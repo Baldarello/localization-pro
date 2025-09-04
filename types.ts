@@ -9,6 +9,12 @@ export interface Term {
     translations: { [langCode: string]: string };
 }
 
+export interface Branch {
+    id: string;
+    name: string;
+    terms: Term[];
+}
+
 export interface User {
     id:string;
     name: string;
@@ -23,6 +29,7 @@ export interface Project {
     name: string;
     defaultLanguageCode: string;
     languages: Language[];
-    terms: Term[];
     team: { [userId: string]: { role: Role; languages: string[] } }; // Maps user ID to role and assigned languages
+    branches: Branch[];
+    defaultBranchId: string;
 }
