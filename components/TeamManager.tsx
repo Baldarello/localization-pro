@@ -1,8 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { User, Role } from '../types';
-import { UIStore } from '../stores/UIStore';
-import { ProjectStore } from '../stores/ProjectStore';
+import { User, UserRole } from '../types';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
     MenuItem, Avatar, ListItemText, Menu, Checkbox
@@ -11,17 +10,14 @@ import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import CloseIcon from '@mui/icons-material/Close';
 import PeopleIcon from '@mui/icons-material/People';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { useStores } from '../stores/StoreProvider';
 
-interface TeamManagerProps {
-    uiStore: UIStore;
-    projectStore: ProjectStore;
-}
-
-const TeamManager: React.FC<TeamManagerProps> = observer(({ uiStore, projectStore }) => {
+const TeamManager: React.FC = observer(() => {
+    const { uiStore, projectStore } = useStores();
     const { isTeamManagerOpen, closeTeamManager } = uiStore;
 
     const [newMemberEmail, setNewMemberEmail] = useState('');
-    const [newMemberRole, setNewMemberRole] = useState<Role>('translator');
+    const [newMemberRole, setNewMemberRole] = useState<UserRole>(UserRole.Translator);
     const [anchorEl, setAnchorEl] = useState<[string, HTMLElement] | null>(null);
 
     const project = projectStore.selectedProject;
@@ -42,7 +38,7 @@ const TeamManager: React.FC<TeamManagerProps> = observer(({ uiStore, projectStor
     const handleAdd = () => {
         projectStore.addMember(newMemberEmail, newMemberRole);
         setNewMemberEmail('');
-        setNewMemberRole('translator');
+        setNewMemberRole(UserRole.Translator);
     };
 
     const handleLanguageToggle = (userId: string, langCode: string) => {
@@ -73,13 +69,13 @@ const TeamManager: React.FC<TeamManagerProps> = observer(({ uiStore, projectStor
             renderCell: (params) => (
                 <Select
                     value={project.team[params.row.id]?.role || ''}
-                    onChange={(e) => projectStore.updateMemberRole(params.row.id, e.target.value as Role)}
+                    onChange={(e) => projectStore.updateMemberRole(params.row.id, e.target.value as UserRole)}
                     size="small"
                     sx={{ width: '100%' }}
                 >
-                    <MenuItem value="translator">Translator</MenuItem>
-                    <MenuItem value="editor">Editor</MenuItem>
-                    <MenuItem value="admin">Admin</MenuItem>
+                    <MenuItem value={UserRole.Translator}>Translator</MenuItem>
+                    <MenuItem value={UserRole.Editor}>Editor</MenuItem>
+                    <MenuItem value={UserRole.Admin}>Admin</MenuItem>
                 </Select>
             ),
         },
@@ -180,14 +176,14 @@ const TeamManager: React.FC<TeamManagerProps> = observer(({ uiStore, projectStor
                     />
                      <Select
                         value={newMemberRole}
-                        onChange={(e) => setNewMemberRole(e.target.value as Role)}
+                        onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
                         size="small"
                         sx={{ minWidth: 150 }}
                         displayEmpty
                      >
-                        <MenuItem value="translator">Translator</MenuItem>
-                        <MenuItem value="editor">Editor</MenuItem>
-                        <MenuItem value="admin">Admin</MenuItem>
+                        <MenuItem value={UserRole.Translator}>Translator</MenuItem>
+                        <MenuItem value={UserRole.Editor}>Editor</MenuItem>
+                        <MenuItem value={UserRole.Admin}>Admin</MenuItem>
                     </Select>
                     <Button variant="contained" color="secondary" onClick={handleAdd}>Invite</Button>
                 </Box>

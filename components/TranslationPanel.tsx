@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ProjectStore } from '../stores/ProjectStore';
 import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import StarIcon from '@mui/icons-material/Star';
@@ -8,12 +8,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import DoneIcon from '@mui/icons-material/Done';
 import CloseIcon from '@mui/icons-material/Close';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import { useStores } from '../stores/StoreProvider';
+import { UserRole } from '../types';
 
-interface TranslationPanelProps {
-    projectStore: ProjectStore;
-}
-
-const TranslationPanel: React.FC<TranslationPanelProps> = observer(({ projectStore }) => {
+const TranslationPanel: React.FC = observer(() => {
+    const { projectStore } = useStores();
     const {
         selectedTerm: term,
         selectedProject: project,
@@ -51,7 +50,7 @@ const TranslationPanel: React.FC<TranslationPanelProps> = observer(({ projectSto
     }
 
     const userPermissions = getAssignedLanguagesForCurrentUser();
-    const canEditKey = currentUserRole === 'admin' || currentUserRole === 'editor';
+    const canEditKey = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
 
     const handleKeySave = () => {
         if (editedKeyText.trim() && editedKeyText !== term.text) {

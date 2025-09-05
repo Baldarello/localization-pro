@@ -1,18 +1,16 @@
+
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ProjectStore } from '../stores/ProjectStore';
 import { AVAILABLE_LANGUAGES } from '../constants';
 import { Button, Menu, MenuItem, ListItemIcon, ListItemText, Checkbox, IconButton, Divider, Typography, Box } from '@mui/material';
 import LanguageIcon from '@mui/icons-material/Language';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
+import { useStores } from '../stores/StoreProvider';
 
-interface LanguageSelectorProps {
-    projectStore: ProjectStore;
-}
-
-const LanguageSelector: React.FC<LanguageSelectorProps> = observer(({ projectStore }) => {
+const LanguageSelector: React.FC = observer(() => {
+    const { projectStore } = useStores();
     const { selectedProject, updateProjectLanguages, setDefaultLanguage } = projectStore;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);

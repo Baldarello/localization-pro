@@ -1,3 +1,4 @@
+
 export interface Language {
     code: string;
     name: string;
@@ -16,7 +17,11 @@ export interface User {
     avatarInitials: string;
 }
 
-export type Role = 'translator' | 'editor' | 'admin';
+export enum UserRole {
+    Translator = 'translator',
+    Editor = 'editor',
+    Admin = 'admin',
+}
 
 export type AlertSeverity = 'info' | 'success' | 'warning' | 'error';
 
@@ -26,5 +31,5 @@ export interface Project {
     defaultLanguageCode: string;
     languages: Language[];
     terms: Term[];
-    team: { [userId: string]: { role: Role; languages: string[] } }; // Maps user ID to role and assigned languages
+    team: { [userId: string]: { role: UserRole; languages: string[] } }; // Maps user ID to role and assigned languages
 }

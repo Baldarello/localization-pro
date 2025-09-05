@@ -1,19 +1,15 @@
+
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { AuthStore } from '../stores/AuthStore';
-import { UIStore } from '../stores/UIStore';
 import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { useStores } from '../stores/StoreProvider';
 
-interface HeaderProps {
-    authStore: AuthStore;
-    uiStore: UIStore;
-}
-
-const Header: React.FC<HeaderProps> = observer(({ authStore, uiStore }) => {
+const Header: React.FC = observer(() => {
+    const { authStore, uiStore } = useStores();
     const { currentUser, logout } = authStore;
     const { theme, toggleTheme } = uiStore;
 

@@ -1,16 +1,15 @@
+
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ProjectStore } from '../stores/ProjectStore';
 import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
+import { useStores } from '../stores/StoreProvider';
+import { UserRole } from '../types';
 
-interface TermListProps {
-    projectStore: ProjectStore;
-}
-
-const TermList: React.FC<TermListProps> = observer(({ projectStore }) => {
+const TermList: React.FC = observer(() => {
+    const { projectStore } = useStores();
     const {
         selectedProject,
         selectedTermId,
@@ -44,7 +43,7 @@ const TermList: React.FC<TermListProps> = observer(({ projectStore }) => {
         const matchesSearch = term.text.toLowerCase().includes(searchQuery.toLowerCase());
         if (!matchesSearch) return false;
         if (showUntranslatedOnly) {
-            if (userAssignedLangs.length === 0 && currentUserRole === 'translator') return false;
+            if (userAssignedLangs.length === 0 && currentUserRole === UserRole.Translator) return false;
             if (userAssignedLangs.length > 0) {
                 return userAssignedLangs.some(langCode => !term.translations[langCode]?.trim());
             }
@@ -52,7 +51,7 @@ const TermList: React.FC<TermListProps> = observer(({ projectStore }) => {
         return true;
     }) || [];
 
-    const canManageTerms = currentUserRole === 'admin' || currentUserRole === 'editor';
+    const canManageTerms = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
     if (!selectedProject) return null;
 
     return (

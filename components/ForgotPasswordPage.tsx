@@ -1,14 +1,12 @@
+
 import React, { useState } from 'react';
-import { UIStore } from '../stores/UIStore';
 import { Container, Paper, Box, Typography, TextField, Button, InputAdornment, Link } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import EmailIcon from '@mui/icons-material/Email';
+import { useStores } from '../stores/StoreProvider';
 
-interface ForgotPasswordPageProps {
-    uiStore: UIStore;
-}
-
-const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ uiStore }) => {
+const ForgotPasswordPage: React.FC = () => {
+    const { uiStore } = useStores();
     const [email, setEmail] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {

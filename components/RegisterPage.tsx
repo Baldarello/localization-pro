@@ -1,16 +1,14 @@
+
 import React, { useState } from 'react';
-import { UIStore } from '../stores/UIStore';
 import { Container, Paper, Box, Typography, TextField, Button, InputAdornment, Link } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
 import PersonIcon from '@mui/icons-material/Person';
+import { useStores } from '../stores/StoreProvider';
 
-interface RegisterPageProps {
-    uiStore: UIStore;
-}
-
-const RegisterPage: React.FC<RegisterPageProps> = ({ uiStore }) => {
+const RegisterPage: React.FC = () => {
+    const { uiStore } = useStores();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

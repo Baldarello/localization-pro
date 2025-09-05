@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { RootStore } from './stores/RootStore';
 import ProjectSidebar from './components/ProjectSidebar';
 import TermList from './components/TermList';
 import TranslationPanel from './components/TranslationPanel';
@@ -13,11 +13,11 @@ import TeamManager from './components/TeamManager';
 import { ThemeProvider, CssBaseline, Box, Typography, Button, Toolbar, Alert, Snackbar } from '@mui/material';
 import { createAppTheme } from './theme';
 import PeopleIcon from '@mui/icons-material/People';
-
-const rootStore = new RootStore();
+import { useStores } from './stores/StoreProvider';
+import { UserRole } from './types';
 
 const App: React.FC = observer(() => {
-    const { uiStore, authStore, projectStore } = rootStore;
+    const { uiStore, authStore, projectStore } = useStores();
     const theme = createAppTheme(uiStore.theme);
 
     const handleCloseAlert = () => {
@@ -26,20 +26,20 @@ const App: React.FC = observer(() => {
 
     const mainContent = () => {
         if (uiStore.view === 'login') {
-            return <LoginPage authStore={authStore} uiStore={uiStore} />;
+            return <LoginPage />;
         }
         if (uiStore.view === 'register') {
-            return <RegisterPage uiStore={uiStore} />;
+            return <RegisterPage />;
         }
         if (uiStore.view === 'forgotPassword') {
-            return <ForgotPasswordPage uiStore={uiStore} />;
+            return <ForgotPasswordPage />;
         }
 
         return (
             <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
-                <Header authStore={authStore} uiStore={uiStore} />
+                <Header />
                 <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-                    <ProjectSidebar projectStore={projectStore} />
+                    <ProjectSidebar />
                     <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         {projectStore.selectedProject ? (
                             <>
@@ -53,7 +53,7 @@ const App: React.FC = observer(() => {
                                     <Typography variant="h5" component="h2" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
                                         {projectStore.selectedProject.name}
                                     </Typography>
-                                    {projectStore.currentUserRole === 'admin' && (
+                                    {projectStore.currentUserRole === UserRole.Admin && (
                                         <Box sx={{ display: 'flex', gap: 2 }}>
                                             <Button
                                                 variant="outlined"
@@ -62,13 +62,13 @@ const App: React.FC = observer(() => {
                                             >
                                                 Manage Team
                                             </Button>
-                                            <LanguageSelector projectStore={projectStore} />
+                                            <LanguageSelector />
                                         </Box>
                                     )}
                                 </Toolbar>
                                 <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-                                    <TermList projectStore={projectStore} />
-                                    <TranslationPanel projectStore={projectStore} />
+                                    <TermList />
+                                    <TranslationPanel />
                                 </Box>
                             </>
                         ) : (
@@ -83,8 +83,8 @@ const App: React.FC = observer(() => {
                         )}
                     </Box>
                 </Box>
-                {projectStore.selectedProject && projectStore.currentUserRole === 'admin' && (
-                    <TeamManager uiStore={uiStore} projectStore={projectStore} />
+                {projectStore.selectedProject && projectStore.currentUserRole === UserRole.Admin && (
+                    <TeamManager />
                 )}
             </Box>
         );

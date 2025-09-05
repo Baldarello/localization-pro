@@ -1,18 +1,16 @@
+
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ProjectStore } from '../stores/ProjectStore';
 import { Drawer, List, ListItemButton, ListItemIcon, ListItemText, Typography, Box, TextField, Button, Divider } from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 import AddIcon from '@mui/icons-material/Add';
 import CancelIcon from '@mui/icons-material/Cancel';
-
-interface ProjectSidebarProps {
-    projectStore: ProjectStore;
-}
+import { useStores } from '../stores/StoreProvider';
 
 const drawerWidth = 280;
 
-const ProjectSidebar: React.FC<ProjectSidebarProps> = observer(({ projectStore }) => {
+const ProjectSidebar: React.FC = observer(() => {
+    const { projectStore } = useStores();
     const { projects, selectedProjectId, selectProject, addProject } = projectStore;
     const [newProjectName, setNewProjectName] = useState('');
     const [isAdding, setIsAdding] = useState(false);

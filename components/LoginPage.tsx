@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
-import { AuthStore } from '../stores/AuthStore';
-import { UIStore } from '../stores/UIStore';
 import { Container, Paper, Box, Typography, TextField, Button, InputAdornment, Link, Divider, Alert } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
-import { GoogleIcon } from './BrandIcons';
+import { GoogleIcon } from './icons';
+import { useStores } from '../stores/StoreProvider';
 
-interface LoginPageProps {
-    authStore: AuthStore;
-    uiStore: UIStore;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ authStore, uiStore }) => {
+const LoginPage: React.FC = () => {
+    const { authStore, uiStore } = useStores();
     const [email, setEmail] = useState('alice@example.com');
     const [password, setPassword] = useState('password');
 

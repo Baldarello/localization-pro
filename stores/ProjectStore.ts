@@ -1,5 +1,6 @@
+
 import { makeAutoObservable } from 'mobx';
-import { Project, Term, Language, User, Role } from '../types';
+import { Project, Term, Language, User, UserRole } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
 import { RootStore } from './RootStore';
 import { GoogleGenAI } from '@google/genai';
@@ -23,9 +24,9 @@ const INITIAL_PROJECTS: Project[] = [
             { id: 'term-2', text: 'button_submit', translations: { 'en': 'Submit', 'it': 'Invia', 'es': 'Enviar' } },
         ],
         team: {
-            'user-1': { role: 'admin', languages: ['en', 'it', 'es'] },
-            'user-2': { role: 'editor', languages: ['it'] },
-            'user-3': { role: 'translator', languages: ['es'] },
+            'user-1': { role: UserRole.Admin, languages: ['en', 'it', 'es'] },
+            'user-2': { role: UserRole.Editor, languages: ['it'] },
+            'user-3': { role: UserRole.Translator, languages: ['es'] },
         },
     },
     {
@@ -37,7 +38,7 @@ const INITIAL_PROJECTS: Project[] = [
             { id: 'term-3', text: 'start_game', translations: { 'en': 'Start Game', 'de': 'Spiel starten' } },
         ],
         team: {
-            'user-1': { role: 'admin', languages: ['en', 'de'] }
+            'user-1': { role: UserRole.Admin, languages: ['en', 'de'] }
         },
     },
 ];
@@ -75,7 +76,7 @@ export class ProjectStore {
         const user = this.rootStore.authStore.currentUser;
         if (!this.selectedProject || !user) return [];
         const userRole = this.currentUserRole;
-        if (userRole === 'admin' || userRole === 'editor') {
+        if (userRole === UserRole.Admin || userRole === UserRole.Editor) {
             return this.selectedProject.languages.map(l => l.code);
         }
         return this.selectedProject.team[user.id]?.languages || [];
@@ -100,7 +101,7 @@ export class ProjectStore {
             languages: [AVAILABLE_LANGUAGES[0]],
             defaultLanguageCode: AVAILABLE_LANGUAGES[0].code,
             terms: [],
-            team: { [user.id]: { role: 'admin', languages: [AVAILABLE_LANGUAGES[0].code] } }
+            team: { [user.id]: { role: UserRole.Admin, languages: [AVAILABLE_LANGUAGES[0].code] } }
         };
         this.projects.push(newProject);
         this.selectedProjectId = newProject.id;
@@ -108,7 +109,7 @@ export class ProjectStore {
     };
     
     addTerm(termText: string) {
-        if (!this.selectedProject || (this.currentUserRole !== 'admin' && this.currentUserRole !== 'editor')) return;
+        if (!this.selectedProject || (this.currentUserRole !== UserRole.Admin && this.currentUserRole !== UserRole.Editor)) return;
         const newTerm: Term = {
             id: `term-${Date.now()}`,
             text: termText,
@@ -127,7 +128,7 @@ export class ProjectStore {
     };
 
     updateTermText(termId: string, newText: string) {
-        if (!this.selectedProject || (this.currentUserRole !== 'admin' && this.currentUserRole !== 'editor')) return;
+        if (!this.selectedProject || (this.currentUserRole !== UserRole.Admin && this.currentUserRole !== UserRole.Editor)) return;
         const term = this.selectedProject.terms.find(t => t.id === termId);
         if (term) {
             term.text = newText;
@@ -135,7 +136,7 @@ export class ProjectStore {
     };
 
     updateProjectLanguages(newLanguages: Language[]) {
-        if (!this.selectedProject || this.currentUserRole !== 'admin') return;
+        if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
         
         const newLangCodes = newLanguages.map(l => l.code);
         const newDefaultLang = newLangCodes.includes(this.selectedProject.defaultLanguageCode)
@@ -153,12 +154,12 @@ export class ProjectStore {
     };
     
     setDefaultLanguage(langCode: string) {
-        if (!this.selectedProject || this.currentUserRole !== 'admin') return;
+        if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
         this.selectedProject.defaultLanguageCode = langCode;
     };
     
     deleteTerm(termId: string) {
-        if (!this.selectedProject || (this.currentUserRole !== 'admin' && this.currentUserRole !== 'editor')) return;
+        if (!this.selectedProject || (this.currentUserRole !== UserRole.Admin && this.currentUserRole !== UserRole.Editor)) return;
         
         const termIndex = this.selectedProject.terms.findIndex(t => t.id === termId);
         if (termIndex === -1) return;
@@ -170,8 +171,8 @@ export class ProjectStore {
         }
     };
     
-    addMember(email: string, role: Role) {
-        if (!this.selectedProject || this.currentUserRole !== 'admin') return;
+    addMember(email: string, role: UserRole) {
+        if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
         
         const trimmedEmail = email.trim();
         if (!trimmedEmail) { this.rootStore.uiStore.showAlert('Email cannot be empty.', 'error'); return; }
@@ -186,7 +187,7 @@ export class ProjectStore {
     };
 
     removeMember(userId: string) {
-        if (!this.selectedProject || this.currentUserRole !== 'admin') return;
+        if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
         const user = this.allUsers.find(u => u.id === userId);
         delete this.selectedProject.team[userId];
         if(user) {
@@ -195,15 +196,15 @@ export class ProjectStore {
     };
     
     updateMemberLanguages(userId: string, assignedLanguages: string[]) {
-        if (!this.selectedProject || this.currentUserRole !== 'admin') return;
+        if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
         const member = this.selectedProject.team[userId];
         if (member) {
             member.languages = assignedLanguages;
         }
     };
     
-    updateMemberRole(userId: string, role: Role) {
-        if (!this.selectedProject || this.currentUserRole !== 'admin') return;
+    updateMemberRole(userId: string, role: UserRole) {
+        if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
         const member = this.selectedProject.team[userId];
         if (member) {
             member.role = role;
@@ -234,11 +235,13 @@ export class ProjectStore {
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const prompt = `Translate the following text from ${sourceLang} to ${targetLang}. Only return the translation, without any additional comments or quotation marks:\n\n"${sourceText}"`;
-
+            
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
-                contents: prompt,
+                contents: `Translate this text from ${sourceLang} to ${targetLang}: "${sourceText}"`,
+                config: {
+                    systemInstruction: "You are a professional translation API. Your only task is to translate the given text accurately. Do not add any extra text, explanations, or quotation marks. Return only the translated string.",
+                }
             });
 
             const translatedText = response.text.trim();
