@@ -1,46 +1,60 @@
 import React from 'react';
-import { TranslateIcon, LogoutIcon, SunIcon, MoonIcon } from './icons';
-import { User } from '../types';
+import { observer } from 'mobx-react-lite';
+import { AuthStore } from '../stores/AuthStore';
+import { UIStore } from '../stores/UIStore';
+import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box } from '@mui/material';
+import TranslateIcon from '@mui/icons-material/Translate';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 
 interface HeaderProps {
-    user: User | null;
-    onLogout: () => void;
-    theme: 'light' | 'dark';
-    onToggleTheme: () => void;
+    authStore: AuthStore;
+    uiStore: UIStore;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onLogout, theme, onToggleTheme }) => {
+const Header: React.FC<HeaderProps> = observer(({ authStore, uiStore }) => {
+    const { currentUser, logout } = authStore;
+    const { theme, toggleTheme } = uiStore;
+
     return (
-        <header className="flex items-center justify-between p-4 bg-brand-primary text-white shadow-md z-10">
-            <div className="flex items-center space-x-3">
-                <TranslateIcon className="w-8 h-8"/>
-                <h1 className="text-2xl font-bold tracking-wider">Localization Manager Pro</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-                <button 
-                    onClick={onToggleTheme}
-                    className="p-2 rounded-full text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-primary focus:ring-white transition-colors"
-                    aria-label="Toggle theme"
-                >
-                    {theme === 'light' ? <MoonIcon className="w-6 h-6" /> : <SunIcon className="w-6 h-6" />}
-                </button>
-                {user && (
-                     <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                             <div className="w-8 h-8 rounded-full bg-brand-accent flex items-center justify-center text-white font-bold">
-                                {user.avatarInitials}
-                            </div>
-                            <span className="font-semibold">{user.name}</span>
-                        </div>
-                        <button onClick={onLogout} className="flex items-center space-x-2 text-white hover:text-indigo-200 transition-colors">
-                            <LogoutIcon className="w-6 h-6" />
-                            <span>Logout</span>
-                        </button>
-                    </div>
+        <AppBar position="static" elevation={1} color="primary">
+            <Toolbar>
+                <TranslateIcon sx={{ mr: 2, fontSize: 32 }} />
+                <Typography variant="h6" component="h1" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+                    Localization Manager Pro
+                </Typography>
+
+                <IconButton sx={{ mr: 2 }} onClick={toggleTheme} color="inherit" aria-label="Toggle theme">
+                    {theme === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                </IconButton>
+
+                {currentUser && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, fontSize: '0.875rem' }}>
+                            {currentUser.avatarInitials}
+                        </Avatar>
+                        <Typography variant="subtitle1">{currentUser.name}</Typography>
+                        <Button
+                            color="inherit"
+                            variant="outlined"
+                            startIcon={<LogoutIcon />}
+                            onClick={logout}
+                            sx={{
+                                borderColor: 'rgba(255, 255, 255, 0.5)',
+                                '&:hover': {
+                                    borderColor: 'white',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }}
+                        >
+                            Logout
+                        </Button>
+                    </Box>
                 )}
-            </div>
-        </header>
+            </Toolbar>
+        </AppBar>
     );
-};
+});
 
 export default Header;

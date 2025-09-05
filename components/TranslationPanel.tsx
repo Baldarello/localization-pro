@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Term, Project, User, Role } from '../types';
-import { LockClosedIcon, StarIcon, PencilIcon } from './icons';
+import { observer } from 'mobx-react-lite';
+import { ProjectStore } from '../stores/ProjectStore';
+import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress } from '@mui/material';
+import LockIcon from '@mui/icons-material/Lock';
+import StarIcon from '@mui/icons-material/Star';
+import EditIcon from '@mui/icons-material/Edit';
+import DoneIcon from '@mui/icons-material/Done';
+import CloseIcon from '@mui/icons-material/Close';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
 interface TranslationPanelProps {
-    term: Term | undefined;
-    project: Project;
-    currentUser: User | null;
-    currentUserRole: Role | null;
-    onUpdateTranslation: (langCode: string, value: string) => void;
-    onUpdateTermText: (termId: string, newText: string) => void;
+    projectStore: ProjectStore;
 }
 
-const TranslationPanel: React.FC<TranslationPanelProps> = ({ term, project, currentUser, currentUserRole, onUpdateTranslation, onUpdateTermText }) => {
+const TranslationPanel: React.FC<TranslationPanelProps> = observer(({ projectStore }) => {
+    const {
+        selectedTerm: term,
+        selectedProject: project,
+        currentUserRole,
+        getAssignedLanguagesForCurrentUser,
+        updateTranslation,
+        updateTermText,
+        generateTranslation,
+        translatingState,
+    } = projectStore;
+
     const [isEditingKey, setIsEditingKey] = useState(false);
     const [editedKeyText, setEditedKeyText] = useState('');
 
@@ -22,85 +35,119 @@ const TranslationPanel: React.FC<TranslationPanelProps> = ({ term, project, curr
         }
     }, [term]);
 
-    if (!term) {
+    if (!term || !project) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-light-bg dark:bg-dark-bg">
-                <div className="text-center">
-                    <h3 className="text-xl font-semibold text-light-text-secondary dark:text-dark-text-secondary">Select a Term</h3>
-                    <p className="mt-2 text-gray-400 dark:text-gray-500">Choose a term from the list to start translating.</p>
-                </div>
-            </div>
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h5" color="text.secondary">
+                        Select a Term
+                    </Typography>
+                    <Typography color="text.secondary" sx={{ mt: 1 }}>
+                        Choose a term from the list to start translating.
+                    </Typography>
+                </Box>
+            </Box>
         );
     }
-    
-    const userPermissions = (currentUser && project.team[currentUser.id]?.languages) || [];
+
+    const userPermissions = getAssignedLanguagesForCurrentUser();
     const canEditKey = currentUserRole === 'admin' || currentUserRole === 'editor';
-    
+
     const handleKeySave = () => {
         if (editedKeyText.trim() && editedKeyText !== term.text) {
-            onUpdateTermText(term.id, editedKeyText.trim());
+            updateTermText(term.id, editedKeyText.trim());
         }
         setIsEditingKey(false);
     };
-
+    
+    const handleKeyCancel = () => {
+        setEditedKeyText(term.text);
+        setIsEditingKey(false);
+    };
 
     return (
-        <div className="flex-1 flex flex-col overflow-y-auto bg-light-bg dark:bg-dark-bg p-6">
-            <div className="mb-6 pb-4 border-b border-light-border dark:border-dark-border">
-                <div className="flex items-center group">
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
+            <Box sx={{ mb: 3, pb: 2, borderBottom: 1, borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: '48px' }}>
                     {isEditingKey && canEditKey ? (
-                         <input
-                            type="text"
-                            value={editedKeyText}
-                            onChange={(e) => setEditedKeyText(e.target.value)}
-                            onBlur={handleKeySave}
-                            onKeyDown={(e) => { if(e.key === 'Enter') handleKeySave(); if(e.key === 'Escape') setIsEditingKey(false); }}
-                            className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary bg-transparent border-b-2 border-brand-primary outline-none"
-                            autoFocus
-                        />
+                        <>
+                            <TextField
+                                value={editedKeyText}
+                                onChange={(e) => setEditedKeyText(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleKeySave(); if (e.key === 'Escape') handleKeyCancel(); }}
+                                variant="standard"
+                                autoFocus
+                                sx={{
+                                    '.MuiInput-input': {
+                                        fontSize: '1.75rem',
+                                        fontWeight: 'bold',
+                                    }
+                                }}
+                            />
+                            <IconButton onClick={handleKeySave} color="primary"><DoneIcon /></IconButton>
+                            <IconButton onClick={handleKeyCancel}><CloseIcon /></IconButton>
+                        </>
                     ) : (
-                        <h3 className={`text-2xl font-bold text-light-text-primary dark:text-dark-text-primary ${canEditKey ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md px-2' : ''}`} onClick={() => canEditKey && setIsEditingKey(true)}>
-                           {term.text}
-                        </h3>
+                        <>
+                            <Typography variant="h4" component="h3" sx={{ fontWeight: 'bold' }}>
+                                {term.text}
+                            </Typography>
+                            {canEditKey && (
+                                <IconButton onClick={() => setIsEditingKey(true)} size="small">
+                                    <EditIcon fontSize="small" />
+                                </IconButton>
+                            )}
+                        </>
                     )}
-                    {canEditKey && !isEditingKey && (
-                        <button onClick={() => setIsEditingKey(true)} className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-light-text-secondary dark:text-dark-text-secondary hover:text-brand-primary">
-                            <PencilIcon className="w-5 h-5" />
-                        </button>
-                    )}
-                </div>
-
-                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">Translate this term for the selected languages.</p>
-            </div>
-            <div className="space-y-6">
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Translate this term for the selected languages.
+                </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {project.languages.map(lang => {
                     const isDefault = lang.code === project.defaultLanguageCode;
                     const canEdit = userPermissions.includes(lang.code);
+                    const isLoading = translatingState?.termId === term.id && translatingState?.langCode === lang.code;
 
                     return (
-                        <div key={lang.code}>
-                            <label className="flex items-center text-md font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
-                                <span className={`flag-icon flag-icon-${lang.code === 'en' ? 'gb' : lang.code} mr-3`}></span>
+                        <Box key={lang.code}>
+                            <Typography component="label" sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', mb: 1 }}>
+                                <Box component="span" className={`flag-icon flag-icon-${lang.code === 'en' ? 'gb' : lang.code}`} sx={{ mr: 1 }} />
                                 {lang.name}
-                                {isDefault && <StarIcon className="w-4 h-4 ml-2 text-brand-accent" />}
-                                {!canEdit && <LockClosedIcon className="w-4 h-4 ml-2 text-light-text-secondary dark:text-dark-text-secondary" />}
-                            </label>
-                            <textarea
-                                value={term.translations[lang.code] || ''}
-                                onChange={(e) => onUpdateTranslation(lang.code, e.target.value)}
+                                {isDefault && <StarIcon sx={{ ml: 1, color: 'warning.main', fontSize: 16 }} />}
+                                {!canEdit && <LockIcon sx={{ ml: 1, color: 'text.disabled', fontSize: 16 }} />}
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                multiline
                                 rows={3}
-                                className={`w-full px-3 py-2 text-light-text-primary dark:text-dark-text-primary bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary shadow-sm transition-all placeholder:text-light-text-secondary/70 dark:placeholder:text-dark-text-secondary/70 ${
-                                    !canEdit ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
-                                }`}
+                                value={term.translations[lang.code] || ''}
+                                onChange={(e) => updateTranslation(lang.code, e.target.value)}
                                 placeholder={`Translation in ${lang.name}...`}
-                                readOnly={!canEdit}
+                                disabled={!canEdit}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            {!isDefault && canEdit && (
+                                                <IconButton
+                                                    onClick={() => generateTranslation(term.id, lang.code)}
+                                                    disabled={isLoading}
+                                                    title={`Auto-translate to ${lang.name}`}
+                                                >
+                                                    {isLoading ? <CircularProgress size={24} /> : <AutoFixHighIcon />}
+                                                </IconButton>
+                                            )}
+                                        </InputAdornment>
+                                    ),
+                                }}
                             />
-                        </div>
+                        </Box>
                     );
                 })}
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
-};
+});
 
 export default TranslationPanel;

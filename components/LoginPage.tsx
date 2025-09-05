@@ -1,131 +1,122 @@
 import React, { useState } from 'react';
-import { AtSymbolIcon, LockClosedIcon, TranslateIcon, GoogleIcon } from './icons';
+import { AuthStore } from '../stores/AuthStore';
+import { UIStore } from '../stores/UIStore';
+import { Container, Paper, Box, Typography, TextField, Button, InputAdornment, Link, Divider, Alert } from '@mui/material';
+import TranslateIcon from '@mui/icons-material/Translate';
+import EmailIcon from '@mui/icons-material/Email';
+import LockIcon from '@mui/icons-material/Lock';
+import { GoogleIcon } from './BrandIcons';
 
 interface LoginPageProps {
-    onLogin: (email: string, pass: string) => Promise<void>;
-    onNavigateToRegister: () => void;
-    onNavigateToForgotPassword: () => void;
+    authStore: AuthStore;
+    uiStore: UIStore;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ authStore, uiStore }) => {
     const [email, setEmail] = useState('alice@example.com');
     const [password, setPassword] = useState('password');
-    const [error, setError] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
         if (!email || !password) {
-            setError('Please enter both email and password.');
+            uiStore.showAlert('Please enter both email and password.', 'warning');
             return;
         }
-        try {
-            await onLogin(email, password);
-        } catch (err: any) {
-            setError(err.message);
-        }
+        await authStore.login(email, password);
     };
-    
+
     const handleGoogleLogin = async () => {
-        setError('');
-        try {
-            // In a real app, this would trigger the Google OAuth flow.
-            // Here, we simulate a successful login with a predefined user.
-            await onLogin('alice@example.com', 'password');
-        } catch (err: any) {
-             setError('Could not sign in with Google.');
-        }
-    }
+        // In a real app, this would trigger the Google OAuth flow.
+        await authStore.login('alice@example.com', 'password');
+    };
 
     return (
-        <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex flex-col justify-center items-center p-4">
-            <div className="max-w-md w-full mx-auto bg-light-surface dark:bg-dark-surface p-8 border border-light-border dark:border-dark-border rounded-lg shadow-lg">
-                <div className="flex items-center justify-center mb-6">
-                    <TranslateIcon className="w-12 h-12 text-brand-primary" />
-                    <h1 className="text-3xl font-bold text-light-text-primary dark:text-dark-text-primary ml-3">Localization Pro</h1>
-                </div>
-                <h2 className="text-2xl font-semibold text-center text-light-text-secondary dark:text-dark-text-secondary mb-6">Welcome Back</h2>
-                <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400 p-4 mb-6">
-                    <div className="flex">
-                        <div className="py-1">
-                           <p className="text-sm text-blue-700 dark:text-blue-300">Use <b>alice@example.com</b> and password <b>password</b> to log in, or use Google Sign-In.</p>
-                        </div>
-                    </div>
-                </div>
-                {error && <p className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-md mb-4 text-center">{error}</p>}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label htmlFor="email" className="text-sm font-bold text-light-text-secondary dark:text-dark-text-secondary block">Email</label>
-                        <div className="relative">
-                           <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                               <AtSymbolIcon className="h-5 w-5 text-gray-400" />
-                            </span>
-                            <input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 mt-1 text-light-text-primary dark:text-dark-text-primary bg-light-surface dark:bg-gray-800 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary placeholder:text-light-text-secondary/70 dark:placeholder:text-dark-text-secondary/70"
-                                placeholder="you@example.com"
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label htmlFor="password-login" className="text-sm font-bold text-light-text-secondary dark:text-dark-text-secondary block">Password</label>
-                        <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                            </span>
-                            <input
-                                id="password-login"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 mt-1 text-light-text-primary dark:text-dark-text-primary bg-light-surface dark:bg-gray-800 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary placeholder:text-light-text-secondary/70 dark:placeholder:text-dark-text-secondary/70"
-                                placeholder="••••••••"
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                         <div/>
-                        <button type="button" onClick={onNavigateToForgotPassword} className="text-sm text-brand-primary hover:underline">
-                            Forgot password?
-                        </button>
-                    </div>
-                    <div>
-                        <button type="submit" className="w-full py-3 px-4 text-white bg-brand-primary rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary font-semibold">
-                            Log In
-                        </button>
-                    </div>
-                </form>
+        <Container component="main" maxWidth="xs">
+            <Paper elevation={3} sx={{ mt: 8, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <TranslateIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
+                <Typography component="h1" variant="h5">
+                    Localization Pro
+                </Typography>
+                <Typography component="h2" variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
+                    Welcome Back
+                </Typography>
                 
-                <div className="mt-6 flex items-center justify-center">
-                    <div className="border-t border-light-border dark:border-dark-border flex-grow"></div>
-                    <span className="px-4 text-sm text-light-text-secondary dark:text-dark-text-secondary bg-light-surface dark:bg-dark-surface">or continue with</span>
-                    <div className="border-t border-light-border dark:border-dark-border flex-grow"></div>
-                </div>
-
-                <div className="mt-6">
-                    <button
-                        type="button"
-                        onClick={handleGoogleLogin}
-                        className="w-full flex items-center justify-center py-2.5 px-4 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-surface dark:bg-dark-surface text-sm font-medium text-light-text-primary dark:text-dark-text-primary hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary"
+                <Alert severity="info" sx={{ width: '100%', mb: 2 }}>
+                    Use <b>alice@example.com</b> & <b>password</b> or Google Sign-In.
+                </Alert>
+                
+                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        id="email"
+                        label="Email Address"
+                        name="email"
+                        autoComplete="email"
+                        autoFocus
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <EmailIcon />
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        name="password"
+                        label="Password"
+                        type="password"
+                        id="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <LockIcon />
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+                    <Link href="#" variant="body2" sx={{ display: 'block', textAlign: 'right', mt: 1 }} onClick={() => uiStore.setView('forgotPassword')}>
+                        Forgot password?
+                    </Link>
+                    <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        sx={{ mt: 3, mb: 2 }}
                     >
-                        <GoogleIcon className="w-5 h-5 mr-2" />
+                        Log In
+                    </Button>
+                    <Divider sx={{ my: 2 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            OR
+                        </Typography>
+                    </Divider>
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<GoogleIcon />}
+                        onClick={handleGoogleLogin}
+                    >
                         Sign in with Google
-                    </button>
-                </div>
-
-                <p className="mt-8 text-center text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                    Don't have an account?{' '}
-                    <button onClick={onNavigateToRegister} className="font-medium text-brand-primary hover:underline">
-                        Sign up
-                    </button>
-                </p>
-            </div>
-        </div>
+                    </Button>
+                    <Typography variant="body2" sx={{ mt: 3, textAlign: 'center' }}>
+                        Don't have an account?{' '}
+                        <Link href="#" onClick={() => uiStore.setView('register')}>
+                            Sign up
+                        </Link>
+                    </Typography>
+                </Box>
+            </Paper>
+        </Container>
     );
 };
 

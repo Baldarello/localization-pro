@@ -1,57 +1,46 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { User, Project, Role } from '../types';
-import { UserGroupIcon, XIcon, TrashIcon, ChevronDownIcon } from './icons';
+import React, { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { User, Role } from '../types';
+import { UIStore } from '../stores/UIStore';
+import { ProjectStore } from '../stores/ProjectStore';
+import {
+    Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
+    MenuItem, Avatar, ListItemText, Menu, Checkbox
+} from '@mui/material';
+import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
+import CloseIcon from '@mui/icons-material/Close';
+import PeopleIcon from '@mui/icons-material/People';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 interface TeamManagerProps {
-    isOpen: boolean;
-    onClose: () => void;
-    project: Project;
-    onRemoveMember: (userId: string) => void;
-    onAddMember: (email: string, role: Role) => void;
-    onUpdateMemberLanguages: (userId: string, assignedLanguages: string[]) => void;
-    onUpdateMemberRole: (userId: string, role: Role) => void;
-    allUsers: User[];
+    uiStore: UIStore;
+    projectStore: ProjectStore;
 }
 
-const TeamManager: React.FC<TeamManagerProps> = ({ isOpen, onClose, project, onRemoveMember, onAddMember, onUpdateMemberLanguages, onUpdateMemberRole, allUsers }) => {
+const TeamManager: React.FC<TeamManagerProps> = observer(({ uiStore, projectStore }) => {
+    const { isTeamManagerOpen, closeTeamManager } = uiStore;
+
     const [newMemberEmail, setNewMemberEmail] = useState('');
     const [newMemberRole, setNewMemberRole] = useState<Role>('translator');
-    const [error, setError] = useState('');
-    const [managingUserId, setManagingUserId] = useState<string | null>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-    
+    const [anchorEl, setAnchorEl] = useState<[string, HTMLElement] | null>(null);
+
+    const project = projectStore.selectedProject;
+    if (!project) return null;
+
     const teamMemberIds = Object.keys(project.team);
-    const teamMembers = teamMemberIds.map(id => allUsers.find(u => u.id === id)).filter((u): u is User => !!u);
+    const teamMembers = teamMemberIds.map(id => projectStore.allUsers.find(u => u.id === id)).filter((u): u is User => !!u);
 
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setManagingUserId(null);
+        if (anchorEl) {
+            const memberExists = teamMembers.some(member => member.id === anchorEl[0]);
+            if (!memberExists) {
+                setAnchorEl(null);
             }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        }
+    }, [teamMembers, anchorEl]);
 
-    if (!isOpen) return null;
-    
     const handleAdd = () => {
-        setError('');
-        const trimmedEmail = newMemberEmail.trim();
-        if (!trimmedEmail) {
-            setError('Email cannot be empty.'); return;
-        }
-        if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
-            setError('Please enter a valid email address.'); return;
-        }
-        if (teamMembers.some(member => member.email === trimmedEmail)) {
-            setError('This user is already a member of the project.'); return;
-        }
-        const userExists = allUsers.some(user => user.email === trimmedEmail);
-        if (!userExists) {
-            setError('No user found with this email address.'); return;
-        }
-        onAddMember(trimmedEmail, newMemberRole);
+        projectStore.addMember(newMemberEmail, newMemberRole);
         setNewMemberEmail('');
         setNewMemberRole('translator');
     };
@@ -61,115 +50,153 @@ const TeamManager: React.FC<TeamManagerProps> = ({ isOpen, onClose, project, onR
         const newLangs = currentLangs.includes(langCode)
             ? currentLangs.filter(code => code !== langCode)
             : [...currentLangs, langCode];
-        onUpdateMemberLanguages(userId, newLangs);
+        projectStore.updateMemberLanguages(userId, newLangs);
     };
 
+    const columns: GridColDef[] = [
+        {
+            field: 'name',
+            headerName: 'Member',
+            flex: 1,
+            minWidth: 250,
+            renderCell: (params) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
+                    <Avatar sx={{ bgcolor: 'secondary.main' }}>{params.row.avatarInitials}</Avatar>
+                    <ListItemText primary={params.row.name} secondary={params.row.email} />
+                </Box>
+            ),
+        },
+        {
+            field: 'role',
+            headerName: 'Role',
+            width: 150,
+            renderCell: (params) => (
+                <Select
+                    value={project.team[params.row.id]?.role || ''}
+                    onChange={(e) => projectStore.updateMemberRole(params.row.id, e.target.value as Role)}
+                    size="small"
+                    sx={{ width: '100%' }}
+                >
+                    <MenuItem value="translator">Translator</MenuItem>
+                    <MenuItem value="editor">Editor</MenuItem>
+                    <MenuItem value="admin">Admin</MenuItem>
+                </Select>
+            ),
+        },
+        {
+            field: 'languages',
+            headerName: 'Languages Assigned',
+            width: 200,
+            sortable: false,
+            renderCell: (params) => {
+                const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+                    setAnchorEl([params.row.id, event.currentTarget]);
+                };
+                const assignedLangs = project.team[params.row.id]?.languages || [];
+                return (
+                    <>
+                        <Button onClick={handleMenuOpen} sx={{ textTransform: 'none' }}>
+                            {`${assignedLangs.length} of ${project.languages.length} selected`}
+                        </Button>
+                        <Menu
+                            anchorEl={anchorEl && anchorEl[1]}
+                            open={anchorEl ? anchorEl[0] === params.row.id : false}
+                            onClose={() => setAnchorEl(null)}
+                        >
+                            {project.languages.map(lang => (
+                                <MenuItem key={lang.code} onClick={() => handleLanguageToggle(params.row.id, lang.code)}>
+                                    <Checkbox checked={assignedLangs.includes(lang.code)} />
+                                    <ListItemText>{lang.name}</ListItemText>
+                                </MenuItem>
+                            ))}
+                        </Menu>
+                    </>
+                );
+            },
+        },
+        {
+            field: 'actions',
+            type: 'actions',
+            width: 80,
+            getActions: (params) => [
+                <GridActionsCellItem
+                    icon={<DeleteIcon />}
+                    label="Remove"
+                    onClick={() => projectStore.removeMember(params.row.id)}
+                    showInMenu
+                />,
+            ],
+        },
+    ];
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center" onClick={onClose}>
-            <div className="bg-light-surface dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl m-4" onClick={e => e.stopPropagation()}>
-                <div className="p-6 border-b border-light-border dark:border-dark-border flex justify-between items-center">
-                    <div className="flex items-center">
-                        <UserGroupIcon className="w-6 h-6 text-brand-primary mr-3" />
-                        <h2 className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">Manage Team for "{project.name}"</h2>
-                    </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <XIcon className="w-6 h-6" />
-                    </button>
-                </div>
-
-                <div className="p-6">
-                    <h3 className="text-lg font-semibold text-light-text-secondary dark:text-dark-text-secondary mb-4">Project Members</h3>
-                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                        {teamMembers.map(member => (
-                            <div key={member.id} className="grid grid-cols-3 items-center bg-gray-50 dark:bg-gray-800 p-3 rounded-md gap-4">
-                                <div className="flex items-center col-span-1">
-                                    <div className="w-10 h-10 rounded-full bg-brand-accent flex items-center justify-center text-white font-bold text-lg mr-4 flex-shrink-0">
-                                        {member.avatarInitials}
-                                    </div>
-                                    <div>
-                                        <p className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">{member.name}</p>
-                                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary truncate">{member.email}</p>
-                                    </div>
-                                </div>
-                                <div className="col-span-1">
-                                    <select
-                                        value={project.team[member.id]?.role}
-                                        onChange={(e) => onUpdateMemberRole(member.id, e.target.value as Role)}
-                                        className="w-full px-3 py-1.5 text-sm text-light-text-primary dark:text-dark-text-primary bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary capitalize"
-                                    >
-                                        <option value="translator">Translator</option>
-                                        <option value="editor">Editor</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </div>
-                                <div className="flex items-center space-x-2 col-span-1 justify-end">
-                                    <div className="relative" ref={managingUserId === member.id ? dropdownRef : null}>
-                                        <button onClick={() => setManagingUserId(managingUserId === member.id ? null : member.id)} className="flex items-center px-3 py-1.5 text-sm bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
-                                            Languages
-                                            <ChevronDownIcon className="w-4 h-4 ml-1" />
-                                        </button>
-                                        {managingUserId === member.id && (
-                                            <div className="absolute right-0 mt-2 w-48 bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-md shadow-lg z-10">
-                                                <div className="py-1 max-h-40 overflow-y-auto">
-                                                    {project.languages.map(lang => (
-                                                        <label key={lang.code} className="flex items-center justify-between px-3 py-2 text-sm text-light-text-primary dark:text-dark-text-primary cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                                                            <span>{lang.name}</span>
-                                                            <input
-                                                                type="checkbox"
-                                                                className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
-                                                                checked={(project.team[member.id]?.languages || []).includes(lang.code)}
-                                                                onChange={() => handleLanguageToggle(member.id, lang.code)}
-                                                            />
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <button onClick={() => onRemoveMember(member.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-md hover:bg-red-100 dark:hover:bg-red-900/50">
-                                        <TrashIcon className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                         {teamMembers.length === 0 && (
-                            <p className="text-light-text-secondary dark:text-dark-text-secondary text-center py-4">No members yet. Invite someone!</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-b-lg">
-                     <h3 className="text-lg font-semibold text-light-text-secondary dark:text-dark-text-secondary mb-4">Invite New Member</h3>
-                     {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-                     <div className="flex space-x-2 items-center">
-                        <input
-                            type="email"
-                            value={newMemberEmail}
-                            onChange={(e) => setNewMemberEmail(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                            placeholder="user@example.com"
-                            className="flex-1 px-3 py-2 text-sm text-light-text-primary dark:text-dark-text-primary bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary placeholder:text-light-text-secondary/70 dark:placeholder:text-dark-text-secondary/70"
-                        />
-                         <select
-                            value={newMemberRole}
-                            onChange={(e) => setNewMemberRole(e.target.value as Role)}
-                            className="px-3 py-2 text-sm text-light-text-primary dark:text-dark-text-primary bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary capitalize"
-                        >
-                            <option value="translator">Translator</option>
-                            <option value="editor">Editor</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                        <button
-                            onClick={handleAdd}
-                            className="px-4 py-2 font-semibold text-white bg-brand-secondary rounded-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-secondary flex items-center"
-                        >
-                            Invite
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <Dialog open={isTeamManagerOpen} onClose={closeTeamManager} fullWidth maxWidth="lg">
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PeopleIcon />
+                    <Typography variant="h6">Manage Team for "{project.name}"</Typography>
+                </Box>
+                <IconButton onClick={closeTeamManager}><CloseIcon /></IconButton>
+            </DialogTitle>
+            <DialogContent dividers sx={{ p: 0 }}>
+                <Box sx={{ height: 450, width: '100%' }}>
+                     <DataGrid
+                        rows={teamMembers}
+                        columns={columns}
+                        rowHeight={70}
+                        pageSizeOptions={[5, 10, 20]}
+                        disableRowSelectionOnClick
+                        autoHeight={false}
+                        sx={{
+                            border: 'none',
+                             '& .MuiDataGrid-cell:focus-within, & .MuiDataGrid-cell:focus': {
+                                outline: 'none !important'
+                            },
+                            '& .MuiDataGrid-columnHeader:focus-within, & .MuiDataGrid-columnHeader:focus': {
+                                outline: 'none !important'
+                            }
+                        }}
+                        slots={{
+                            noRowsOverlay: () => (
+                                <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                    <Typography color="text.secondary">No members yet. Invite someone!</Typography>
+                                </Box>
+                            )
+                        }}
+                    />
+                </Box>
+            </DialogContent>
+            <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
+                <Typography variant="h6" gutterBottom>Invite New Member</Typography>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <TextField
+                        label="Email"
+                        variant="outlined"
+                        size="small"
+                        value={newMemberEmail}
+                        onChange={(e) => setNewMemberEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                        sx={{ flexGrow: 1 }}
+                    />
+                     <Select
+                        value={newMemberRole}
+                        onChange={(e) => setNewMemberRole(e.target.value as Role)}
+                        size="small"
+                        sx={{ minWidth: 150 }}
+                        displayEmpty
+                     >
+                        <MenuItem value="translator">Translator</MenuItem>
+                        <MenuItem value="editor">Editor</MenuItem>
+                        <MenuItem value="admin">Admin</MenuItem>
+                    </Select>
+                    <Button variant="contained" color="secondary" onClick={handleAdd}>Invite</Button>
+                </Box>
+            </Box>
+            <DialogActions>
+                <Button onClick={closeTeamManager}>Done</Button>
+            </DialogActions>
+        </Dialog>
     );
-};
+});
 
 export default TeamManager;

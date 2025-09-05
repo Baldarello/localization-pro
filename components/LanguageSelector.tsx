@@ -1,90 +1,96 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Language } from '../types';
+import React, { useState } from 'react';
+import { observer } from 'mobx-react-lite';
+import { ProjectStore } from '../stores/ProjectStore';
 import { AVAILABLE_LANGUAGES } from '../constants';
-import { CheckIcon, ChevronDownIcon, GlobeIcon, StarIcon } from './icons';
+import { Button, Menu, MenuItem, ListItemIcon, ListItemText, Checkbox, IconButton, Divider, Typography, Box } from '@mui/material';
+import LanguageIcon from '@mui/icons-material/Language';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import StarIcon from '@mui/icons-material/Star';
 
 interface LanguageSelectorProps {
-    projectLanguages: Language[];
-    defaultLanguageCode: string;
-    onUpdateLanguages: (languages: Language[]) => void;
-    onSetDefaultLanguage: (langCode: string) => void;
+    projectStore: ProjectStore;
 }
 
-const LanguageSelector: React.FC<LanguageSelectorProps> = ({ projectLanguages, defaultLanguageCode, onUpdateLanguages, onSetDefaultLanguage }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const wrapperRef = useRef<HTMLDivElement>(null);
+const LanguageSelector: React.FC<LanguageSelectorProps> = observer(({ projectStore }) => {
+    const { selectedProject, updateProjectLanguages, setDefaultLanguage } = projectStore;
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
 
-    const isSelected = (lang: Language) => projectLanguages.some(l => l.code === lang.code);
+    if (!selectedProject) return null;
 
-    const handleToggleLanguage = (lang: Language) => {
+    const { languages: projectLanguages, defaultLanguageCode } = selectedProject;
+
+    const isSelected = (langCode: string) => projectLanguages.some(l => l.code === langCode);
+
+    const handleToggleLanguage = (langCode: string) => {
+        const lang = AVAILABLE_LANGUAGES.find(l => l.code === langCode);
+        if (!lang) return;
+
         let newLanguages;
-        if (isSelected(lang)) {
-            // Prevent removing the default language if it's the last one
+        if (isSelected(lang.code)) {
             if (projectLanguages.length === 1 && lang.code === defaultLanguageCode) return;
             newLanguages = projectLanguages.filter(l => l.code !== lang.code);
         } else {
             newLanguages = [...projectLanguages, lang];
         }
-        onUpdateLanguages(newLanguages);
+        updateProjectLanguages(newLanguages);
     };
-    
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [wrapperRef]);
 
     return (
-        <div className="relative" ref={wrapperRef}>
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-light-text-primary dark:text-dark-text-primary bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary"
+        <div>
+            <Button
+                id="language-selector-button"
+                aria-controls={open ? 'language-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={open ? 'true' : undefined}
+                variant="outlined"
+                onClick={(event) => setAnchorEl(event.currentTarget)}
+                startIcon={<LanguageIcon />}
+                endIcon={<ExpandMoreIcon />}
             >
-                <GlobeIcon className="w-5 h-5 mr-2 text-light-text-secondary dark:text-dark-text-secondary" />
-                <span>Manage Languages</span>
-                <ChevronDownIcon className={`w-5 h-5 ml-2 -mr-1 text-gray-400 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isOpen && (
-                <div className="absolute right-0 w-72 mt-2 origin-top-right bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border divide-y divide-light-border dark:divide-dark-border rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20">
-                    <div className="p-2">
-                        <p className="text-sm font-semibold text-light-text-primary dark:text-dark-text-primary px-2 py-1">Project Languages</p>
-                    </div>
-                    <div className="py-1 max-h-60 overflow-y-auto">
-                        {AVAILABLE_LANGUAGES.map(lang => (
-                            <div
-                                key={lang.code}
-                                onClick={() => handleToggleLanguage(lang)}
-                                className="flex items-center justify-between px-4 py-2 text-sm text-light-text-primary dark:text-dark-text-primary cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 group"
+                Manage Languages
+            </Button>
+            <Menu
+                id="language-menu"
+                anchorEl={anchorEl}
+                open={open}
+                onClose={() => setAnchorEl(null)}
+                MenuListProps={{ 'aria-labelledby': 'language-selector-button' }}
+                PaperProps={{ style: { width: 320, maxHeight: 400 } }}
+            >
+                <Box sx={{ px: 2, py: 1 }}>
+                    <Typography variant="subtitle2">Project Languages</Typography>
+                </Box>
+                <Divider />
+                {AVAILABLE_LANGUAGES.map(lang => (
+                    <MenuItem key={lang.code} onClick={() => handleToggleLanguage(lang.code)} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <ListItemIcon>
+                                <Checkbox
+                                    edge="start"
+                                    checked={isSelected(lang.code)}
+                                    tabIndex={-1}
+                                    disableRipple
+                                />
+                            </ListItemIcon>
+                            <Box component="span" className={`flag-icon flag-icon-${lang.code === 'en' ? 'gb' : lang.code}`} sx={{ mr: 1.5 }} />
+                            <ListItemText primary={lang.name} />
+                        </Box>
+                        {isSelected(lang.code) && (
+                            <IconButton
+                                size="small"
+                                onClick={(e) => { e.stopPropagation(); setDefaultLanguage(lang.code); }}
+                                color={lang.code === defaultLanguageCode ? 'warning' : 'default'}
                             >
-                                <div className="flex items-center">
-                                    <span className={`flag-icon flag-icon-${lang.code === 'en' ? 'gb' : lang.code} mr-3`}></span>
-                                    <span>{lang.name}</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                     {isSelected(lang) && (
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); onSetDefaultLanguage(lang.code); }}
-                                            className="p-1 rounded-full group-hover:bg-yellow-100 dark:group-hover:bg-yellow-900/50"
-                                        >
-                                            <StarIcon className={`w-4 h-4 ${lang.code === defaultLanguageCode ? 'text-brand-accent' : 'text-gray-300 dark:text-gray-600 group-hover:text-yellow-500'}`} />
-                                        </button>
-                                     )}
-                                    {isSelected(lang) && <CheckIcon className="w-5 h-5 text-brand-secondary" />}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                                {lang.code === defaultLanguageCode ? <StarIcon /> : <StarBorderIcon />}
+                            </IconButton>
+                        )}
+                    </MenuItem>
+                ))}
+            </Menu>
         </div>
     );
-};
+});
 
 export default LanguageSelector;
