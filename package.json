@@ -13,12 +13,12 @@
     "mobx": "^6.13.1",
     "mobx-react-lite": "^4.0.7",
     "react-dom": "^18.2.0",
-    "@mui/material": "^7.2.0",
-    "@mui/icons-material": "^7.2.0",
+    "@mui/material": "^7.3.2",
+    "@mui/icons-material": "^7.3.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@google/genai": "^0.15.0",
-    "@mui/x-data-grid": "^8.11.1"
+    "@mui/x-data-grid": "^7.11.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",

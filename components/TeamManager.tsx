@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { User, UserRole } from '../types';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
-    MenuItem, Avatar, ListItemText, Menu, Checkbox
+    MenuItem, Avatar, ListItemText, Menu, Checkbox, Tooltip
 } from '@mui/material';
-import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import CloseIcon from '@mui/icons-material/Close';
 import PeopleIcon from '@mui/icons-material/People';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -112,16 +111,20 @@ const TeamManager: React.FC = observer(() => {
         },
         {
             field: 'actions',
-            type: 'actions',
+            headerName: 'Actions',
             width: 80,
-            getActions: (params) => [
-                <GridActionsCellItem
-                    icon={<DeleteIcon />}
-                    label="Remove"
-                    onClick={() => projectStore.removeMember(params.row.id)}
-                    showInMenu
-                />,
-            ],
+            sortable: false,
+            disableColumnMenu: true,
+            renderCell: (params) => (
+                <Tooltip title="Remove member">
+                    <IconButton
+                        onClick={() => projectStore.removeMember(params.row.id)}
+                        aria-label="Remove member"
+                    >
+                        <DeleteIcon />
+                    </IconButton>
+                </Tooltip>
+            ),
         },
     ];
 
@@ -141,7 +144,7 @@ const TeamManager: React.FC = observer(() => {
                         columns={columns}
                         rowHeight={70}
                         pageSizeOptions={[5, 10, 20]}
-                        disableRowSelectionOnClick
+                        rowSelection={false}
                         autoHeight={false}
                         sx={{
                             border: 'none',
