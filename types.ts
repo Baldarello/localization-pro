@@ -7,7 +7,22 @@ export interface Language {
 export interface Term {
     id: string;
     text: string;
+    context?: string;
     translations: { [langCode: string]: string };
+}
+
+export interface Commit {
+    id: string;
+    message: string;
+    authorId: string;
+    timestamp: string; // ISO string
+    terms: Term[];
+}
+
+export interface Branch {
+    name: string;
+    commits: Commit[];
+    workingTerms: Term[];
 }
 
 export interface User {
@@ -30,6 +45,7 @@ export interface Project {
     name: string;
     defaultLanguageCode: string;
     languages: Language[];
-    terms: Term[];
+    branches: Branch[];
+    currentBranchName: string;
     team: { [userId: string]: { role: UserRole; languages: string[] } }; // Maps user ID to role and assigned languages
 }

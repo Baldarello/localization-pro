@@ -1,112 +1,122 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Drawer, List, ListItemButton, ListItemIcon, ListItemText, Typography, Box, TextField, Button, Divider } from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
-import AddIcon from '@mui/icons-material/Add';
-import CancelIcon from '@mui/icons-material/Cancel';
+import { Box, Typography, IconButton, Tooltip, Button, LinearProgress } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PeopleIcon from '@mui/icons-material/People';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import SaveIcon from '@mui/icons-material/Save';
+import ImportExportIcon from '@mui/icons-material/ImportExport';
 import { useStores } from '../stores/StoreProvider';
-
-const drawerWidth = 280;
+import { UserRole } from '../types';
+import BranchSelector from './BranchSelector';
+import LanguageSelector from './LanguageSelector';
 
 const ProjectSidebar: React.FC = observer(() => {
-    const { projectStore } = useStores();
-    const { projects, selectedProjectId, selectProject, addProject } = projectStore;
-    const [newProjectName, setNewProjectName] = useState('');
-    const [isAdding, setIsAdding] = useState(false);
+    const { projectStore, uiStore } = useStores();
+    const { selectedProject: project, currentUserRole, deselectProject, getProjectCompletion, uncommittedChangesCount } = projectStore;
 
-    const handleAddProject = () => {
-        if (newProjectName.trim()) {
-            addProject(newProjectName.trim());
-            setNewProjectName('');
-            setIsAdding(false);
-        }
-    };
+    if (!project) return null;
+
+    const completion = getProjectCompletion(project);
+    const mainBranchLatestCommitTerms = project.branches.find(b => b.name === 'main')?.commits[0]?.terms || [];
+    const canManageProject = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
 
     return (
-        <Drawer
-            variant="permanent"
+        <Box
             sx={{
-                width: drawerWidth,
+                width: 280,
                 flexShrink: 0,
-                [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box', position: 'relative' },
+                borderRight: 1,
+                borderColor: 'divider',
+                display: 'flex',
+                flexDirection: 'column',
+                bgcolor: 'background.paper',
             }}
         >
-            <Box sx={{ p: 2 }}>
-                <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold' }}>
-                    Projects
-                </Typography>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Tooltip title="Back to Projects">
+                        <IconButton onClick={deselectProject} edge="start" sx={{ mr: 1 }}>
+                            <ArrowBackIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Typography variant="h6" noWrap sx={{ fontWeight: 'bold' }}>
+                        {project.name}
+                    </Typography>
+                </Box>
+                <BranchSelector />
             </Box>
-            <Divider />
-            <List sx={{ flexGrow: 1, overflowY: 'auto', p: 1 }}>
-                {projects.map(project => (
-                    <ListItemButton
-                        key={project.id}
-                        selected={selectedProjectId === project.id}
-                        onClick={() => selectProject(project.id)}
-                        sx={{
-                            borderRadius: 1,
-                            mb: 0.5,
-                            '&.Mui-selected': {
-                                backgroundColor: 'action.selected',
-                                '&:hover': {
-                                    backgroundColor: 'action.hover',
-                                },
-                            },
-                        }}
-                    >
-                        <ListItemIcon>
-                            <FolderIcon color={selectedProjectId === project.id ? 'primary' : 'inherit'} />
-                        </ListItemIcon>
-                        <ListItemText primary={project.name} />
-                    </ListItemButton>
-                ))}
-            </List>
-            <Divider />
+
             <Box sx={{ p: 2 }}>
-                {isAdding ? (
-                    <Box component="div" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <TextField
-                            label="New project name"
-                            variant="outlined"
-                            size="small"
-                            value={newProjectName}
-                            onChange={(e) => setNewProjectName(e.target.value)}
-                            autoFocus
-                            onKeyDown={(e) => e.key === 'Enter' && handleAddProject()}
-                        />
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button
-                                variant="contained"
-                                onClick={handleAddProject}
-                                fullWidth
-                                startIcon={<AddIcon />}
-                            >
-                                Add
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                onClick={() => setIsAdding(false)}
-                                fullWidth
-                                startIcon={<CancelIcon />}
-                            >
-                                Cancel
-                            </Button>
+                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>Project Stats</Typography>
+                <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Typography variant="body2">{mainBranchLatestCommitTerms.length} terms in main</Typography>
+                    <Typography variant="body2">{project.languages.length} languages</Typography>
+                    <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ width: '100%', mr: 1 }}>
+                                <LinearProgress variant="determinate" value={completion} color="secondary" sx={{ height: 6, borderRadius: 3 }} />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">{`${Math.round(completion)}%`}</Typography>
                         </Box>
                     </Box>
-                ) : (
-                    <Button
+                </Box>
+            </Box>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            {uncommittedChangesCount > 0 && (
+                <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                     <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>Branch Status</Typography>
+                     <Typography variant="body2" color="text.secondary">
+                        {uncommittedChangesCount} uncommitted change{uncommittedChangesCount > 1 ? 's' : ''}.
+                     </Typography>
+                     <Button
                         variant="contained"
                         color="secondary"
-                        onClick={() => setIsAdding(true)}
-                        fullWidth
-                        startIcon={<AddIcon />}
+                        startIcon={<SaveIcon />}
+                        onClick={uiStore.openCommitDialog}
                     >
-                        New Project
+                        Commit Changes
                     </Button>
-                )}
-            </Box>
-        </Drawer>
+                </Box>
+            )}
+
+            {canManageProject && (
+                 <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<ImportExportIcon />}
+                        onClick={uiStore.openImportExportDialog}
+                    >
+                        Import / Export Data
+                    </Button>
+                </Box>
+            )}
+
+            {currentUserRole === UserRole.Admin && (
+                <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', mb: 1 }}>Admin Controls</Typography>
+                    <LanguageSelector />
+                     <Button
+                        variant="outlined"
+                        startIcon={<AccountTreeIcon />}
+                        onClick={() => uiStore.openBranchManager()}
+                    >
+                        Manage Branches
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<PeopleIcon />}
+                        onClick={() => uiStore.openTeamManager()}
+                    >
+                        Manage Team
+                    </Button>
+                </Box>
+            )}
+        </Box>
     );
 });
 

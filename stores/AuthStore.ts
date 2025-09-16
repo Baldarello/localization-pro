@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { User } from '../types';
 import { RootStore } from './RootStore';
 
@@ -12,13 +12,11 @@ export class AuthStore {
     }
 
     login = async (email: string, pass: string) => {
-        const user = this.rootStore.projectStore.allUsers.find(u => u.email === email);
-        if (user && pass === 'password') {
+        const user = await this.rootStore.apiClient.login(email, pass);
+        if (user) {
             this.currentUser = user;
-            const firstProject = this.rootStore.projectStore.projects[0];
-            if (firstProject) {
-                this.rootStore.projectStore.selectProject(firstProject.id);
-            }
+            await this.rootStore.projectStore.initializeData();
+            // No longer auto-select a project, show dashboard instead
             this.rootStore.uiStore.setView('app');
         } else {
             this.rootStore.uiStore.showAlert('Invalid email or password.', 'error');
@@ -27,6 +25,31 @@ export class AuthStore {
 
     logout = () => {
         this.currentUser = null;
+        this.rootStore.projectStore.clearData();
         this.rootStore.uiStore.setView('login');
+    };
+
+    updateCurrentUserName = async (newName: string) => {
+        if (!this.currentUser) return;
+        const updatedUser = await this.rootStore.apiClient.updateCurrentUserName(this.currentUser.id, newName);
+        if (updatedUser) {
+            runInAction(() => {
+                this.currentUser = updatedUser;
+            });
+            this.rootStore.uiStore.showAlert('Name updated successfully!', 'success');
+        } else {
+            this.rootStore.uiStore.showAlert('Failed to update name.', 'error');
+        }
+    };
+
+    changePassword = async (currentPassword: string, newPassword: string) => {
+        if (!this.currentUser) return;
+        const result = await this.rootStore.apiClient.changePassword(this.currentUser.id, currentPassword, newPassword);
+        if (result.success) {
+            this.rootStore.uiStore.showAlert(result.message, 'success');
+        } else {
+            this.rootStore.uiStore.showAlert(result.message, 'error');
+        }
+        return result.success;
     };
 }

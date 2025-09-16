@@ -14,6 +14,7 @@ const TermList: React.FC = observer(() => {
         selectedProject,
         selectedTermId,
         currentUserRole,
+        currentBranchTerms,
         selectTerm,
         addTerm,
         deleteTerm,
@@ -39,7 +40,7 @@ const TermList: React.FC = observer(() => {
     };
 
     const userAssignedLangs = getAssignedLanguagesForCurrentUser();
-    const filteredTerms = selectedProject?.terms.filter(term => {
+    const filteredTerms = currentBranchTerms.filter(term => {
         const matchesSearch = term.text.toLowerCase().includes(searchQuery.toLowerCase());
         if (!matchesSearch) return false;
         if (showUntranslatedOnly) {
@@ -57,7 +58,8 @@ const TermList: React.FC = observer(() => {
     return (
         <Box
             sx={{
-                width: { xs: '100%', sm: 360 },
+                width: 360,
+                flexShrink: 0,
                 borderRight: 1,
                 borderColor: 'divider',
                 display: 'flex',

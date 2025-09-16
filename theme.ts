@@ -1,15 +1,45 @@
+
 import { createTheme } from '@mui/material/styles';
 
-export const createAppTheme = (mode: 'light' | 'dark') =>
+export type ThemeName = 'default' | 'teal' | 'purple' | 'green' | 'red' | 'cyan';
+
+interface ThemeConfig {
+    primary: { main: string };
+    secondary: { main: string };
+}
+
+export const themes: Record<ThemeName, ThemeConfig> = {
+    default: {
+        primary: { main: '#1976d2' },
+        secondary: { main: '#f50057' },
+    },
+    teal: {
+        primary: { main: '#009688' },
+        secondary: { main: '#ffc107' },
+    },
+    purple: {
+        primary: { main: '#673ab7' },
+        secondary: { main: '#ff9800' },
+    },
+    green: {
+        primary: { main: '#4caf50' },
+        secondary: { main: '#3f51b5' },
+    },
+    red: {
+        primary: { main: '#f44336' },
+        secondary: { main: '#607d8b' },
+    },
+    cyan: {
+        primary: { main: '#00bcd4' },
+        secondary: { main: '#cddc39' },
+    },
+};
+
+export const createAppTheme = (mode: 'light' | 'dark', themeName: ThemeName) =>
     createTheme({
         palette: {
             mode,
-            primary: {
-                main: '#1976d2', // blue[600]
-            },
-            secondary: {
-                main: '#f50057', // pink['A400']
-            },
+            ...(themes[themeName] || themes.default),
             ...(mode === 'light'
                 ? {
                       background: {
