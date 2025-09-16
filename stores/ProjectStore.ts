@@ -279,8 +279,12 @@ export class ProjectStore {
             runInAction(() => {
                 if (this.currentBranch) {
                     this.currentBranch.commits.unshift(newCommit);
-                    // The API already updated its internal state, so the working copy is now committed.
-                    // The local `workingTerms` is already what we want the new state to be.
+                    // FIX: The working copy is now "clean" and its state must exactly match the state
+                    // of the terms that were just committed. The server response (`newCommit.terms`)
+                    // is the source of truth, ensuring perfect state synchronization and resetting
+                    // the uncommitted changes counter correctly. A deep copy is used to prevent
+                    // accidental mutation of the commit history.
+                    this.currentBranch.workingTerms = JSON.parse(JSON.stringify(newCommit.terms));
                 }
             });
             this.rootStore.uiStore.showAlert('Changes committed successfully.', 'success');
