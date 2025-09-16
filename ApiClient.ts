@@ -3,34 +3,6 @@ import { Project, Term, Language, User, UserRole, Branch, Commit } from './types
 // The base URL for the backend API
 const API_BASE_URL = 'http://localhost:3001/api/v1';
 
-// Simulate network latency
-// const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-// Helper function for making API requests
-const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            },
-            ...options,
-        });
-        if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({ message: response.statusText }));
-            throw new Error(errorBody.message || 'An API error occurred');
-        }
-        if (response.status === 204) { // No Content
-            return null;
-        }
-        return response.json();
-    } catch (error) {
-        console.error(`API call to ${endpoint} failed:`, error);
-        throw error;
-    }
-};
-
-
 export interface AddMemberResult {
     user: User | null;
     success: boolean;
@@ -39,20 +11,64 @@ export interface AddMemberResult {
 }
 
 class ApiClient {
-    async login(email: string, pass: string): Promise<User | null> {
-        // The backend will return a user object on success or a 401/403 error on failure
+    private currentUserId: string | null = null;
+
+    public setAuth(userId: string | null) {
+        this.currentUserId = userId;
+    }
+
+    private async apiFetch(endpoint: string, options: RequestInit = {}) {
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        };
+
+        if (this.currentUserId) {
+            headers['X-User-ID'] = this.currentUserId;
+        }
+
         try {
-            return await apiFetch('/auth/login', {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                ...options,
+                headers,
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({ message: response.statusText }));
+                throw new Error(errorBody.message || 'An API error occurred');
+            }
+            if (response.status === 204) { // No Content
+                return null;
+            }
+            return response.json();
+        } catch (error) {
+            console.error(`API call to ${endpoint} failed:`, error);
+            throw error;
+        }
+    }
+
+    async login(email: string, pass: string): Promise<User | null> {
+        try {
+            // Using a direct fetch call here to avoid sending a (potentially stale) auth header during login.
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ email, pass }),
             });
+            if (!response.ok) {
+                return null;
+            }
+            return response.json();
         } catch (error) {
-            return null; // Login failed
+            console.error(`API call to /auth/login failed:`, error);
+            return null;
         }
     }
     
     async updateCurrentUserName(userId: string, newName: string): Promise<User | null> {
-        return await apiFetch(`/users/${userId}/profile`, {
+        return await this.apiFetch(`/users/${userId}/profile`, {
             method: 'PUT',
             body: JSON.stringify({ name: newName }),
         });
@@ -60,7 +76,7 @@ class ApiClient {
 
     async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
          try {
-            const result = await apiFetch(`/users/${userId}/password`, {
+            const result = await this.apiFetch(`/users/${userId}/password`, {
                 method: 'PUT',
                 body: JSON.stringify({ currentPassword, newPassword }),
             });
@@ -71,23 +87,22 @@ class ApiClient {
     }
 
     async getProjects(): Promise<Project[]> {
-        return await apiFetch('/projects');
+        return await this.apiFetch('/projects');
     }
     
     async getAllUsers(): Promise<User[]> {
-        return await apiFetch('/users');
+        return await this.apiFetch('/users');
     }
 
     async addProject(name: string, userId: string): Promise<Project> {
-        return await apiFetch('/projects', {
+        return await this.apiFetch('/projects', {
             method: 'POST',
             body: JSON.stringify({ name, userId }),
         });
     }
     
     async addTerm(projectId: string, termText: string): Promise<Term | null> {
-        // The current branch is managed on the backend based on the project's state
-        return await apiFetch(`/projects/${projectId}/terms`, {
+        return await this.apiFetch(`/projects/${projectId}/terms`, {
             method: 'POST',
             body: JSON.stringify({ termText }),
         });
@@ -95,7 +110,7 @@ class ApiClient {
     
     async updateTranslation(projectId: string, termId: string, langCode: string, value: string): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/terms/${termId}/translations/${langCode}`, {
+            await this.apiFetch(`/projects/${projectId}/terms/${termId}/translations/${langCode}`, {
                 method: 'PUT',
                 body: JSON.stringify({ value }),
             });
@@ -107,7 +122,7 @@ class ApiClient {
 
     async updateTermText(projectId: string, termId: string, newText: string): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/terms/${termId}`, {
+            await this.apiFetch(`/projects/${projectId}/terms/${termId}`, {
                 method: 'PUT',
                 body: JSON.stringify({ text: newText }),
             });
@@ -119,7 +134,7 @@ class ApiClient {
 
     async updateTermContext(projectId: string, termId: string, context: string): Promise<boolean> {
          try {
-            await apiFetch(`/projects/${projectId}/terms/${termId}/context`, {
+            await this.apiFetch(`/projects/${projectId}/terms/${termId}/context`, {
                 method: 'PUT',
                 body: JSON.stringify({ context }),
             });
@@ -130,7 +145,7 @@ class ApiClient {
     }
 
     async updateProjectLanguages(projectId: string, newLanguages: Language[]): Promise<Project | null> {
-        return await apiFetch(`/projects/${projectId}/languages`, {
+        return await this.apiFetch(`/projects/${projectId}/languages`, {
             method: 'PUT',
             body: JSON.stringify(newLanguages),
         });
@@ -138,7 +153,7 @@ class ApiClient {
 
     async setDefaultLanguage(projectId: string, langCode: string): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/defaultLanguage`, {
+            await this.apiFetch(`/projects/${projectId}/defaultLanguage`, {
                 method: 'PUT',
                 body: JSON.stringify({ langCode }),
             });
@@ -150,7 +165,7 @@ class ApiClient {
 
     async deleteTerm(projectId: string, termId: string): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/terms/${termId}`, {
+            await this.apiFetch(`/projects/${projectId}/terms/${termId}`, {
                 method: 'DELETE',
             });
             return true;
@@ -161,7 +176,7 @@ class ApiClient {
     
     async addMember(projectId: string, email: string, role: UserRole, languages: string[]): Promise<AddMemberResult> {
         try {
-            return await apiFetch(`/projects/${projectId}/team`, {
+            return await this.apiFetch(`/projects/${projectId}/team`, {
                 method: 'POST',
                 body: JSON.stringify({ email, role, languages }),
             });
@@ -172,7 +187,7 @@ class ApiClient {
 
     async removeMember(projectId: string, userId: string): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/team/${userId}`, {
+            await this.apiFetch(`/projects/${projectId}/team/${userId}`, {
                 method: 'DELETE',
             });
             return true;
@@ -183,7 +198,7 @@ class ApiClient {
     
     async updateMemberLanguages(projectId: string, userId: string, assignedLanguages: string[]): Promise<boolean> {
          try {
-            await apiFetch(`/projects/${projectId}/team/${userId}/languages`, {
+            await this.apiFetch(`/projects/${projectId}/team/${userId}/languages`, {
                 method: 'PUT',
                 body: JSON.stringify(assignedLanguages),
             });
@@ -195,7 +210,7 @@ class ApiClient {
 
     async updateMemberRole(projectId: string, userId: string, role: UserRole): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/team/${userId}/role`, {
+            await this.apiFetch(`/projects/${projectId}/team/${userId}/role`, {
                 method: 'PUT',
                 body: JSON.stringify({ role }),
             });
@@ -207,7 +222,7 @@ class ApiClient {
 
     // --- COMMIT API ---
     async createCommit(projectId: string, branchName: string, message: string, authorId: string): Promise<Commit | null> {
-        return await apiFetch(`/projects/${projectId}/branches/${branchName}/commits`, {
+        return await this.apiFetch(`/projects/${projectId}/branches/${branchName}/commits`, {
             method: 'POST',
             body: JSON.stringify({ message, authorId }),
         });
@@ -215,14 +230,14 @@ class ApiClient {
 
     // --- BRANCHING API ---
     async createBranch(projectId: string, newBranchName: string, sourceBranchName: string): Promise<Branch | null> {
-        return await apiFetch(`/projects/${projectId}/branches`, {
+        return await this.apiFetch(`/projects/${projectId}/branches`, {
             method: 'POST',
             body: JSON.stringify({ newBranchName, sourceBranchName }),
         });
     }
 
     async createBranchFromCommit(projectId: string, commitId: string, newBranchName: string): Promise<Branch | null> {
-         return await apiFetch(`/projects/${projectId}/branches/from-commit`, {
+         return await this.apiFetch(`/projects/${projectId}/branches/from-commit`, {
             method: 'POST',
             body: JSON.stringify({ commitId, newBranchName }),
         });
@@ -230,7 +245,7 @@ class ApiClient {
 
     async deleteLatestCommit(projectId: string, branchName: string): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/branches/${branchName}/commits/latest`, {
+            await this.apiFetch(`/projects/${projectId}/branches/${branchName}/commits/latest`, {
                 method: 'DELETE',
             });
             return true;
@@ -241,7 +256,7 @@ class ApiClient {
 
     async switchBranch(projectId: string, branchName: string): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/currentBranch`, {
+            await this.apiFetch(`/projects/${projectId}/currentBranch`, {
                 method: 'PUT',
                 body: JSON.stringify({ branchName }),
             });
@@ -253,7 +268,7 @@ class ApiClient {
 
     async deleteBranch(projectId: string, branchName: string): Promise<boolean> {
          try {
-            await apiFetch(`/projects/${projectId}/branches/${branchName}`, {
+            await this.apiFetch(`/projects/${projectId}/branches/${branchName}`, {
                 method: 'DELETE',
             });
             return true;
@@ -264,7 +279,7 @@ class ApiClient {
 
     async mergeBranches(projectId: string, sourceBranchName: string, targetBranchName: string): Promise<boolean> {
         try {
-            await apiFetch(`/projects/${projectId}/branches/merge`, {
+            await this.apiFetch(`/projects/${projectId}/branches/merge`, {
                 method: 'POST',
                 body: JSON.stringify({ sourceBranchName, targetBranchName }),
             });

@@ -12,11 +12,20 @@ export class AuthStore {
     }
 
     login = async (email: string, pass: string) => {
+        // Clear any previous auth state before trying to log in
+        this.rootStore.apiClient.setAuth(null);
         const user = await this.rootStore.apiClient.login(email, pass);
         if (user) {
-            this.currentUser = user;
+            // Set the user ID for all subsequent API calls
+            this.rootStore.apiClient.setAuth(user.id);
+            
+            runInAction(() => {
+                this.currentUser = user;
+            });
+
+            // This call will now be authenticated
             await this.rootStore.projectStore.initializeData();
-            // No longer auto-select a project, show dashboard instead
+            
             this.rootStore.uiStore.setView('app');
         } else {
             this.rootStore.uiStore.showAlert('Invalid email or password.', 'error');
@@ -25,6 +34,8 @@ export class AuthStore {
 
     logout = () => {
         this.currentUser = null;
+        // Clear the user ID from the ApiClient
+        this.rootStore.apiClient.setAuth(null);
         this.rootStore.projectStore.clearData();
         this.rootStore.uiStore.setView('login');
     };
