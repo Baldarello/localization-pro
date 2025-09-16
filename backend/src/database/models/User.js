@@ -1,7 +1,13 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../Sequelize.js';
+import bcrypt from 'bcrypt';
 
-class User extends Model {}
+class User extends Model {
+  // Instance method to validate password
+  async validPassword(password) {
+    return bcrypt.compare(password, this.password);
+  }
+}
 
 User.init({
   id: {
@@ -20,15 +26,28 @@ User.init({
   avatarInitials: {
     type: DataTypes.STRING,
   },
-  // In a real app, this should be a hashed password and a salt
   password: {
     type: DataTypes.STRING,
-    defaultValue: 'password', // For mock purposes
+    allowNull: false,
   },
 }, {
   sequelize,
   modelName: 'User',
   timestamps: false,
+  hooks: {
+    beforeCreate: async (user) => {
+        if (user.password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(user.password, salt);
+        }
+    },
+    beforeUpdate: async (user) => {
+        if (user.changed('password')) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(user.password, salt);
+        }
+    }
+  }
 });
 
 export default User;

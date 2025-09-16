@@ -7,10 +7,10 @@ import logger from '../helpers/logger.js';
 
 // --- MOCK DATA ---
 const USERS_DATA = [
-    { id: 'user-1', name: 'Alice (Admin)', email: 'alice@example.com', avatarInitials: 'A' },
-    { id: 'user-2', name: 'Bob (Editor)', email: 'bob@example.com', avatarInitials: 'B' },
-    { id: 'user-3', name: 'Charlie (Translator)', email: 'charlie@example.com', avatarInitials: 'C' },
-    { id: 'user-4', name: 'Diana (Translator)', email: 'diana@example.com', avatarInitials: 'D' },
+    { id: 'user-1', name: 'Alice (Admin)', email: 'alice@example.com', avatarInitials: 'A', password: 'password' },
+    { id: 'user-2', name: 'Bob (Editor)', email: 'bob@example.com', avatarInitials: 'B', password: 'password' },
+    { id: 'user-3', name: 'Charlie (Translator)', email: 'charlie@example.com', avatarInitials: 'C', password: 'password' },
+    { id: 'user-4', name: 'Diana (Translator)', email: 'diana@example.com', avatarInitials: 'D', password: 'password' },
 ];
 
 // --- Project 1: E-Commerce Platform Data ---
@@ -60,8 +60,8 @@ export const seedDatabase = async () => {
         await sequelize.sync({ force: true });
         logger.info('Database synchronized. Wiping old data and seeding new data...');
 
-        // Create Users
-        await User.bulkCreate(USERS_DATA);
+        // Create Users - individualHooks: true ensures the beforeCreate hook runs for each user to hash passwords.
+        await User.bulkCreate(USERS_DATA, { individualHooks: true });
         logger.info('Users seeded.');
 
         // --- Project 1: E-Commerce Platform ---

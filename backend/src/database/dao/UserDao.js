@@ -1,12 +1,14 @@
 import { User } from '../models/index.js';
 
 export const login = async (email, pass) => {
-    // This is a mock login. In a real app, you would hash and compare passwords.
-    const user = await User.findOne({ where: { email, password: pass } });
-    if (user) {
-        // Return a plain object to avoid sending Sequelize instance details
+    const user = await User.findOne({ where: { email } });
+
+    // Check if user exists and if password is valid
+    if (user && await user.validPassword(pass)) {
         return user.get({ plain: true });
     }
+
+    // If user not found or password incorrect
     return null;
 };
 
@@ -42,12 +44,17 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
     if (!user) {
         return { success: false, message: 'User not found.' };
     }
-    // Mock password check
-    if (user.password !== currentPassword) {
+    
+    // Validate the current password
+    const isMatch = await user.validPassword(currentPassword);
+    if (!isMatch) {
         return { success: false, message: 'Current password is incorrect.' };
     }
-    // In a real app, hash the new password
+
+    // Set the new password. The `beforeUpdate` hook on the User model
+    // will automatically hash it before saving.
     user.password = newPassword;
     await user.save();
+
     return { success: true, message: 'Password updated successfully.' };
 };
