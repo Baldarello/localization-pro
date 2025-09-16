@@ -89,6 +89,15 @@ class ApiClient {
     async getProjects(): Promise<Project[]> {
         return await this.apiFetch('/projects');
     }
+
+    async getProjectById(projectId: string): Promise<Project | null> {
+        try {
+            return await this.apiFetch(`/projects/${projectId}`);
+        } catch (error) {
+            console.error(`API call to /projects/${projectId} failed:`, error);
+            return null;
+        }
+    }
     
     async getAllUsers(): Promise<User[]> {
         return await this.apiFetch('/users');

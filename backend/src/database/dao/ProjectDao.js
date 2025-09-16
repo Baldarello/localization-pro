@@ -45,6 +45,11 @@ const findProjectById = async (projectId) => {
     });
 };
 
+export const getProjectById = async (projectId) => {
+    const project = await findProjectById(projectId);
+    return formatProject(project);
+};
+
 export const getAllProjects = async () => {
     const projects = await Project.findAll({
         include: [
@@ -223,7 +228,12 @@ export const createCommit = async (projectId, branchName, message, authorId) => 
         branchId: branch.id,
     });
     
-    return newCommit.get({ plain: true });
+    // Fetch the full commit with its author association to return to the client
+    const fullCommit = await Commit.findByPk(newCommit.id, {
+        include: [{ model: User, as: 'author' }]
+    });
+    
+    return fullCommit.get({ plain: true });
 };
 
 export const createBranch = async (projectId, newBranchName, sourceBranchName) => {

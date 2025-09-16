@@ -272,22 +272,25 @@ export class ProjectStore {
     async commitChanges(message: string) {
         const user = this.rootStore.authStore.currentUser;
         if (!this.selectedProject || !this.currentBranch || !user) return;
-        
+
+        // Create the commit on the backend
         const newCommit = await this.rootStore.apiClient.createCommit(this.selectedProject.id, this.currentBranch.name, message, user.id);
-        
+
         if (newCommit) {
-            runInAction(() => {
-                if (this.currentBranch) {
-                    this.currentBranch.commits.unshift(newCommit);
-                    // FIX: The working copy is now "clean" and its state must exactly match the state
-                    // of the terms that were just committed. The server response (`newCommit.terms`)
-                    // is the source of truth, ensuring perfect state synchronization and resetting
-                    // the uncommitted changes counter correctly. A deep copy is used to prevent
-                    // accidental mutation of the commit history.
-                    this.currentBranch.workingTerms = JSON.parse(JSON.stringify(newCommit.terms));
-                }
-            });
             this.rootStore.uiStore.showAlert('Changes committed successfully.', 'success');
+            
+            // To ensure perfect state synchronization, refetch the entire project object
+            // from the server, which now includes the new commit.
+            const updatedProject = await this.rootStore.apiClient.getProjectById(this.selectedProject.id);
+            
+            if (updatedProject) {
+                runInAction(() => {
+                    const projectIndex = this.projects.findIndex(p => p.id === this.selectedProject!.id);
+                    if (projectIndex !== -1) {
+                        this.projects[projectIndex] = updatedProject;
+                    }
+                });
+            }
         } else {
             this.rootStore.uiStore.showAlert('Failed to commit changes.', 'error');
         }

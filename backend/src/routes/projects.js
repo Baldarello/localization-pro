@@ -35,6 +35,43 @@ router.get('/', authenticate, async (req, res, next) => {
 
 /**
  * @swagger
+ * /projects/{projectId}:
+ *   get:
+ *     summary: Get a single project by ID
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: A single project object
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Project'
+ *       '401':
+ *         description: Unauthorized
+ *       '404':
+ *         description: Project not found
+ */
+router.get('/:projectId', authenticate, async (req, res, next) => {
+    try {
+        const project = await ProjectDao.getProjectById(req.params.projectId);
+        if (project) {
+            res.json(project);
+        } else {
+            res.status(404).json({ message: 'Project not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * @swagger
  * /projects:
  *   post:
  *     summary: Create a new project
