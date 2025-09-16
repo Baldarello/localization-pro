@@ -2,7 +2,7 @@
 // Run with `npm run db:seed` from the backend directory.
 import sequelize from './Sequelize.js';
 import { User, Project, Branch, Commit, TeamMembership } from './models/index.js';
-import { AVAILABLE_LANGUAGES } from '../../../constants.js'; // Adjust path as needed
+import { AVAILABLE_LANGUAGES } from '../constants.js'; // Adjust path as needed
 import logger from '../helpers/logger.js';
 
 // --- MOCK DATA from original ApiClient ---

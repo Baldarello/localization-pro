@@ -1,5 +1,5 @@
 import { Project, User, Branch, Commit, TeamMembership } from '../models/index.js';
-import { AVAILABLE_LANGUAGES } from '../../../../constants.js';
+import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import { col, fn } from 'sequelize';
 
 const formatProject = (project) => {

@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../Sequelize.js';
-import { UserRole } from '../../../../types.js'; // Adjust path
+import { UserRole } from '../../constants.js'; // Adjust path
 
 class TeamMembership extends Model {}
 
