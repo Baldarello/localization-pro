@@ -2,8 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import apiRouter from './src/routes/index.js';
 import logger from './src/helpers/logger.js';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerOptions from '../swaggerConfig.js';
 
 const app = express();
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
 
 // Middleware
 app.use(cors());
@@ -14,6 +18,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use((req, res, next) => {
     logger.info(`Request: ${req.method} ${req.originalUrl} - IP: ${req.ip}`);
     next();
+});
+
+// --- Swagger Docs ---
+// Serve the interactive Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Serve the raw openapi.json for compatibility with the existing frontend component
+app.get('/openapi.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
 });
 
 

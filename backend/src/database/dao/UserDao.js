@@ -10,6 +10,14 @@ export const login = async (email, pass) => {
     return null;
 };
 
+export const getUserById = async (userId) => {
+    const user = await User.findByPk(userId);
+    if (user) {
+        return user.get({ plain: true });
+    }
+    return null;
+};
+
 export const getAllUsers = async () => {
     const users = await User.findAll();
     return users.map(u => u.get({ plain: true }));
