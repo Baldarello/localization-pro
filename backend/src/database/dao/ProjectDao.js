@@ -1,6 +1,7 @@
 import { Project, User, Branch, Commit, TeamMembership } from '../models/index.js';
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import { col, fn } from 'sequelize';
+import sequelize from '../Sequelize.js';
 
 const formatProject = (project) => {
     if (!project) return null;
@@ -151,20 +152,24 @@ export const addTerm = async (projectId, termText) => {
 
 export const updateTermText = async (projectId, termId, newText) => {
     const branch = await getCurrentBranch(projectId);
-    const termIndex = branch.workingTerms.findIndex(t => t.id === termId);
+    const terms = branch.workingTerms;
+    const termIndex = terms.findIndex(t => t.id === termId);
     if (termIndex > -1) {
-        branch.workingTerms[termIndex].text = newText;
-        branch.workingTerms = [...branch.workingTerms]; // Trigger sequelize update
+        terms[termIndex].text = newText;
+        branch.workingTerms = terms;
+        branch.changed('workingTerms', true);
         await branch.save();
     }
 };
 
 export const updateTermContext = async (projectId, termId, newContext) => {
     const branch = await getCurrentBranch(projectId);
-    const termIndex = branch.workingTerms.findIndex(t => t.id === termId);
+    const terms = branch.workingTerms;
+    const termIndex = terms.findIndex(t => t.id === termId);
     if (termIndex > -1) {
-        branch.workingTerms[termIndex].context = newContext;
-        branch.workingTerms = [...branch.workingTerms];
+        terms[termIndex].context = newContext;
+        branch.workingTerms = terms;
+        branch.changed('workingTerms', true);
         await branch.save();
     }
 };
@@ -177,10 +182,15 @@ export const deleteTerm = async (projectId, termId) => {
 
 export const updateTranslation = async (projectId, termId, langCode, value) => {
     const branch = await getCurrentBranch(projectId);
-    const termIndex = branch.workingTerms.findIndex(t => t.id === termId);
+    const terms = branch.workingTerms;
+    const termIndex = terms.findIndex(t => t.id === termId);
     if (termIndex > -1) {
-        branch.workingTerms[termIndex].translations[langCode] = value;
-        branch.workingTerms = [...branch.workingTerms];
+        if (!terms[termIndex].translations) {
+            terms[termIndex].translations = {};
+        }
+        terms[termIndex].translations[langCode] = value;
+        branch.workingTerms = terms;
+        branch.changed('workingTerms', true);
         await branch.save();
     }
 };
@@ -278,18 +288,35 @@ export const deleteBranch = async (projectId, branchName) => {
 };
 
 export const deleteLatestCommit = async (projectId, branchName) => {
-    const branch = await Branch.findOne({ where: { projectId, name: branchName }, include: [{model: Commit, as: 'commits'}] });
-    if (!branch) throw new Error('Branch not found');
+    const t = await sequelize.transaction();
+    try {
+        const branch = await Branch.findOne({ 
+            where: { projectId, name: branchName }, 
+            include: [{model: Commit, as: 'commits'}],
+            transaction: t
+        });
+        if (!branch) {
+            throw new Error('Branch not found');
+        }
 
-    branch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    if (branch.commits.length <= 1) throw new Error('Cannot delete the initial commit');
+        branch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        if (branch.commits.length <= 1) {
+            throw new Error('Cannot delete the initial commit');
+        }
 
-    const latestCommit = branch.commits[0];
-    const newLatestCommit = branch.commits[1];
+        const latestCommit = branch.commits[0];
+        const newLatestCommit = branch.commits[1];
 
-    branch.workingTerms = newLatestCommit.terms;
-    await branch.save();
-    await latestCommit.destroy();
+        branch.workingTerms = newLatestCommit.terms;
+        await branch.save({ transaction: t });
+        
+        await Commit.destroy({ where: { id: latestCommit.id }, transaction: t });
+
+        await t.commit();
+    } catch (error) {
+        await t.rollback();
+        throw error;
+    }
 };
 
 export const mergeBranches = async (projectId, sourceBranchName, targetBranchName) => {
@@ -307,12 +334,16 @@ export const mergeBranches = async (projectId, sourceBranchName, targetBranchNam
     for (const [key, sourceTerm] of sourceTermsMap.entries()) {
         const existingTargetTerm = Array.from(targetTermsMap.values()).find(t => t.text === key);
         if (existingTargetTerm) {
+            if (!existingTargetTerm.translations) {
+                existingTargetTerm.translations = {};
+            }
             Object.assign(existingTargetTerm.translations, sourceTerm.translations);
         } else {
             targetTerms.push({ ...sourceTerm, id: `term-${Date.now()}-${key}` });
         }
     }
     
-    targetBranch.workingTerms = [...targetTerms];
+    targetBranch.workingTerms = targetTerms;
+    targetBranch.changed('workingTerms', true);
     await targetBranch.save();
 };

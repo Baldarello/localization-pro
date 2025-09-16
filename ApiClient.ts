@@ -237,6 +237,17 @@ class ApiClient {
         });
     }
 
+    async deleteLatestCommit(projectId: string, branchName: string): Promise<boolean> {
+        try {
+            await this.apiFetch(`/projects/${projectId}/branches/${branchName}/commits/latest`, {
+                method: 'DELETE',
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
     // --- BRANCHING API ---
     async createBranch(projectId: string, newBranchName: string, sourceBranchName: string): Promise<Branch | null> {
         return await this.apiFetch(`/projects/${projectId}/branches`, {
@@ -250,17 +261,6 @@ class ApiClient {
             method: 'POST',
             body: JSON.stringify({ commitId, newBranchName }),
         });
-    }
-
-    async deleteLatestCommit(projectId: string, branchName: string): Promise<boolean> {
-        try {
-            await this.apiFetch(`/projects/${projectId}/branches/${branchName}/commits/latest`, {
-                method: 'DELETE',
-            });
-            return true;
-        } catch (error) {
-            return false;
-        }
     }
 
     async switchBranch(projectId: string, branchName: string): Promise<boolean> {

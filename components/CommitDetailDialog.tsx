@@ -14,7 +14,6 @@ import { User, Term, Commit } from '../types';
  * Creates a word-level diff between two strings.
  */
 const createWordDiff = (oldText = '', newText = '') => {
-    // FIX: Swapped oldText and newText which were assigned to the wrong variables.
     const oldWords = oldText.split(/(\s+)/).filter(Boolean);
     const newWords = newText.split(/(\s+)/).filter(Boolean);
     const n = oldWords.length;
@@ -38,10 +37,12 @@ const createWordDiff = (oldText = '', newText = '') => {
             diff.unshift({ value: oldWords[i - 1], type: 'common' as const });
             i--; j--;
         } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-            diff.unshift({ value: newWords[j - 1], type: 'removed' as const });
+            // This word is in the new text but not the old one -> ADDED
+            diff.unshift({ value: newWords[j - 1], type: 'added' as const });
             j--;
         } else if (i > 0 && (j === 0 || dp[i][j - 1] < dp[i - 1][j])) {
-            diff.unshift({ value: oldWords[i - 1], type: 'added' as const });
+            // This word was in the old text but not in the new one -> REMOVED
+            diff.unshift({ value: oldWords[i - 1], type: 'removed' as const });
             i--;
         } else {
             break;
@@ -77,30 +78,49 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
     const changes = useMemo(() => {
         const parentTerms = parentCommit?.terms || [];
         const currentTerms = commit.terms;
-        // FIX: Explicitly typed the Maps to ensure TypeScript correctly infers term types, preventing errors when accessing term properties.
+
         const parentTermsMap = new Map<string, Term>(parentTerms.map(t => [t.id, t]));
         const currentTermsMap = new Map<string, Term>(currentTerms.map(t => [t.id, t]));
 
+        const allTermIds = new Set([...parentTerms.map(t => t.id), ...currentTerms.map(t => t.id)]);
+        
         const added: Term[] = [];
-        const modified: { term: Term; changes: { type: 'key' | 'context' | 'translation'; langCode?: string; oldValue: string; newValue: string; }[]; }[] = [];
-        for (const [id, currentTerm] of currentTermsMap.entries()) {
-            const parentTerm = parentTermsMap.get(id);
-            if (!parentTerm) {
+        const removed: Term[] = [];
+        const modified: { term: Term; changes: { type: 'key' | 'context' | 'translation'; langCode?: string; oldValue: string; newValue: string; }[] }[] = [];
+
+        for (const termId of allTermIds) {
+            const parentTerm = parentTermsMap.get(termId);
+            const currentTerm = currentTermsMap.get(termId);
+
+            if (currentTerm && !parentTerm) {
                 added.push(currentTerm);
-            } else {
+            } else if (!currentTerm && parentTerm) {
+                removed.push(parentTerm);
+            } else if (currentTerm && parentTerm) {
                 const termChanges: { type: 'key' | 'context' | 'translation'; langCode?: string; oldValue: string; newValue: string; }[] = [];
-                if (currentTerm.text !== parentTerm.text) termChanges.push({ type: 'key', oldValue: parentTerm.text, newValue: currentTerm.text });
-                if ((currentTerm.context || '') !== (parentTerm.context || '')) termChanges.push({ type: 'context', oldValue: parentTerm.context || '', newValue: currentTerm.context || '' });
+                
+                if (currentTerm.text !== parentTerm.text) {
+                    termChanges.push({ type: 'key', oldValue: parentTerm.text, newValue: currentTerm.text });
+                }
+                if ((currentTerm.context || '') !== (parentTerm.context || '')) {
+                    termChanges.push({ type: 'context', oldValue: parentTerm.context || '', newValue: currentTerm.context || '' });
+                }
+                
                 const allLangCodes = new Set([...Object.keys(currentTerm.translations), ...Object.keys(parentTerm.translations)]);
                 for (const langCode of allLangCodes) {
                     const oldValue = parentTerm.translations[langCode] || '';
                     const newValue = currentTerm.translations[langCode] || '';
-                    if (oldValue !== newValue) termChanges.push({ type: 'translation', langCode, oldValue, newValue });
+                    if (oldValue !== newValue) {
+                        termChanges.push({ type: 'translation', langCode, oldValue, newValue });
+                    }
                 }
-                if (termChanges.length > 0) modified.push({ term: currentTerm, changes: termChanges });
+
+                if (termChanges.length > 0) {
+                    modified.push({ term: currentTerm, changes: termChanges });
+                }
             }
         }
-        const removed = parentTerms.filter(parentTerm => !currentTermsMap.has(parentTerm.id));
+        
         return { added, modified, removed };
     }, [commit, parentCommit]);
 
