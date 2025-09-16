@@ -631,94 +631,7 @@ router.put('/:projectId/team/:userId/languages', authenticate, async (req, res, 
     }
 });
 
-// --- Branches ---
-
-/**
- * @swagger
- * /projects/{projectId}/branches:
- *   post:
- *     summary: Create a new branch from another branch
- *     tags: [Branches]
- *     parameters:
- *       - in: path
- *         name: projectId
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - newBranchName
- *               - sourceBranchName
- *             properties:
- *               newBranchName:
- *                 type: string
- *               sourceBranchName:
- *                 type: string
- *     responses:
- *       '201':
- *         description: Branch created
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Branch'
- *       '401':
- *         description: Unauthorized
- *       '404':
- *         description: Project or source branch not found
- *       '409':
- *         description: Branch name already exists
- */
-router.post('/:projectId/branches', authenticate, async (req, res, next) => {
-    try {
-        const { newBranchName, sourceBranchName } = req.body;
-        const newBranch = await ProjectDao.createBranch(req.params.projectId, newBranchName, sourceBranchName);
-        res.status(201).json(newBranch);
-    } catch (error) {
-        next(error);
-    }
-});
-
-/**
- * @swagger
- * /projects/{projectId}/branches/{branchName}:
- *   delete:
- *     summary: Delete a branch
- *     tags: [Branches]
- *     parameters:
- *       - in: path
- *         name: projectId
- *         required: true
- *         schema:
- *           type: string
- *       - in: path
- *         name: branchName
- *         required: true
- *         schema:
- *           type: string
- *           description: The name of the branch to delete. Use URL encoding for slashes (e.g., feature%2Fnew-branch).
- *     responses:
- *       '204':
- *         description: Branch deleted
- *       '400':
- *         description: Cannot delete the main branch
- *       '401':
- *         description: Unauthorized
- *       '404':
- *         description: Project or branch not found
- */
-router.delete('/:projectId/branches/:branchName(*)', authenticate, async (req, res, next) => {
-    try {
-        await ProjectDao.deleteBranch(req.params.projectId, req.params.branchName);
-        res.sendStatus(204);
-    } catch (error) {
-        next(error);
-    }
-});
+// --- Branches & Commits (Ordered by specificity) ---
 
 /**
  * @swagger
@@ -814,7 +727,42 @@ router.post('/:projectId/branches/merge', authenticate, async (req, res, next) =
     }
 });
 
-// --- Commits ---
+/**
+ * @swagger
+ * /projects/{projectId}/branches/{branchName}/commits/latest:
+ *   delete:
+ *     summary: Delete the latest commit of a branch
+ *     tags: [Commits]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: branchName
+ *         required: true
+ *         schema:
+ *           type: string
+ *           description: The name of the branch. Use URL encoding for slashes.
+ *     responses:
+ *       '204':
+ *         description: Commit deleted successfully
+ *       '400':
+ *         description: Cannot delete the initial commit
+ *       '401':
+ *         description: Unauthorized
+ *       '404':
+ *         description: Project or branch not found
+ */
+router.delete('/:projectId/branches/:branchName(*)/commits/latest', authenticate, async (req, res, next) => {
+    try {
+        await ProjectDao.deleteLatestCommit(req.params.projectId, req.params.branchName);
+        res.sendStatus(204);
+    } catch (error) {
+        next(error);
+    }
+});
 
 /**
  * @swagger
@@ -870,13 +818,12 @@ router.post('/:projectId/branches/:branchName(*)/commits', authenticate, async (
     }
 });
 
-
 /**
  * @swagger
- * /projects/{projectId}/branches/{branchName}/commits/latest:
+ * /projects/{projectId}/branches/{branchName}:
  *   delete:
- *     summary: Delete the latest commit of a branch
- *     tags: [Commits]
+ *     summary: Delete a branch
+ *     tags: [Branches]
  *     parameters:
  *       - in: path
  *         name: projectId
@@ -888,21 +835,71 @@ router.post('/:projectId/branches/:branchName(*)/commits', authenticate, async (
  *         required: true
  *         schema:
  *           type: string
- *           description: The name of the branch. Use URL encoding for slashes.
+ *           description: The name of the branch to delete. Use URL encoding for slashes (e.g., feature%2Fnew-branch).
  *     responses:
  *       '204':
- *         description: Commit deleted successfully
+ *         description: Branch deleted
  *       '400':
- *         description: Cannot delete the initial commit
+ *         description: Cannot delete the main branch
  *       '401':
  *         description: Unauthorized
  *       '404':
  *         description: Project or branch not found
  */
-router.delete('/:projectId/branches/:branchName(*)/commits/latest', authenticate, async (req, res, next) => {
+router.delete('/:projectId/branches/:branchName(*)', authenticate, async (req, res, next) => {
     try {
-        await ProjectDao.deleteLatestCommit(req.params.projectId, req.params.branchName);
+        await ProjectDao.deleteBranch(req.params.projectId, req.params.branchName);
         res.sendStatus(204);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * @swagger
+ * /projects/{projectId}/branches:
+ *   post:
+ *     summary: Create a new branch from another branch
+ *     tags: [Branches]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newBranchName
+ *               - sourceBranchName
+ *             properties:
+ *               newBranchName:
+ *                 type: string
+ *               sourceBranchName:
+ *                 type: string
+ *     responses:
+ *       '201':
+ *         description: Branch created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Branch'
+ *       '401':
+ *         description: Unauthorized
+ *       '404':
+ *         description: Project or source branch not found
+ *       '409':
+ *         description: Branch name already exists
+ */
+router.post('/:projectId/branches', authenticate, async (req, res, next) => {
+    try {
+        const { newBranchName, sourceBranchName } = req.body;
+        const newBranch = await ProjectDao.createBranch(req.params.projectId, newBranchName, sourceBranchName);
+        res.status(201).json(newBranch);
     } catch (error) {
         next(error);
     }
