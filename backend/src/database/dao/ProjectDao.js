@@ -49,7 +49,11 @@ export const getAllProjects = async () => {
     const projects = await Project.findAll({
         include: [
             { model: Branch, as: 'branches', include: [{ model: Commit, as: 'commits' }] },
-            { model: User, as: 'users', through: { attributes: [] } } // For team member count
+            {
+                model: User,
+                as: 'users',
+                through: { attributes: ['role', 'languages'] }
+            }
         ]
     });
     // This is a simplified version for the dashboard card.

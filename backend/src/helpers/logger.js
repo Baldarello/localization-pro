@@ -50,12 +50,8 @@ const consoleTransport = new winston.transports.Console({
 const transports = [
     dailyRotateFileTransport,
     errorTransport,
+    consoleTransport,
 ];
-
-// Log to console only in development environment
-if (process.env.NODE_ENV === 'development') {
-    transports.push(consoleTransport);
-}
 
 const logger = winston.createLogger({
   transports,
