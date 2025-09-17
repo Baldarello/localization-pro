@@ -1,6 +1,6 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { RootStore } from './RootStore';
-import { AlertSeverity } from '../types';
+import { AlertSeverity, Notification } from '../types';
 import { ThemeName } from '../theme';
 
 type View = 'login' | 'register' | 'forgotPassword' | 'app' | 'profile';
@@ -18,6 +18,8 @@ export class UIStore {
     isCommitDialogOpen = false;
     isImportExportDialogOpen = false;
 
+    notifications: Notification[] = [];
+
     // Alert state
     isAlertOpen = false;
     alertMessage = '';
@@ -33,6 +35,10 @@ export class UIStore {
 
         this.setTheme(savedThemeMode || (prefersDark ? 'dark' : 'light'));
         this.setThemeName(savedThemeName || 'default');
+    }
+
+    get unreadNotificationCount() {
+        return this.notifications.filter(n => !n.read).length;
     }
 
     setView = (view: View) => {
@@ -109,5 +115,33 @@ export class UIStore {
 
     hideAlert = () => {
         this.isAlertOpen = false;
+    };
+
+    // --- Notification Actions ---
+    fetchNotifications = async () => {
+        try {
+            const notifications = await this.rootStore.apiClient.getNotifications();
+            runInAction(() => {
+                this.notifications = notifications;
+            });
+        } catch (error) {
+            console.error("Failed to fetch notifications:", error);
+        }
+    };
+
+    markNotificationsAsRead = async (notificationIds: string[]) => {
+        try {
+            await this.rootStore.apiClient.markNotificationsAsRead(notificationIds);
+            runInAction(() => {
+                this.notifications.forEach(n => {
+                    if (notificationIds.includes(n.id)) {
+                        n.read = true;
+                    }
+                });
+            });
+        } catch (error) {
+            console.error("Failed to mark notifications as read:", error);
+            this.showAlert('Could not update notifications.', 'error');
+        }
     };
 }

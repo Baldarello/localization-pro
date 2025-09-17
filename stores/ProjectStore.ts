@@ -1,6 +1,7 @@
 
-import { makeAutoObservable, runInAction } from 'mobx';
-import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange } from '../types';
+
+import { makeAutoObservable, runInAction, computed } from 'mobx';
+import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
 import { RootStore } from './RootStore';
 import { GoogleGenAI } from '@google/genai';
@@ -28,6 +29,7 @@ export class ProjectStore {
     selectedProjectId: string | null = null;
     selectedTermId: string | null = null;
     translatingState: { termId: string; langCode: string } | null = null;
+    comments: Comment[] = [];
 
     constructor(rootStore: RootStore) {
         makeAutoObservable(this, {}, { autoBind: true });
@@ -50,6 +52,7 @@ export class ProjectStore {
         this.allUsers = [];
         this.selectedProjectId = null;
         this.selectedTermId = null;
+        this.comments = [];
     }
 
     get selectedProject() {
@@ -114,6 +117,24 @@ export class ProjectStore {
         return this.selectedProject.team[user.id]?.role;
     }
 
+    @computed get selectedTermComments(): Comment[] {
+        if (!this.selectedTerm) return [];
+        const commentsForTerm = this.comments.filter(c => c.termId === this.selectedTerm!.id);
+        
+        // Create a mutable copy with an empty replies array
+        const commentMap = new Map(commentsForTerm.map(c => [c.id, { ...c, replies: [] as Comment[] }]));
+        const rootComments: Comment[] = [];
+
+        for (const comment of Array.from(commentMap.values())) {
+            if (comment.parentId && commentMap.has(comment.parentId)) {
+                commentMap.get(comment.parentId)!.replies.push(comment);
+            } else {
+                rootComments.push(comment);
+            }
+        }
+        return rootComments;
+    }
+
     getProjectCompletion(project: Project): number {
         const mainBranch = project.branches.find(b => b.name === 'main');
         if (!mainBranch) return 0;
@@ -155,11 +176,13 @@ export class ProjectStore {
         const project = this.projects.find(p => p.id === projectId);
         const currentTerms = project?.branches.find(b => b.name === project.currentBranchName)?.workingTerms || [];
         this.selectedTermId = currentTerms[0]?.id || null;
+        this.comments = [];
     };
 
     deselectProject() {
         this.selectedProjectId = null;
         this.selectedTermId = null;
+        this.comments = [];
     }
     
     selectTerm(termId: string) {
@@ -176,8 +199,25 @@ export class ProjectStore {
     };
     
     async addTerm(termText: string) {
-        if (!this.selectedProject || (this.currentUserRole !== UserRole.Admin && this.currentUserRole !== UserRole.Editor)) return;
-        const newTerm = await this.rootStore.apiClient.addTerm(this.selectedProject.id, termText);
+        if (!this.selectedProject || !this.currentBranch || (this.currentUserRole !== UserRole.Admin && this.currentUserRole !== UserRole.Editor)) return;
+        
+        const trimmedText = termText.trim();
+        if (!trimmedText) {
+            this.rootStore.uiStore.showAlert('Term key cannot be empty.', 'warning');
+            return;
+        }
+        
+        // Check for duplicates in the current working copy (case-insensitive)
+        const isDuplicate = this.currentBranch.workingTerms.some(
+            (term) => term.text.toLowerCase() === trimmedText.toLowerCase()
+        );
+
+        if (isDuplicate) {
+            this.rootStore.uiStore.showAlert(`Term key "${trimmedText}" already exists in this branch.`, 'error');
+            return;
+        }
+
+        const newTerm = await this.rootStore.apiClient.addTerm(this.selectedProject.id, trimmedText);
         if (newTerm) {
             runInAction(() => {
                 this.currentBranch?.workingTerms.push(newTerm);
@@ -761,6 +801,31 @@ export class ProjectStore {
             });
         } else {
             this.rootStore.uiStore.showAlert(`Failed to merge branches.`, 'error');
+        }
+    }
+
+    // --- Comment Actions ---
+    async fetchComments(projectId: string, termId: string) {
+        try {
+            const comments = await this.rootStore.apiClient.getComments(projectId, termId);
+            runInAction(() => {
+                this.comments = comments;
+            });
+        } catch (error) {
+            console.error("Failed to fetch comments:", error);
+            this.rootStore.uiStore.showAlert('Could not load comments.', 'error');
+        }
+    }
+
+    async addComment(content: string, parentId: string | null = null) {
+        if (!this.selectedProject || !this.selectedTerm) return;
+        try {
+            await this.rootStore.apiClient.postComment(this.selectedProject.id, this.selectedTerm.id, content, parentId);
+            // Refresh comments after posting
+            await this.fetchComments(this.selectedProject.id, this.selectedTerm.id);
+        } catch (error) {
+            console.error("Failed to post comment:", error);
+            this.rootStore.uiStore.showAlert('Could not post comment.', 'error');
         }
     }
 }

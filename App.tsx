@@ -20,8 +20,12 @@ const App: React.FC = observer(() => {
 
     useEffect(() => {
         authStore.fetchAuthConfig();
-        authStore.checkAuthStatus();
-    }, [authStore]);
+        authStore.checkAuthStatus().then(() => {
+            if (authStore.currentUser) {
+                uiStore.fetchNotifications();
+            }
+        });
+    }, [authStore, uiStore]);
 
     const handleCloseAlert = () => {
         uiStore.hideAlert();

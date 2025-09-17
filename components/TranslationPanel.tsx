@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, Paper } from '@mui/material';
+import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, Paper, Divider } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import StarIcon from '@mui/icons-material/Star';
 import EditIcon from '@mui/icons-material/Edit';
@@ -11,6 +11,7 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { useStores } from '../stores/StoreProvider';
 import { UserRole } from '../types';
 import { getFlagCode } from '../constants';
+import CommentSection from './CommentSection';
 
 const TranslationPanel: React.FC = observer(() => {
     const { projectStore } = useStores();
@@ -37,8 +38,9 @@ const TranslationPanel: React.FC = observer(() => {
             setIsEditingKey(false);
             setEditedContext(term.context || '');
             setIsEditingContext(false);
+            projectStore.fetchComments(project!.id, term.id);
         }
-    }, [term]);
+    }, [term, project, projectStore]);
 
     if (!term || !project) {
         return (
@@ -208,6 +210,10 @@ const TranslationPanel: React.FC = observer(() => {
                     );
                 })}
             </Box>
+
+            <Divider sx={{ my: 4 }} />
+
+            <CommentSection />
         </Box>
     );
 });

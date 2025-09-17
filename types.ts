@@ -57,3 +57,25 @@ export type UncommittedChange =
     | { type: 'added'; term: Term }
     | { type: 'removed'; originalTerm: Term }
     | { type: 'modified'; term: Term; originalTerm: Term };
+
+export interface Comment {
+    id: string;
+    content: string;
+    termId: string;
+    branchName: string;
+    createdAt: string; // ISO string
+    author: Pick<User, 'id' | 'name' | 'avatarInitials'>;
+    replies: Comment[];
+    parentId: string | null;
+}
+
+export interface Notification {
+    id: string;
+    read: boolean;
+    type: 'mention';
+    createdAt: string; // ISO string
+    comment: Comment;
+    termId: string;
+    projectId: string;
+    branchName: string;
+}

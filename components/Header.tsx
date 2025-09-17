@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import CodeIcon from '@mui/icons-material/Code';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -9,21 +9,24 @@ import SaveIcon from '@mui/icons-material/Save';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import PeopleIcon from '@mui/icons-material/People';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useStores } from '../stores/StoreProvider';
 import BranchSelector from './BranchSelector';
-import { UserRole } from '../types';
+import { UserRole, Notification } from '../types';
 import LanguageSelector from './LanguageSelector';
 
 const Header: React.FC = observer(() => {
     const { authStore, uiStore, projectStore } = useStores();
     const { currentUser, logout } = authStore;
-    const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole } = projectStore;
+    const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole, selectProject, switchBranch, selectTerm } = projectStore;
     const canManageProject = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [adminMenuAnchorEl, setAdminMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [notificationMenuAnchorEl, setNotificationMenuAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const isAdminMenuOpen = Boolean(adminMenuAnchorEl);
+    const isNotificationMenuOpen = Boolean(notificationMenuAnchorEl);
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -32,6 +35,12 @@ const Header: React.FC = observer(() => {
 
     const handleAdminMenuClick = (event: React.MouseEvent<HTMLElement>) => setAdminMenuAnchorEl(event.currentTarget);
     const handleAdminMenuClose = () => setAdminMenuAnchorEl(null);
+
+    const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setNotificationMenuAnchorEl(event.currentTarget);
+        uiStore.fetchNotifications();
+    };
+    const handleNotificationMenuClose = () => setNotificationMenuAnchorEl(null);
 
     const handleProfile = () => {
         uiStore.setView('profile');
@@ -58,6 +67,19 @@ const Header: React.FC = observer(() => {
         uiStore.openBranchManager();
         handleAdminMenuClose();
     };
+
+    const handleNotificationClick = async (notification: Notification) => {
+        if (selectedProjectId !== notification.projectId) {
+            selectProject(notification.projectId);
+        }
+        // Await branch switch to ensure project state is updated before selecting term
+        await switchBranch(notification.branchName); 
+        selectTerm(notification.termId);
+        uiStore.markNotificationsAsRead([notification.id]);
+        handleNotificationMenuClose();
+    };
+
+    const { selectedProjectId } = projectStore;
 
     return (
         <AppBar position="static" elevation={1} color="primary">
@@ -153,9 +175,47 @@ const Header: React.FC = observer(() => {
                 </Tooltip>
 
                 {currentUser && (
-                    <div>
+                    <>
+                        <Tooltip title="Notifications">
+                            <IconButton color="inherit" onClick={handleNotificationMenuOpen}>
+                                <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
+                                    <NotificationsIcon />
+                                </Badge>
+                            </IconButton>
+                        </Tooltip>
+                         <Menu
+                            anchorEl={notificationMenuAnchorEl}
+                            open={isNotificationMenuOpen}
+                            onClose={handleNotificationMenuClose}
+                            PaperProps={{ style: { width: 380, maxHeight: 400 } }}
+                            sx={{ mt: 1 }}
+                        >
+                            <Box sx={{ px: 2, py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="subtitle2">Notifications</Typography>
+                                {uiStore.unreadNotificationCount > 0 && (
+                                    <Button size="small" onClick={() => uiStore.markNotificationsAsRead(uiStore.notifications.map(n => n.id))}>Mark all as read</Button>
+                                )}
+                            </Box>
+                            <Divider />
+                            {uiStore.notifications.length === 0 ? (
+                                <MenuItem disabled>
+                                    <ListItemText primary="No new notifications" />
+                                </MenuItem>
+                            ) : (
+                                uiStore.notifications.map(notification => (
+                                    <MenuItem key={notification.id} onClick={() => handleNotificationClick(notification)} selected={!notification.read}>
+                                        <ListItemText 
+                                            primary={`${notification.comment.author.name} mentioned you`}
+                                            secondary={`On term: "${projectStore.projects.find(p => p.id === notification.projectId)?.branches.flatMap(b => b.workingTerms).find(t => t.id === notification.termId)?.text || 'a term'}"`}
+                                            primaryTypographyProps={{ fontWeight: !notification.read ? 'bold' : 'normal' }}
+                                        />
+                                    </MenuItem>
+                                ))
+                            )}
+                        </Menu>
+
                         <Tooltip title="Account settings">
-                            <IconButton onClick={handleMenu} sx={{ p: 0 }}>
+                            <IconButton onClick={handleMenu} sx={{ p: 0, ml: 1.5 }}>
                                 <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, fontSize: '0.875rem' }}>
                                     {currentUser.avatarInitials}
                                 </Avatar>
@@ -180,7 +240,7 @@ const Header: React.FC = observer(() => {
                             <MenuItem onClick={handleProfile}>Profile</MenuItem>
                             <MenuItem onClick={handleLogout}>Logout</MenuItem>
                         </Menu>
-                    </div>
+                    </>
                 )}
             </Toolbar>
         </AppBar>

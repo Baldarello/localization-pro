@@ -1,4 +1,4 @@
-import { Project, Term, Language, User, UserRole, Branch, Commit } from './types';
+import { Project, Term, Language, User, UserRole, Branch, Commit, Notification, Comment } from './types';
 
 // The base URL is now dynamically set by the Vite build process
 export const API_BASE_URL = process.env.API_BASE_URL || 'https://localizationpro-api.tnl.one/api/v1';
@@ -373,6 +373,34 @@ class ApiClient {
             await this.apiFetch(`/projects/${projectId}/branches/merge`, {
                 method: 'POST',
                 body: JSON.stringify({ sourceBranchName, targetBranchName }),
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // --- Comments & Notifications ---
+    async getComments(projectId: string, termId: string): Promise<Comment[]> {
+        return await this.apiFetch(`/projects/${projectId}/terms/${termId}/comments`);
+    }
+
+    async postComment(projectId: string, termId: string, content: string, parentId: string | null): Promise<Comment> {
+        return await this.apiFetch(`/projects/${projectId}/terms/${termId}/comments`, {
+            method: 'POST',
+            body: JSON.stringify({ content, parentId }),
+        });
+    }
+
+    async getNotifications(): Promise<Notification[]> {
+        return await this.apiFetch('/users/me/notifications');
+    }
+
+    async markNotificationsAsRead(notificationIds: string[]): Promise<boolean> {
+        try {
+            await this.apiFetch('/users/me/notifications/read', {
+                method: 'POST',
+                body: JSON.stringify({ notificationIds }),
             });
             return true;
         } catch (error) {
