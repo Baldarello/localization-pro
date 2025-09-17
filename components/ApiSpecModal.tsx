@@ -12,6 +12,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useStores } from '../stores/StoreProvider';
 import ApiCodeSnippets from './ApiCodeSnippets';
 import ApiExamplePanel from './ApiExamplePanel';
+import { API_BASE_URL } from '../ApiClient';
 
 const getMethodColor = (method: string) => {
     switch (method.toUpperCase()) {
@@ -123,7 +124,8 @@ const ApiReferenceView = () => {
     useEffect(() => {
         const fetchSpec = async () => {
             try {
-                const response = await fetch('/openapi.json');
+                const specUrl = API_BASE_URL.replace('/api/v1', '/openapi.json');
+                const response = await fetch(specUrl);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 setSpec(data);
@@ -239,7 +241,8 @@ const RawSpecView: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/openapi.json')
+        const specUrl = API_BASE_URL.replace('/api/v1', '/openapi.json');
+        fetch(specUrl)
             .then(res => res.json())
             .then(data => {
                 const formattedSpec = JSON.stringify(data, null, 2);

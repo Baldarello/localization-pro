@@ -9,7 +9,12 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import { useStores } from '../stores/StoreProvider';
 
-const LanguageSelector: React.FC = observer(() => {
+interface LanguageSelectorProps {
+    asMenuItem?: boolean;
+    onMenuAction?: () => void;
+}
+
+const LanguageSelector: React.FC<LanguageSelectorProps> = observer(({ asMenuItem = false, onMenuAction }) => {
     const { projectStore } = useStores();
     const { selectedProject, updateProjectLanguages, setDefaultLanguage } = projectStore;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -20,6 +25,17 @@ const LanguageSelector: React.FC = observer(() => {
     const { languages: projectLanguages, defaultLanguageCode } = selectedProject;
 
     const isSelected = (langCode: string) => projectLanguages.some(l => l.code === langCode);
+
+    const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+        if (onMenuAction) {
+            onMenuAction();
+        }
+    };
 
     const handleToggleLanguage = (langCode: string) => {
         const lang = AVAILABLE_LANGUAGES.find(l => l.code === langCode);
@@ -38,27 +54,38 @@ const LanguageSelector: React.FC = observer(() => {
         updateProjectLanguages(newLanguages);
     };
 
+    const TriggerComponent = asMenuItem ? (
+        <MenuItem onClick={handleOpen}>
+            <ListItemIcon>
+                <LanguageIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Manage Languages</ListItemText>
+        </MenuItem>
+    ) : (
+        <Button
+            id="language-selector-button"
+            aria-controls={open ? 'language-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={open ? 'true' : undefined}
+            variant="outlined"
+            onClick={handleOpen}
+            startIcon={<LanguageIcon />}
+            endIcon={<ExpandMoreIcon />}
+            fullWidth
+            sx={{ justifyContent: 'space-between' }}
+        >
+            Manage Languages
+        </Button>
+    );
+
     return (
-        <div>
-            <Button
-                id="language-selector-button"
-                aria-controls={open ? 'language-menu' : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? 'true' : undefined}
-                variant="outlined"
-                onClick={(event) => setAnchorEl(event.currentTarget)}
-                startIcon={<LanguageIcon />}
-                endIcon={<ExpandMoreIcon />}
-                fullWidth
-                sx={{ justifyContent: 'space-between' }}
-            >
-                Manage Languages
-            </Button>
+        <>
+            {TriggerComponent}
             <Menu
                 id="language-menu"
                 anchorEl={anchorEl}
                 open={open}
-                onClose={() => setAnchorEl(null)}
+                onClose={handleClose}
                 MenuListProps={{ 'aria-labelledby': 'language-selector-button' }}
                 PaperProps={{ style: { width: 320, maxHeight: 400 } }}
             >
@@ -92,7 +119,7 @@ const LanguageSelector: React.FC = observer(() => {
                     </MenuItem>
                 ))}
             </Menu>
-        </div>
+        </>
     );
 });
 

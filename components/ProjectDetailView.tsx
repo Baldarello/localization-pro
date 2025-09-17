@@ -8,12 +8,12 @@ import TermList from './TermList';
 import TranslationPanel from './TranslationPanel';
 import ReviewView from './ReviewView';
 import BranchManagerDialog from './BranchManagerDialog';
-import ProjectSidebar from './ProjectSidebar';
 import HistoryView from './HistoryView';
+import StatsView from './StatsView';
 import TranslateIcon from '@mui/icons-material/Translate';
 import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
 import HistoryIcon from '@mui/icons-material/History';
-import CommitDetailDialog from './CommitDetailDialog';
+import BarChartIcon from '@mui/icons-material/BarChart';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,13 +56,13 @@ const ProjectDetailView: React.FC = observer(() => {
 
     return (
         <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-            <ProjectSidebar />
             <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <Paper square elevation={0} sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
                      <Tabs value={tabValue} onChange={handleTabChange} aria-label="project view tabs" variant="fullWidth">
                         <Tab icon={<TranslateIcon />} iconPosition="start" label="Translate" id="view-tab-0" aria-controls="view-tabpanel-0" sx={{py:2}} title="Focused view for one term at a time." />
                         <Tab icon={<TableChartOutlinedIcon />} iconPosition="start" label="Simple Grid" id="view-tab-1" aria-controls="view-tabpanel-1" sx={{py:2}} title="Quickly edit all translations in a simple grid." />
                         <Tab icon={<HistoryIcon />} iconPosition="start" label="History" id="view-tab-2" aria-controls="view-tabpanel-2" sx={{py:2}} title="View commit history for this branch." />
+                        <Tab icon={<BarChartIcon />} iconPosition="start" label="Stats" id="view-tab-3" aria-controls="view-tabpanel-3" sx={{py:2}} title="View project statistics and commit activity." />
                     </Tabs>
                 </Paper>
                 
@@ -78,6 +78,9 @@ const ProjectDetailView: React.FC = observer(() => {
                     </TabPanel>
                     <TabPanel value={tabValue} index={2}>
                         <HistoryView />
+                    </TabPanel>
+                    <TabPanel value={tabValue} index={3}>
+                        <StatsView />
                     </TabPanel>
                 </Box>
             </Box>

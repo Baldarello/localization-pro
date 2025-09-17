@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Button, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip } from '@mui/material';
@@ -28,17 +29,15 @@ const BranchSelector: React.FC = observer(() => {
                     aria-controls={open ? 'branch-menu' : undefined}
                     aria-haspopup="true"
                     aria-expanded={open ? 'true' : undefined}
-                    variant="outlined"
                     color="inherit"
                     onClick={(event) => setAnchorEl(event.currentTarget)}
                     startIcon={<AccountTreeIcon />}
                     endIcon={<ExpandMoreIcon />}
                     sx={{
-                        borderColor: 'rgba(255, 255, 255, 0.23)',
-                        color: 'inherit',
                         textTransform: 'none',
+                        fontSize: '1rem',
                         '&:hover': {
-                            borderColor: 'rgba(255, 255, 255, 0.87)'
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)'
                         }
                     }}
                 >
