@@ -106,20 +106,37 @@ export const updateProjectLanguages = async (projectId, newLanguages) => {
         ? project.defaultLanguageCode
         : newLangCodes[0] || '';
 
-    // Update team members' language assignments
-    for (const user of project.users) {
-        // Safety check for languages array to prevent server crash
-        if (user.TeamMembership) {
-            const currentLangs = user.TeamMembership.languages || [];
-            const updatedLangs = currentLangs.filter(code => newLangCodes.includes(code));
-            user.TeamMembership.languages = updatedLangs;
-            await user.TeamMembership.save();
+    const t = await sequelize.transaction();
+    try {
+        // Update team members' language assignments
+        for (const user of project.users) {
+            if (user.TeamMembership) {
+                const currentLangs = user.TeamMembership.languages || [];
+                const updatedLangs = currentLangs.filter(code => newLangCodes.includes(code));
+                
+                // Use a targeted update instead of save() on an incomplete instance
+                await TeamMembership.update(
+                    { languages: updatedLangs },
+                    { 
+                        where: { 
+                            projectId: projectId, 
+                            userId: user.id 
+                        },
+                        transaction: t 
+                    }
+                );
+            }
         }
+        
+        project.languages = newLanguages;
+        project.defaultLanguageCode = newDefaultLang;
+        await project.save({ transaction: t });
+
+        await t.commit();
+    } catch (error) {
+        await t.rollback();
+        throw error;
     }
-    
-    project.languages = newLanguages;
-    project.defaultLanguageCode = newDefaultLang;
-    await project.save();
     
     const updatedProject = await findProjectById(projectId);
     return formatProject(updatedProject);
