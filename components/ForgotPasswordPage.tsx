@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Container, Paper, Box, Typography, TextField, Button, InputAdornment, Link } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
@@ -22,10 +21,15 @@ const ForgotPasswordPage: React.FC = () => {
     return (
         <Container component="main" maxWidth="xs">
             <Paper elevation={3} sx={{ mt: 8, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <TranslateIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
-                <Typography component="h1" variant="h5">
-                    Forgot Password?
-                </Typography>
+                <Box
+                    onClick={() => uiStore.setView('home')}
+                    sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
+                >
+                    <TranslateIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
+                    <Typography component="h1" variant="h5">
+                        Forgot Password?
+                    </Typography>
+                </Box>
                 <Typography color="text.secondary" sx={{ mt: 1, mb: 2, textAlign: 'center' }}>
                     No worries, we'll send you reset instructions.
                 </Typography>

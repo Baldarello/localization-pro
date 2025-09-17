@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Header from './components/Header';
+import HomePage from './components/HomePage';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import ForgotPasswordPage from './components/ForgotPasswordPage';
@@ -54,8 +55,9 @@ const App: React.FC = observer(() => {
                     return <RegisterPage />;
                 case 'forgotPassword':
                     return <ForgotPasswordPage />;
+                case 'home':
                 default:
-                    return <LoginPage />;
+                    return <HomePage />;
             }
         }
 

@@ -4,12 +4,12 @@ import { AlertSeverity, Notification } from '../types';
 import { ThemeName } from '../theme';
 import { API_BASE_URL } from '../ApiClient';
 
-type View = 'login' | 'register' | 'forgotPassword' | 'app' | 'profile';
+type View = 'home' | 'login' | 'register' | 'forgotPassword' | 'app' | 'profile';
 type Theme = 'light' | 'dark';
 
 export class UIStore {
     rootStore: RootStore;
-    view: View = 'login';
+    view: View = 'home';
     theme: Theme = 'light';
     themeName: ThemeName = 'default';
     isTeamManagerOpen = false;

@@ -1,7 +1,3 @@
-
-
-
-
 import { makeAutoObservable, runInAction, computed } from 'mobx';
 import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';

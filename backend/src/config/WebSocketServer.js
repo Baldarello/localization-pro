@@ -60,10 +60,17 @@ export const initializeWebSocketServer = (server, sessionParser) => {
         });
 
         ws.on('close', () => {
+            const clientState = clients.get(userId);
+            // If the user was viewing a branch, notify others they stopped typing
+            if (clientState?.viewing) {
+                 broadcastTypingEvent(userId, { 
+                    ...clientState.viewing, 
+                    termId: null, // termId is not known on disconnect, but not needed for 'stop'
+                    userName: ''   // userName is not known, but not needed for 'stop'
+                }, false);
+            }
             clients.delete(userId);
             logger.info(`WebSocket client disconnected: user ${userId}`);
-            // Also notify others that this user stopped typing if they were
-            broadcastTypingEvent(userId, { termId: null }, false);
         });
 
         ws.on('error', (error) => {
@@ -73,13 +80,8 @@ export const initializeWebSocketServer = (server, sessionParser) => {
 };
 
 const broadcastTypingEvent = (typingUserId, payload, isTyping) => {
-    const typingUser = clients.get(typingUserId);
-    if (!typingUser) return;
-    
     const messageType = isTyping ? 'server_user_typing_start' : 'server_user_typing_stop';
     
-    // In a more complex app, we'd look up the user's name from a cache or DB.
-    // For now, we'll require it from the client payload for simplicity.
     const message = JSON.stringify({
         type: messageType,
         userId: typingUserId,
@@ -106,8 +108,7 @@ export const broadcastBranchUpdate = (projectId, branchName, modifiedByUserId) =
     });
 
     for (const [userId, client] of clients.entries()) {
-        // Send to everyone viewing the branch, including the user who made the change.
-        // The client-side logic will prevent a self-refresh.
+        // Send to everyone viewing the branch. The client-side will prevent a self-refresh.
         if (client.viewing?.projectId === projectId && client.viewing?.branchName === branchName) {
              if (client.ws.readyState === client.ws.OPEN) {
                 client.ws.send(message);

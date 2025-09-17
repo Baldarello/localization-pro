@@ -28,10 +28,15 @@ const LoginPage: React.FC = observer(() => {
     return (
         <Container component="main" maxWidth="xs">
             <Paper elevation={3} sx={{ mt: 8, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <TranslateIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
-                <Typography component="h1" variant="h5">
-                    Localization Pro
-                </Typography>
+                <Box
+                    onClick={() => uiStore.setView('home')}
+                    sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
+                >
+                    <TranslateIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
+                    <Typography component="h1" variant="h5">
+                        Localization Pro
+                    </Typography>
+                </Box>
                 <Typography component="h2" variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
                     Welcome Back
                 </Typography>

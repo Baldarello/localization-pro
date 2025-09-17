@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Box, Typography, TextField, Button, Avatar, Paper, Popover, List, ListItemButton, ListItemAvatar, ListItemText, Collapse } from '@mui/material';
@@ -47,13 +45,10 @@ const CommentForm: React.FC<{
         if (!selectedProject || !selectedTerm || !currentBranch || !currentUser) return;
 
         const payload = {
-            type: 'client_typing_start',
-            payload: {
-                projectId: selectedProject.id,
-                branchName: currentBranch.name,
-                termId: selectedTerm.id,
-                userName: currentUser.name,
-            }
+            projectId: selectedProject.id,
+            branchName: currentBranch.name,
+            termId: selectedTerm.id,
+            userName: currentUser.name,
         };
         
         // Clear previous timeout if it exists
@@ -63,15 +58,12 @@ const CommentForm: React.FC<{
 
         if (content) {
             // User is typing
-            uiStore.sendWebSocketMessage(payload);
+            uiStore.sendWebSocketMessage({ type: 'client_typing_start', payload });
         }
 
         // Set a new timeout to signal "stop typing"
         typingTimeoutRef.current = window.setTimeout(() => {
-            uiStore.sendWebSocketMessage({
-                ...payload,
-                type: 'client_typing_stop',
-            });
+            uiStore.sendWebSocketMessage({ type: 'client_typing_stop', payload });
         }, 2000); // 2 seconds of inactivity
 
         // Cleanup on unmount
@@ -81,14 +73,11 @@ const CommentForm: React.FC<{
             }
             // Ensure we send a "stop" message if the component unmounts while typing
             if (content) {
-                 uiStore.sendWebSocketMessage({
-                    ...payload,
-                    type: 'client_typing_stop',
-                });
+                 uiStore.sendWebSocketMessage({ type: 'client_typing_stop', payload });
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [content]);
+    }, [content, projectStore.selectedTerm]);
 
 
     const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
