@@ -58,6 +58,13 @@ export const createAppTheme = (mode: 'light' | 'dark', themeName: ThemeName) =>
             fontFamily: 'Roboto, sans-serif',
         },
         components: {
+            MuiAppBar: {
+                styleOverrides: {
+                    root: {
+                        borderRadius: 0,
+                    },
+                },
+            },
             MuiButton: {
                 styleOverrides: {
                     root: {

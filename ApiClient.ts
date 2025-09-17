@@ -252,6 +252,18 @@ class ApiClient {
             return false;
         }
     }
+
+    async bulkUpdateTerms(projectId: string, terms: Term[]): Promise<boolean> {
+        try {
+            await this.apiFetch(`/projects/${projectId}/terms/bulk`, {
+                method: 'PUT',
+                body: JSON.stringify(terms),
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
     
     async addMember(projectId: string, email: string, role: UserRole, languages: string[]): Promise<AddMemberResult> {
         try {

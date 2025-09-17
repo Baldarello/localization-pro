@@ -217,6 +217,13 @@ export const updateTranslation = async (projectId, termId, langCode, value) => {
     }
 };
 
+export const bulkUpdateTerms = async (projectId, newTerms) => {
+    const branch = await getCurrentBranch(projectId);
+    branch.workingTerms = newTerms;
+    await branch.save();
+};
+
+
 // --- Team Management ---
 
 export const addMember = async (projectId, email, role, languages) => {

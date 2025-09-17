@@ -3,6 +3,7 @@
 
 
 
+
 import { makeAutoObservable, runInAction } from 'mobx';
 import { Project, Term, Language, User, UserRole, Branch, Commit } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
@@ -488,7 +489,9 @@ export class ProjectStore {
         const fileContent = await file.text();
         const fileExtension = file.name.split('.').pop()?.toLowerCase();
         const stats = { updated: 0, created: 0, ignored: 0 };
-        const workingTerms = this.currentBranch.workingTerms;
+        
+        // Create a deep copy to work with, to avoid modifying state before persistence
+        const newWorkingTerms: Term[] = JSON.parse(JSON.stringify(this.currentBranch.workingTerms));
 
         try {
             if (fileExtension === 'json') {
@@ -497,7 +500,7 @@ export class ProjectStore {
                 }
                 const data = JSON.parse(fileContent) as Record<string, string>;
                 for (const key in data) {
-                    const term = workingTerms.find(t => t.text === key);
+                    const term = newWorkingTerms.find(t => t.text === key);
                     if (term) {
                         if (options.overwrite) {
                             term.translations[options.langCode] = data[key];
@@ -508,7 +511,7 @@ export class ProjectStore {
                     } else {
                         if (options.createNew) {
                             const newTerm: Term = { id: `term-imported-${Date.now()}-${key}`, text: key, translations: { [options.langCode]: data[key] } };
-                            workingTerms.push(newTerm);
+                            newWorkingTerms.push(newTerm);
                             stats.created++;
                         } else {
                             stats.ignored++;
@@ -551,7 +554,7 @@ export class ProjectStore {
                     const values = parseCsvLine(lines[i]);
                     const key = values[0];
                     if (!key) continue;
-                    const term = workingTerms.find(t => t.text === key);
+                    const term = newWorkingTerms.find(t => t.text === key);
 
                     if (term) {
                         if (options.overwrite) {
@@ -572,7 +575,7 @@ export class ProjectStore {
                                     newTerm.translations[langCode] = values[index + 1];
                                 }
                             });
-                            workingTerms.push(newTerm);
+                            newWorkingTerms.push(newTerm);
                             stats.created++;
                         } else {
                             stats.ignored++;
@@ -582,7 +585,21 @@ export class ProjectStore {
             } else {
                 throw new Error('Unsupported file format. Please use .json or .csv');
             }
-            this.rootStore.uiStore.showAlert(`Import complete: ${stats.updated} updated, ${stats.created} created, ${stats.ignored} ignored.`, 'success');
+
+            // Persist the changes to the backend
+            const success = await this.rootStore.apiClient.bulkUpdateTerms(this.selectedProject.id, newWorkingTerms);
+
+            if (success) {
+                // On success, update the local state
+                runInAction(() => {
+                    if (this.currentBranch) {
+                        this.currentBranch.workingTerms = newWorkingTerms;
+                    }
+                });
+                this.rootStore.uiStore.showAlert(`Import complete: ${stats.updated} updated, ${stats.created} created, ${stats.ignored} ignored.`, 'success');
+            } else {
+                throw new Error('Could not save imported data to the server.');
+            }
 
         } catch (error: any) {
             console.error('Import failed:', error);

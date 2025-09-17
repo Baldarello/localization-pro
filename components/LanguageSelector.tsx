@@ -1,8 +1,7 @@
 
-
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { AVAILABLE_LANGUAGES } from '../constants';
+import { AVAILABLE_LANGUAGES, getFlagCode } from '../constants';
 import { Button, Menu, MenuItem, ListItemIcon, ListItemText, Checkbox, IconButton, Divider, Typography, Box } from '@mui/material';
 import LanguageIcon from '@mui/icons-material/Language';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -50,6 +49,8 @@ const LanguageSelector: React.FC = observer(() => {
                 onClick={(event) => setAnchorEl(event.currentTarget)}
                 startIcon={<LanguageIcon />}
                 endIcon={<ExpandMoreIcon />}
+                fullWidth
+                sx={{ justifyContent: 'space-between' }}
             >
                 Manage Languages
             </Button>
@@ -76,7 +77,7 @@ const LanguageSelector: React.FC = observer(() => {
                                     disableRipple
                                 />
                             </ListItemIcon>
-                            <Box component="span" className={`flag-icon flag-icon-${lang.code === 'en' ? 'gb' : lang.code}`} sx={{ mr: 1.5 }} />
+                            <Box component="span" className={`flag-icon flag-icon-${getFlagCode(lang.code)}`} sx={{ mr: 1.5 }} />
                             <ListItemText primary={lang.name} />
                         </Box>
                         {isSelected(lang.code) && (

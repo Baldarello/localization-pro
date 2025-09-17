@@ -101,6 +101,7 @@ const ProjectSidebar: React.FC = observer(() => {
                     <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', mb: 1 }}>Admin Controls</Typography>
                     <LanguageSelector />
                      <Button
+                        fullWidth
                         variant="outlined"
                         startIcon={<AccountTreeIcon />}
                         onClick={() => uiStore.openBranchManager()}
@@ -108,6 +109,7 @@ const ProjectSidebar: React.FC = observer(() => {
                         Manage Branches
                     </Button>
                     <Button
+                        fullWidth
                         variant="outlined"
                         startIcon={<PeopleIcon />}
                         onClick={() => uiStore.openTeamManager()}

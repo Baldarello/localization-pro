@@ -10,6 +10,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { useStores } from '../stores/StoreProvider';
 import { UserRole } from '../types';
+import { getFlagCode } from '../constants';
 
 const TranslationPanel: React.FC = observer(() => {
     const { projectStore } = useStores();
@@ -173,7 +174,7 @@ const TranslationPanel: React.FC = observer(() => {
                     return (
                         <Box key={lang.code}>
                             <Typography component="label" sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', mb: 1 }}>
-                                <Box component="span" className={`flag-icon flag-icon-${lang.code === 'en' ? 'gb' : lang.code}`} sx={{ mr: 1 }} />
+                                <Box component="span" className={`flag-icon flag-icon-${getFlagCode(lang.code)}`} sx={{ mr: 1 }} />
                                 {lang.name}
                                 {isDefault && <StarIcon sx={{ ml: 1, color: 'warning.main', fontSize: 16 }} />}
                                 {!canEdit && <LockIcon sx={{ ml: 1, color: 'text.disabled', fontSize: 16 }} />}

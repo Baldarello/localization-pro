@@ -13,3 +13,13 @@ export const AVAILABLE_LANGUAGES: Language[] = [
     { code: 'zh', name: 'Chinese' },
     { code: 'ar', name: 'Arabic' },
 ];
+
+export const getFlagCode = (langCode: string): string => {
+    switch (langCode) {
+        case 'en': return 'gb';
+        case 'ja': return 'jp';
+        case 'zh': return 'cn';
+        case 'ar': return 'sa'; // Using Saudi Arabia for Arabic as a common representation
+        default: return langCode;
+    }
+};

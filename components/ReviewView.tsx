@@ -5,6 +5,7 @@ import { Box, Typography } from '@mui/material';
 import { DataGrid, GridColDef, GridRowModel, GridRenderCellParams } from '@mui/x-data-grid';
 import { useStores } from '../stores/StoreProvider';
 import { UserRole } from '../types';
+import { getFlagCode } from '../constants';
 
 const ReviewView: React.FC = observer(() => {
     const { projectStore } = useStores();
@@ -37,7 +38,7 @@ const ReviewView: React.FC = observer(() => {
             editable: userPermissions.includes(lang.code),
             renderHeader: () => (
                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold' }}>
-                    <Box component="span" className={`flag-icon flag-icon-${lang.code === 'en' ? 'gb' : lang.code}`} sx={{ mr: 1, mt: '-2px' }} />
+                    <Box component="span" className={`flag-icon flag-icon-${getFlagCode(lang.code)}`} sx={{ mr: 1, mt: '-2px' }} />
                     {lang.name}
                 </Box>
             )

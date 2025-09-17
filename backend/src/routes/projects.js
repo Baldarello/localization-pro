@@ -279,6 +279,43 @@ router.post('/:projectId/terms', authenticate, async (req, res, next) => {
 
 /**
  * @swagger
+ * /projects/{projectId}/terms/bulk:
+ *   put:
+ *     summary: Bulk update terms in the current branch
+ *     tags: [Terms]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               $ref: '#/components/schemas/Term'
+ *     responses:
+ *       '204':
+ *         description: Terms updated successfully
+ *       '401':
+ *         description: Unauthorized
+ *       '404':
+ *         description: Project or branch not found
+ */
+router.put('/:projectId/terms/bulk', authenticate, async (req, res, next) => {
+    try {
+        await ProjectDao.bulkUpdateTerms(req.params.projectId, req.body);
+        res.sendStatus(204);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * @swagger
  * /projects/{projectId}/terms/{termId}:
  *   put:
  *     summary: Update a term's key text in the current branch
