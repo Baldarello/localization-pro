@@ -191,13 +191,20 @@ export class UIStore {
                             this.rootStore.projectStore.handleBranchUpdate(message);
                         }
                         break;
+                    case 'server_new_comment':
+                        // If the new comment is for the currently selected term, refresh the comments
+                        if (this.rootStore.projectStore.selectedTermId && message.termId === this.rootStore.projectStore.selectedTermId) {
+                            this.rootStore.projectStore.fetchComments(message.projectId, message.termId);
+                        }
+                        break;
                     case 'server_user_typing_start':
-                        // Don't show your own typing indicator
-                        if (message.userId !== this.rootStore.authStore.currentUser?.id) {
+                        // Don't show your own typing indicator and check if it's for the current term
+                        if (message.userId !== this.rootStore.authStore.currentUser?.id && message.termId === this.rootStore.projectStore.selectedTermId) {
                             this.rootStore.projectStore.startTyping(message.userId, message.userName);
                         }
                         break;
                     case 'server_user_typing_stop':
+                        // No termId check needed for stop, just remove the user if they exist in the map
                         this.rootStore.projectStore.stopTyping(message.userId);
                         break;
                 }

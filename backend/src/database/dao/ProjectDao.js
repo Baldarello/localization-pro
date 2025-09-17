@@ -2,7 +2,7 @@ import { Project, User, Branch, Commit, TeamMembership, Comment, Notification, I
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import sequelize from '../Sequelize.js';
 import { sendEmail } from '../../helpers/mailer.js';
-import { sendToUser, broadcastBranchUpdate } from '../../config/WebSocketServer.js';
+import { sendToUser, broadcastBranchUpdate, broadcastCommentUpdate } from '../../config/WebSocketServer.js';
 
 const formatProject = (project) => {
     if (!project) return null;
@@ -506,6 +506,9 @@ export const createComment = async (projectId, termId, content, parentId, author
             }
         }
     }
+
+    // Broadcast that a new comment was added
+    broadcastCommentUpdate(projectId, branchName, termId, authorId);
 
     // Fetch the full comment to return
     const fullComment = await Comment.findByPk(newComment.id, {

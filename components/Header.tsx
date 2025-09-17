@@ -84,7 +84,7 @@ const Header: React.FC = observer(() => {
     return (
         <AppBar position="static" elevation={1} color="primary">
             <Toolbar>
-                {selectedProject ? (
+                {selectedProject && uiStore.view !== 'profile' ? (
                     <>
                         <Tooltip title="Back to Projects">
                             <IconButton color="inherit" onClick={deselectProject} edge="start" sx={{ mr: 1 }}>
@@ -110,7 +110,7 @@ const Header: React.FC = observer(() => {
 
                 <Box sx={{ flexGrow: 1 }} />
 
-                {selectedProject && (
+                {selectedProject && uiStore.view !== 'profile' && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {uncommittedChangesCount > 0 && (
                             <Button

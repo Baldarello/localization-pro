@@ -117,6 +117,25 @@ export const broadcastBranchUpdate = (projectId, branchName, modifiedByUserId) =
     }
 };
 
+export const broadcastCommentUpdate = (projectId, branchName, termId, authorId) => {
+    const message = JSON.stringify({
+        type: 'server_new_comment',
+        projectId,
+        branchName,
+        termId,
+        authorId,
+    });
+
+    for (const [userId, client] of clients.entries()) {
+        // Broadcast to other users on the same branch (client will filter by termId)
+        if (userId !== authorId && client.viewing?.projectId === projectId && client.viewing?.branchName === branchName) {
+            if (client.ws.readyState === client.ws.OPEN) {
+                client.ws.send(message);
+            }
+        }
+    }
+};
+
 export const sendToUser = (userId, data) => {
     const client = clients.get(userId)?.ws;
     if (client && client.readyState === client.OPEN) {
