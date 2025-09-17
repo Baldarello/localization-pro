@@ -1,6 +1,6 @@
 # Localization Manager Pro - Backend
 
-This folder contains the Node.js backend for the Localization Manager Pro application. It uses Express.js for the API server and Sequelize as the ORM with a self-contained SQLite database.
+This folder contains the Node.js backend for the Localization Manager Pro application. It uses Express.js for the API server, Sequelize as the ORM with a self-contained SQLite database, and Passport.js for session-based authentication with Google OAuth.
 
 ## Setup
 
@@ -23,13 +23,10 @@ This folder contains the Node.js backend for the Localization Manager Pro applic
 
 ## Configuration
 
-The backend requires an environment file to store sensitive configuration like email credentials.
+The backend requires an environment file to store configuration and sensitive credentials.
 
 1.  **Create an environment file:**
-    Inside the `backend/` directory, create a copy of `.env.example` and name it `.env`.
-    ```sh
-    cp .env.example .env
-    ```
+    Inside the `backend/` directory, create a new file named `.env`.
 
 2.  **Edit the `.env` file:**
     Open `backend/.env` and fill in the values for your environment.
@@ -38,16 +35,29 @@ The backend requires an environment file to store sensitive configuration like e
 
 The following table lists all the environment variables used by the backend:
 
-| Variable        | Description                                                                                             | Example                           |
-| --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `PORT`          | The port on which the backend server will run.                                                          | `3001`                            |
-| `EMAIL_ENABLED` | Set to `true` to enable all email-sending features. If `false`, no emails will be sent.                 | `true`                            |
-| `EMAIL_HOST`    | The hostname of your SMTP server.                                                                       | `smtp.mailgun.org`                |
-| `EMAIL_PORT`    | The port for your SMTP server (e.g., 587 for TLS, 465 for SSL).                                         | `587`                             |
-| `EMAIL_SECURE`  | Set to `true` if your SMTP server uses SSL (typically on port 465).                                       | `true`                            |
-| `EMAIL_USER`    | The username for authenticating with your SMTP server.                                                  | `postmaster@sandbox.mailgun.org`  |
-| `EMAIL_PASS`    | The password for authenticating with your SMTP server.                                                  | `your-smtp-password`              |
-| `EMAIL_FROM`    | The "From" address that will appear on emails sent by the application.                                  | `"MyApp" <noreply@myapp.com>`     |
+| Variable                | Description                                                                                             | Example                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `PORT`                  | The port on which the backend server will run.                                                          | `3001`                                |
+| `FRONTEND_URL`          | The base URL of the frontend application. Used for OAuth redirects.                                     | `http://localhost:5173`               |
+| `SESSION_SECRET`        | **Required.** A long, random string used to sign the session ID cookie.                                 | `a-very-long-and-secret-string`       |
+| `GOOGLE_CLIENT_ID`      | **Optional.** Your Google API project's client ID. If omitted, Google Sign-In will be disabled.          | `your-client-id.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET`  | **Optional.** Your Google API project's client secret. If omitted, Google Sign-In will be disabled.      | `GOCSPX-your-client-secret`           |
+| `EMAIL_ENABLED`         | Set to `true` to enable all email-sending features.                                                     | `true`                                |
+| `EMAIL_HOST`            | The hostname of your SMTP server.                                                                       | `smtp.mailgun.org`                    |
+| `EMAIL_PORT`            | The port for your SMTP server (e.g., 587 for TLS, 465 for SSL).                                         | `587`                                 |
+| `EMAIL_SECURE`          | Set to `true` if your SMTP server uses SSL (typically on port 465).                                       | `true`                                |
+| `EMAIL_USER`            | The username for authenticating with your SMTP server.                                                  | `postmaster@sandbox.mailgun.org`      |
+| `EMAIL_PASS`            | The password for authenticating with your SMTP server.                                                  | `your-smtp-password`                  |
+| `EMAIL_FROM`            | The "From" address that will appear on emails sent by the application.                                  | `"MyApp" <noreply@myapp.com>`         |
+
+> **Where to get Google Credentials:**
+> 1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+> 2. Create a new project.
+> 3. Go to "APIs & Services" > "Credentials".
+> 4. Click "Create Credentials" > "OAuth client ID".
+> 5. Choose "Web application".
+> 6. Under "Authorized redirect URIs", add `http://localhost:3001/api/v1/auth/google/callback`.
+> 7. Click "Create". Your Client ID and Client Secret will be displayed.
 
 ## Running the Server
 

@@ -5,23 +5,68 @@ export const login = async (email, pass) => {
 
     // Check if user exists and if password is valid
     if (user && await user.validPassword(pass)) {
-        return user.get({ plain: true });
+        // Exclude password hash from returned user object
+        const { password, ...userWithoutPassword } = user.get({ plain: true });
+        return userWithoutPassword;
     }
 
     // If user not found or password incorrect
     return null;
 };
 
+export const findOrCreateGoogleUser = async (profile) => {
+    const { id: googleId, displayName, emails } = profile;
+    const email = emails[0].value;
+
+    // 1. Find user by Google ID first
+    let user = await User.findOne({ where: { googleId } });
+    if (user) {
+        const { password, ...userWithoutPassword } = user.get({ plain: true });
+        return userWithoutPassword;
+    }
+
+    // 2. If not found, try to find by email to link the account
+    user = await User.findOne({ where: { email } });
+    if (user) {
+        user.googleId = googleId;
+        await user.save();
+        const { password, ...userWithoutPassword } = user.get({ plain: true });
+        return userWithoutPassword;
+    }
+
+    // 3. If no user is found by email, create a new one
+    const nameParts = displayName.split(' ');
+    const avatarInitials = nameParts.length > 1
+        ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+        : displayName.substring(0, 2).toUpperCase();
+
+    // Password field is omitted and will be null for OAuth users
+    const newUser = await User.create({
+        id: `user-${Date.now()}`,
+        googleId,
+        name: displayName,
+        email,
+        avatarInitials,
+        settings: { commitNotifications: true }
+    });
+    
+    const { password, ...userWithoutPassword } = newUser.get({ plain: true });
+    return userWithoutPassword;
+};
+
 export const getUserById = async (userId) => {
     const user = await User.findByPk(userId);
     if (user) {
-        return user.get({ plain: true });
+        const { password, ...userWithoutPassword } = user.get({ plain: true });
+        return userWithoutPassword;
     }
     return null;
 };
 
 export const getAllUsers = async () => {
-    const users = await User.findAll();
+    const users = await User.findAll({
+        attributes: { exclude: ['password'] }
+    });
     return users.map(u => u.get({ plain: true }));
 };
 
@@ -50,7 +95,8 @@ export const registerUser = async (name, email, password) => {
         settings: { commitNotifications: true } // Default setting
     });
     
-    return newUser.get({ plain: true });
+    const { password: _, ...userWithoutPassword } = newUser.get({ plain: true });
+    return userWithoutPassword;
 };
 
 export const updateUserName = async (userId, newName) => {
@@ -62,7 +108,8 @@ export const updateUserName = async (userId, newName) => {
             ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
             : newName.substring(0, 2).toUpperCase();
         await user.save();
-        return user.get({ plain: true });
+        const { password, ...userWithoutPassword } = user.get({ plain: true });
+        return userWithoutPassword;
     }
     return null;
 };
@@ -73,7 +120,8 @@ export const updateUserSettings = async (userId, settings) => {
         // Merge settings to preserve other potential settings in the future
         user.settings = { ...user.settings, ...settings };
         await user.save();
-        return user.get({ plain: true });
+        const { password, ...userWithoutPassword } = user.get({ plain: true });
+        return userWithoutPassword;
     }
     return null;
 };
@@ -82,6 +130,10 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
     const user = await User.findByPk(userId);
     if (!user) {
         return { success: false, message: 'User not found.' };
+    }
+
+    if (!user.password) {
+        return { success: false, message: 'Cannot change password for an account created with Google Sign-In.' };
     }
     
     // Validate the current password

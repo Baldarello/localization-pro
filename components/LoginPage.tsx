@@ -5,8 +5,9 @@ import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
 import { GoogleIcon } from './icons';
 import { useStores } from '../stores/StoreProvider';
+import { observer } from 'mobx-react-lite';
 
-const LoginPage: React.FC = () => {
+const LoginPage: React.FC = observer(() => {
     const { authStore, uiStore } = useStores();
     const [email, setEmail] = useState('alice@example.com');
     const [password, setPassword] = useState('password');
@@ -20,9 +21,8 @@ const LoginPage: React.FC = () => {
         await authStore.login(email, password);
     };
 
-    const handleGoogleLogin = async () => {
-        // In a real app, this would trigger the Google OAuth flow.
-        await authStore.login('alice@example.com', 'password');
+    const handleGoogleLogin = () => {
+        authStore.loginWithGoogle();
     };
 
     return (
@@ -90,19 +90,23 @@ const LoginPage: React.FC = () => {
                     >
                         Log In
                     </Button>
-                    <Divider sx={{ my: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                            OR
-                        </Typography>
-                    </Divider>
-                    <Button
-                        fullWidth
-                        variant="outlined"
-                        startIcon={<GoogleIcon />}
-                        onClick={handleGoogleLogin}
-                    >
-                        Sign in with Google
-                    </Button>
+                    {authStore.isGoogleAuthEnabled && (
+                        <>
+                            <Divider sx={{ my: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    OR
+                                </Typography>
+                            </Divider>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                startIcon={<GoogleIcon />}
+                                onClick={handleGoogleLogin}
+                            >
+                                Sign in with Google
+                            </Button>
+                        </>
+                    )}
                     <Typography variant="body2" sx={{ mt: 3, textAlign: 'center' }}>
                         Don't have an account?{' '}
                         <Link href="#" onClick={() => uiStore.setView('register')}>
@@ -113,6 +117,6 @@ const LoginPage: React.FC = () => {
             </Paper>
         </Container>
     );
-};
+});
 
 export default LoginPage;

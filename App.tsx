@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Header from './components/Header';
 import LoginPage from './components/LoginPage';
@@ -18,19 +18,27 @@ const App: React.FC = observer(() => {
     const { uiStore, authStore, projectStore } = useStores();
     const theme = createAppTheme(uiStore.theme, uiStore.themeName);
 
+    useEffect(() => {
+        authStore.fetchAuthConfig();
+        authStore.checkAuthStatus();
+    }, [authStore]);
+
     const handleCloseAlert = () => {
         uiStore.hideAlert();
     };
 
     const mainContent = () => {
-        if (uiStore.view === 'login') {
-            return <LoginPage />;
-        }
-        if (uiStore.view === 'register') {
-            return <RegisterPage />;
-        }
-        if (uiStore.view === 'forgotPassword') {
-            return <ForgotPasswordPage />;
+        if (!authStore.currentUser) {
+            switch (uiStore.view) {
+                case 'login':
+                    return <LoginPage />;
+                case 'register':
+                    return <RegisterPage />;
+                case 'forgotPassword':
+                    return <ForgotPasswordPage />;
+                default:
+                    return <LoginPage />;
+            }
         }
 
         if (uiStore.view === 'profile') {

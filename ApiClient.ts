@@ -1,7 +1,7 @@
 import { Project, Term, Language, User, UserRole, Branch, Commit } from './types';
 
-// The base URL for the backend API
-const API_BASE_URL = 'http://localhost:3001/api/v1';
+// The base URL is now dynamically set by the Vite build process
+export const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api/v1';
 
 export interface AddMemberResult {
     user: User | null;
@@ -10,8 +10,20 @@ export interface AddMemberResult {
     code?: 'user_exists' | 'user_not_found' | 'project_not_found';
 }
 
+export interface AuthConfig {
+    googleAuthEnabled: boolean;
+}
+
+
 class ApiClient {
+    // The currentUserId is no longer needed for auth, as the session cookie handles it.
+    // It's kept here as the backend still uses it for mock authentication. This could be removed
+    // if the backend fully switches to session-only auth for all endpoints.
     private currentUserId: string | null = null;
+    
+    public getBaseUrl(): string {
+        return API_BASE_URL;
+    }
 
     public setAuth(userId: string | null) {
         this.currentUserId = userId;
@@ -22,7 +34,8 @@ class ApiClient {
             'Content-Type': 'application/json',
             ...options.headers,
         };
-
+        // The X-User-ID header is kept for the mock authentication system.
+        // For session-based auth (like Google OAuth), the browser automatically sends the cookie.
         if (this.currentUserId) {
             headers['X-User-ID'] = this.currentUserId;
         }
@@ -31,6 +44,7 @@ class ApiClient {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 ...options,
                 headers,
+                credentials: 'include', // Send cookies with all requests
             });
 
             if (!response.ok) {
@@ -49,22 +63,39 @@ class ApiClient {
 
     async login(email: string, pass: string): Promise<User | null> {
         try {
-            // Using a direct fetch call here to avoid sending a (potentially stale) auth header during login.
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            const user = await this.apiFetch('/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({ email, pass }),
             });
-            if (!response.ok) {
-                return null;
+            if (user) {
+                this.setAuth(user.id);
             }
-            return response.json();
+            return user;
         } catch (error) {
-            console.error(`API call to /auth/login failed:`, error);
             return null;
         }
+    }
+
+    async getAuthConfig(): Promise<AuthConfig> {
+        try {
+            return await this.apiFetch('/auth/config');
+        } catch (error) {
+            // Default to disabled if the endpoint fails
+            return { googleAuthEnabled: false };
+        }
+    }
+
+    async logout(): Promise<void> {
+        try {
+            await this.apiFetch('/auth/logout', { method: 'POST' });
+            this.setAuth(null);
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    }
+
+    async getCurrentUser(): Promise<User | null> {
+        return await this.apiFetch('/auth/me');
     }
     
     async register(name: string, email: string, pass: string): Promise<{user: User | null, message: string}> {

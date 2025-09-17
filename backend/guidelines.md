@@ -58,6 +58,9 @@ DB_PASS=your_database_password
 DB_LOGGING=false
 ```
 
+### Note on Automated Changes
+The AI assistant maintaining this project is configured to **not** modify or create any files starting with a dot (`.`), such as `.env` or `.env.example`. All required environment variables are documented in the `README.md` files. Please refer to `README.md` and `backend/README.md` for setting up your `.env` files.
+
 #### JWT Configuration
 ```env
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production

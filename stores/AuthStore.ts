@@ -5,30 +5,57 @@ import { RootStore } from './RootStore';
 export class AuthStore {
     rootStore: RootStore;
     currentUser: User | null = null;
+    isAuthCheckComplete = false;
+    isGoogleAuthEnabled = false;
 
     constructor(rootStore: RootStore) {
         makeAutoObservable(this);
         this.rootStore = rootStore;
     }
 
+    fetchAuthConfig = async () => {
+        const config = await this.rootStore.apiClient.getAuthConfig();
+        runInAction(() => {
+            this.isGoogleAuthEnabled = config.googleAuthEnabled;
+        });
+    }
+
     login = async (email: string, pass: string) => {
-        // Clear any previous auth state before trying to log in
-        this.rootStore.apiClient.setAuth(null);
         const user = await this.rootStore.apiClient.login(email, pass);
         if (user) {
-            // Set the user ID for all subsequent API calls
-            this.rootStore.apiClient.setAuth(user.id);
-            
             runInAction(() => {
                 this.currentUser = user;
             });
-
-            // This call will now be authenticated
             await this.rootStore.projectStore.initializeData();
-            
             this.rootStore.uiStore.setView('app');
         } else {
             this.rootStore.uiStore.showAlert('Invalid email or password.', 'error');
+        }
+    };
+
+    loginWithGoogle = () => {
+        // The backend URL for initiating Google OAuth
+        window.location.href = `${this.rootStore.apiClient.getBaseUrl()}/auth/google`;
+    };
+
+    checkAuthStatus = async () => {
+        if (this.isAuthCheckComplete) return;
+
+        try {
+            const user = await this.rootStore.apiClient.getCurrentUser();
+            if (user) {
+                runInAction(() => {
+                    this.currentUser = user;
+                });
+                await this.rootStore.projectStore.initializeData();
+                this.rootStore.uiStore.setView('app');
+            }
+        } catch (error) {
+            console.log('User not authenticated');
+        } finally {
+            runInAction(() => {
+                this.isAuthCheckComplete = true;
+            });
         }
     };
 
@@ -48,12 +75,13 @@ export class AuthStore {
         this.rootStore.uiStore.showAlert(message, 'success');
     };
 
-    logout = () => {
-        this.currentUser = null;
-        // Clear the user ID from the ApiClient
-        this.rootStore.apiClient.setAuth(null);
-        this.rootStore.projectStore.clearData();
-        this.rootStore.uiStore.setView('login');
+    logout = async () => {
+        await this.rootStore.apiClient.logout();
+        runInAction(() => {
+            this.currentUser = null;
+            this.rootStore.projectStore.clearData();
+            this.rootStore.uiStore.setView('login');
+        });
     };
 
     updateCurrentUserName = async (newName: string) => {
@@ -61,7 +89,10 @@ export class AuthStore {
         const updatedUser = await this.rootStore.apiClient.updateCurrentUserName(this.currentUser.id, newName);
         if (updatedUser) {
             runInAction(() => {
-                this.currentUser = updatedUser;
+                if (this.currentUser) {
+                    this.currentUser.name = updatedUser.name;
+                    this.currentUser.avatarInitials = updatedUser.avatarInitials;
+                }
             });
             this.rootStore.uiStore.showAlert('Name updated successfully!', 'success');
         } else {

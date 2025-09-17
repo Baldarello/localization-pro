@@ -1,9 +1,12 @@
 import { Router } from 'express';
+import passport from 'passport';
 import * as UserDao from '../database/dao/UserDao.js';
 import { sendEmail } from '../helpers/mailer.js';
+import logger from '../helpers/logger.js';
 
 const router = Router();
 
+// --- Existing Swagger Docs ---
 /**
  * @swagger
  * components:
@@ -14,6 +17,10 @@ const router = Router();
  *         id:
  *           type: string
  *           example: "user-1"
+ *         googleId:
+ *           type: string
+ *           nullable: true
+ *           example: "109876543210987654321"
  *         name:
  *           type: string
  *           example: "Alice (Admin)"
@@ -136,7 +143,7 @@ const router = Router();
  *
  * tags:
  *   - name: Authentication
- *     description: User authentication
+ *     description: User authentication and session management
  *   - name: Users
  *     description: User management
  *   - name: Projects
@@ -158,9 +165,9 @@ const router = Router();
  * @swagger
  * /auth/login:
  *   post:
- *     summary: Log in a user
+ *     summary: Log in a user with email and password
  *     tags: [Authentication]
- *     description: Authenticates a user and returns their details. No authentication token is required for this endpoint.
+ *     description: Authenticates a user and starts a session.
  *     security: []
  *     requestBody:
  *       required: true
@@ -198,7 +205,11 @@ router.post('/login', async (req, res, next) => {
         }
         const user = await UserDao.login(email, pass);
         if (user) {
-            res.json(user);
+            // Use req.login to establish a session
+            req.login(user, (err) => {
+                if (err) { return next(err); }
+                return res.json(user);
+            });
         } else {
             res.status(401).json({ message: 'Invalid credentials' });
         }
@@ -207,7 +218,125 @@ router.post('/login', async (req, res, next) => {
     }
 });
 
+// GET /api/v1/auth/config
+/**
+ * @swagger
+ * /auth/config:
+ *   get:
+ *     summary: Get available authentication methods
+ *     tags: [Authentication]
+ *     description: Returns which external authentication providers are enabled on the server.
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Authentication configuration
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 googleAuthEnabled:
+ *                   type: boolean
+ *                   description: Whether Google OAuth is configured and enabled.
+ */
+router.get('/config', (req, res) => {
+    const googleAuthEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+    res.json({ googleAuthEnabled });
+});
 
+
+// GET /api/v1/auth/google
+/**
+ * @swagger
+ * /auth/google:
+ *   get:
+ *     summary: Initiate Google OAuth login
+ *     tags: [Authentication]
+ *     description: Redirects the user to Google for authentication. The user will be redirected back to the `/auth/google/callback` endpoint.
+ *     security: []
+ *     responses:
+ *       302:
+ *         description: Redirect to Google's authentication service.
+ */
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// GET /api/v1/auth/google/callback
+/**
+ * @swagger
+ * /auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback URL
+ *     tags: [Authentication]
+ *     description: Google redirects to this URL after authentication. Passport.js handles the user lookup or creation, establishes a session, and redirects the user back to the frontend application.
+ *     security: []
+ *     responses:
+ *       302:
+ *         description: Redirect to the frontend application.
+ */
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=true` }),
+  (req, res) => {
+    // Successful authentication, redirect home.
+    res.redirect(process.env.FRONTEND_URL || 'http://localhost:5173');
+  }
+);
+
+// GET /api/v1/auth/me
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Get current authenticated user
+ *     tags: [Authentication]
+ *     description: Fetches the profile of the currently logged-in user based on their session cookie.
+ *     responses:
+ *       200:
+ *         description: The authenticated user's data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Not authenticated
+ */
+router.get('/me', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.json(req.user);
+    } else {
+        res.status(401).json({ message: 'Not authenticated' });
+    }
+});
+
+// POST /api/v1/auth/logout
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Log out the current user
+ *     tags: [Authentication]
+ *     description: Destroys the current user's session.
+ *     responses:
+ *       200:
+ *         description: Logged out successfully.
+ */
+router.post('/logout', (req, res, next) => {
+    req.logout((err) => {
+        if (err) {
+            logger.error('Error during logout:', err);
+            return next(err);
+        }
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ message: 'Could not log out, please try again.' });
+            }
+            res.clearCookie('connect.sid');
+            return res.status(200).json({ message: 'Logged out successfully' });
+        });
+    });
+});
+
+
+// POST /api/v1/auth/register
 /**
  * @swagger
  * /auth/register:
@@ -270,6 +399,7 @@ router.post('/register', async (req, res, next) => {
 });
 
 
+// POST /api/v1/auth/forgot-password
 /**
  * @swagger
  * /auth/forgot-password:

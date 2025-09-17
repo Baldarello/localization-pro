@@ -7,6 +7,7 @@ This application features role-based access control, branching for parallel deve
 ## ✨ Features
 
 -   **Project Dashboard**: View and manage all your localization projects in one place.
+-   **Secure Authentication**: Supports both traditional email/password login and Google OAuth 2.0.
 -   **Role-Based Access Control**: Assign Admin, Editor, or Translator roles to team members.
 -   **Term & Translation Management**: A clean interface for adding terms, context, and translations.
 -   **Git-like Branching**: Create feature branches to work on translations in isolation without affecting the main version.
@@ -22,7 +23,7 @@ This application features role-based access control, branching for parallel deve
 ## 🛠️ Tech Stack
 
 -   **Frontend**: React, TypeScript, MobX, Material-UI (MUI), Vite
--   **Backend**: Node.js, Express.js, Sequelize ORM (with SQLite), Nodemailer
+-   **Backend**: Node.js, Express.js, Sequelize ORM (with SQLite), Passport.js, Nodemailer
 -   **AI**: Google Gemini API
 
 ---
@@ -36,6 +37,7 @@ Follow these instructions to get the project up and running on your local machin
 -   [Node.js](https://nodejs.org/) (v18 or later is recommended)
 -   npm (comes bundled with Node.js)
 -   A **Google Gemini API Key**. You can get one from [Google AI Studio](https://aistudio.google.com/app/apikey).
+-   **Google OAuth 2.0 Credentials**. See the backend configuration section for details.
 
 ### Installation
 
@@ -69,36 +71,36 @@ Create a file named `.env` in the project's **root** directory.
 ```env
 # .env
 GEMINI_API_KEY=your_google_gemini_api_key_here
+REACT_APP_IS_PROD=false
 ```
 
-| Variable         | Description                                                                    |
-| ---------------- | ------------------------------------------------------------------------------ |
-| `GEMINI_API_KEY` | **Required.** Your API key for Google Gemini, used for AI translation features. |
-
-> **Important**: The AI translation feature will not work without a valid Gemini API key.
+| Variable            | Description                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| `GEMINI_API_KEY`    | **Required.** Your API key for Google Gemini, used for AI translation features.                           |
+| `REACT_APP_IS_PROD` | **Optional.** Set to `true` to make the frontend API client point to the production backend URL. Defaults to `false`. |
 
 #### 2. Backend (`.env` in the `backend/` directory)
 
-Navigate to the `backend/` directory, copy the example file, and then edit the new `.env` file with your specific configuration.
+Navigate to the `backend/` directory and create a new file named `.env`. Fill it with the variables below.
 
-```sh
-cd backend
-cp .env.example .env
-```
+| Variable                | Description                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `PORT`                  | The port on which the backend server will run (e.g., `3001`).                                           |
+| `FRONTEND_URL`          | The base URL of the frontend app, for OAuth redirects (e.g., `http://localhost:5173`).                  |
+| `SESSION_SECRET`        | **Required.** A long, random string for securing session cookies.                                       |
+| `GOOGLE_CLIENT_ID`      | **Optional.** Your Google OAuth 2.0 Client ID. If omitted, Google Sign-In will be disabled.            |
+| `GOOGLE_CLIENT_SECRET`  | **Optional.** Your Google OAuth 2.0 Client Secret. If omitted, Google Sign-In will be disabled.         |
+| `EMAIL_ENABLED`         | Set to `true` to enable email features.                                                                 |
+| ..._email variables_    | SMTP server credentials for sending emails (optional).                                                  |
 
-The `.env.example` file outlines the required variables:
-
-| Variable        | Description                                                                                             | Example                           |
-| --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `PORT`          | The port on which the backend server will run.                                                          | `3001`                            |
-| `EMAIL_ENABLED` | Set to `true` to enable all email-sending features. If `false`, no emails will be sent.                 | `true`                            |
-| `EMAIL_HOST`    | The hostname of your SMTP server.                                                                       | `smtp.mailgun.org`                |
-| `EMAIL_PORT`    | The port for your SMTP server (e.g., 587 for TLS, 465 for SSL).                                         | `587`                             |
-| `EMAIL_SECURE`  | Set to `true` if your SMTP server uses SSL (typically on port 465).                                       | `true`                            |
-| `EMAIL_USER`    | The username for authenticating with your SMTP server.                                                  | `postmaster@sandbox.mailgun.org`  |
-| `EMAIL_PASS`    | The password for authenticating with your SMTP server.                                                  | `your-smtp-password`              |
-| `EMAIL_FROM`    | The "From" address that will appear on emails sent by the application.                                  | `"MyApp" <noreply@myapp.com>`     |
-
+> **Where to get Google OAuth Credentials:**
+> 1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+> 2. Create a new project.
+> 3. Go to "APIs & Services" > "Credentials".
+> 4. Click "Create Credentials" > "OAuth client ID".
+> 5. Choose "Web application".
+> 6. Under "Authorized redirect URIs", add `http://localhost:3001/api/v1/auth/google/callback`.
+> 7. Click "Create". Your Client ID and Client Secret will be displayed.
 
 ### Initialize and Seed the Database
 
@@ -117,7 +119,7 @@ To run the full application, you need to start both the frontend and backend ser
     ```sh
     npm run dev:backend
     ```
-    This will start the Node.js server on `http://localhost:3001` with `nodemon`, which automatically restarts when you make changes to backend files. You can access the interactive API documentation at `http://localhost:3001/api-docs`.
+    This will start the Node.js server on `http://localhost:3001` with `nodemon`. You can access the interactive API documentation at `http://localhost:3001/api-docs`.
 
 2.  **Terminal 2: Start the Frontend Server**
     From the project root directory, run:
@@ -136,6 +138,7 @@ The project is organized into a monorepo-like structure with a clear separation 
 /
 ├── backend/              # Node.js, Express, Sequelize backend source
 │   ├── src/
+│   │   ├── config/       # Passport.js strategy configuration
 │   │   ├── database/     # Sequelize models, DAOs, and seed script
 │   │   ├── helpers/      # Utility modules (logger, mailer)
 │   │   ├── middleware/   # Express middleware

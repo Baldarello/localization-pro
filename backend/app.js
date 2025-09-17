@@ -1,24 +1,45 @@
 import express from 'express';
 import cors from 'cors';
+import session from 'express-session';
+import passport from 'passport';
 import apiRouter from './src/routes/index.js';
 import logger from './src/helpers/logger.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerOptions from './swaggerConfig.js';
+import './src/config/passport.js'; // This configures the Passport strategies
 
 const app = express();
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 
 // Middleware
-// FIX: Updated CORS configuration to be more explicit for cross-origin requests from iframes.
+// Allow cross-origin requests, especially for credentials (cookies)
 app.use(cors({
-  origin: '*', // Allow all origins
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Session middleware
+if (!process.env.SESSION_SECRET) {
+    logger.error('FATAL ERROR: SESSION_SECRET is not defined in the environment variables.');
+    process.exit(1);
+}
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false, // Don't create session until something stored
+    cookie: {
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    }
+}));
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Request logger middleware
 app.use((req, res, next) => {
