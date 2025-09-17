@@ -20,9 +20,17 @@ const App: React.FC = observer(() => {
 
     useEffect(() => {
         authStore.fetchAuthConfig();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewParam = urlParams.get('view');
+
         authStore.checkAuthStatus().then(() => {
             if (authStore.currentUser) {
                 uiStore.fetchNotifications();
+            } else if (viewParam === 'register') {
+                uiStore.setView('register');
+                // Clean the URL to remove the query parameter after it's been used
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
     }, [authStore, uiStore]);

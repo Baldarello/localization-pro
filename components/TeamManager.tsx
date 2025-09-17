@@ -75,7 +75,13 @@ const TeamManager: React.FC = observer(() => {
                                             <Box sx={{ p: 1, width: { xs: '100%', md: '25%' } }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                                     <Avatar sx={{ bgcolor: 'secondary.main' }}>{member.avatarInitials}</Avatar>
-                                                    <ListItemText primary={member.name} secondary={member.email} />
+                                                    <ListItemText
+                                                        primary={member.name}
+                                                        secondary={member.email}
+                                                        primaryTypographyProps={{ noWrap: true }}
+                                                        secondaryTypographyProps={{ noWrap: true }}
+                                                        sx={{ minWidth: 0 }}
+                                                    />
                                                 </Box>
                                             </Box>
                                             <Box sx={{ p: 1, width: { xs: '50%', md: '16.67%' } }}>
