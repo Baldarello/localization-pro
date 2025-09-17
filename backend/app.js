@@ -15,7 +15,7 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions);
 // Middleware
 // Allow cross-origin requests, especially for credentials (cookies)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: true, // Reflect the request origin, resolves CORS issues in development.
   credentials: true
 }));
 app.use(express.json());
