@@ -1,7 +1,7 @@
 // This script is for initializing the database with seed data.
 // Run with `npm run db:seed` from the backend directory.
 import sequelize from './Sequelize.js';
-import { User, Project, Branch, Commit, TeamMembership } from './models/index.js';
+import { User, Project, Branch, Commit, TeamMembership, Comment, Notification } from './models/index.js';
 import { AVAILABLE_LANGUAGES } from '../constants.js'; // Adjust path as needed
 import logger from '../helpers/logger.js';
 
@@ -153,6 +153,38 @@ export const seedDatabase = async () => {
         
         await TeamMembership.create({ projectId: proj2.id, userId: 'user-1', role: 'admin', languages: ['en', 'pt', 'ru'] });
         logger.info('Project 2 (Project Phoenix) seeded.');
+        
+        // --- Comments and Notifications ---
+        const comment1 = await Comment.create({
+            id: 'comment-1',
+            content: 'Are we sure about this translation for German? @bob@example.com, can you double check?',
+            termId: 'ecom-1',
+            branchName: 'main',
+            authorId: 'user-1',
+            projectId: proj1.id,
+            parentId: null,
+            createdAt: new Date(Date.now() - 86400000), // 1 day ago
+        });
+
+        await Comment.create({
+            id: 'comment-2',
+            content: 'Looks good to me, Alice!',
+            termId: 'ecom-1',
+            branchName: 'main',
+            authorId: 'user-2',
+            projectId: proj1.id,
+            parentId: 'comment-1',
+        });
+
+        // A notification for Bob from comment-1
+        await Notification.create({
+            id: 'notif-1',
+            read: false,
+            type: 'mention',
+            recipientId: 'user-2', // Bob
+            commentId: comment1.id,
+        });
+        logger.info('Comments and Notifications seeded.');
 
         logger.info('Database seeding completed successfully.');
 

@@ -1,4 +1,6 @@
-import { User } from '../models/index.js';
+import { User, Notification, Comment } from '../models/index.js';
+import bcrypt from 'bcrypt';
+import { Op } from 'sequelize';
 
 export const login = async (email, pass) => {
     const user = await User.findOne({ where: { email } });
@@ -148,4 +150,39 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
     await user.save();
 
     return { success: true, message: 'Password updated successfully.' };
+};
+
+export const getNotificationsForUser = async (userId) => {
+    const notifications = await Notification.findAll({
+        where: { recipientId: userId },
+        include: [{
+            model: Comment,
+            include: [{
+                model: User,
+                as: 'author',
+                attributes: ['id', 'name', 'avatarInitials']
+            }]
+        }],
+        order: [['createdAt', 'DESC']]
+    });
+    return notifications.map(n => {
+        const plain = n.get({ plain: true });
+        // The frontend expects projectId, termId, branchName on the notification
+        // Let's add them from the comment
+        if (plain.Comment) { // Note: Sequelize uses model name as property by default
+            plain.comment = plain.Comment; // Alias for frontend consistency
+            plain.projectId = plain.Comment.projectId;
+            plain.termId = plain.Comment.termId;
+            plain.branchName = plain.Comment.branchName;
+            delete plain.Comment;
+        }
+        return plain;
+    });
+};
+
+export const markNotificationsAsRead = async (userId, notificationIds) => {
+    await Notification.update(
+        { read: true },
+        { where: { recipientId: userId, id: { [Op.in]: notificationIds } } }
+    );
 };

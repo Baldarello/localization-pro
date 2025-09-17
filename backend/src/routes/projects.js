@@ -10,11 +10,11 @@ const router = Router();
  * @swagger
  * /projects:
  *   get:
- *     summary: Get all projects
+ *     summary: Get all projects for the current user
  *     tags: [Projects]
  *     responses:
  *       '200':
- *         description: A list of all projects
+ *         description: A list of projects the user is a member of
  *         content:
  *           application/json:
  *             schema:
@@ -26,7 +26,7 @@ const router = Router();
  */
 router.get('/', authenticate, async (req, res, next) => {
     try {
-        const projects = await ProjectDao.getAllProjects();
+        const projects = await ProjectDao.getAllProjects(req.user.id);
         res.json(projects);
     } catch (error) {
         next(error);
@@ -84,11 +84,8 @@ router.get('/:projectId', authenticate, async (req, res, next) => {
  *             type: object
  *             required:
  *               - name
- *               - userId
  *             properties:
  *               name:
- *                 type: string
- *               userId:
  *                 type: string
  *     responses:
  *       '201':
@@ -102,8 +99,8 @@ router.get('/:projectId', authenticate, async (req, res, next) => {
  */
 router.post('/', authenticate, async (req, res, next) => {
     try {
-        const { name, userId } = req.body;
-        const newProject = await ProjectDao.createProject(name, userId);
+        const { name } = req.body;
+        const newProject = await ProjectDao.createProject(name, req.user.id);
         res.status(201).json(newProject);
     } catch (error) {
         next(error);
@@ -488,6 +485,104 @@ router.put('/:projectId/terms/:termId/translations/:langCode', authenticate, asy
     }
 });
 
+
+// --- Comments ---
+
+/**
+ * @swagger
+ * /projects/{projectId}/terms/{termId}/comments:
+ *   get:
+ *     summary: Get all comments for a term
+ *     tags: [Terms]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: termId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       '200':
+ *         description: A list of comments for the term.
+ *         content:
+ *           application/json:
+ *             schema:
+ *                type: array
+ *                items:
+ *                  $ref: '#/components/schemas/Comment'
+ *       '401':
+ *         description: Unauthorized
+ *       '404':
+ *         description: Project not found
+ */
+router.get('/:projectId/terms/:termId/comments', authenticate, async (req, res, next) => {
+    try {
+        const comments = await ProjectDao.getCommentsForTerm(req.params.projectId, req.params.termId);
+        res.json(comments);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * @swagger
+ * /projects/{projectId}/terms/{termId}/comments:
+ *   post:
+ *     summary: Post a new comment on a term
+ *     tags: [Terms]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: termId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content]
+ *             properties:
+ *               content: { type: string }
+ *               parentId: { type: string, nullable: true }
+ *     responses:
+ *       '201':
+ *         description: Comment created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *                $ref: '#/components/schemas/Comment'
+ *       '401':
+ *         description: Unauthorized
+ *       '404':
+ *         description: Project or term not found
+ */
+router.post('/:projectId/terms/:termId/comments', authenticate, async (req, res, next) => {
+    try {
+        const { content, parentId } = req.body;
+        const project = await ProjectDao.getProjectById(req.params.projectId);
+        if (!project) return res.status(404).json({ message: 'Project not found' });
+        
+        const newComment = await ProjectDao.createComment(
+            req.params.projectId,
+            req.params.termId,
+            content,
+            parentId,
+            req.user.id,
+            project.currentBranchName
+        );
+        res.status(201).json(newComment);
+    } catch (error) {
+        next(error);
+    }
+});
+
 // --- Team ---
 
 /**
@@ -827,11 +922,8 @@ router.delete('/:projectId/branches/:branchName(*)/commits/latest', authenticate
  *             type: object
  *             required:
  *               - message
- *               - authorId
  *             properties:
  *               message:
- *                 type: string
- *               authorId:
  *                 type: string
  *     responses:
  *       '201':
@@ -847,8 +939,8 @@ router.delete('/:projectId/branches/:branchName(*)/commits/latest', authenticate
  */
 router.post('/:projectId/branches/:branchName(*)/commits', authenticate, async (req, res, next) => {
     try {
-        const { message, authorId } = req.body;
-        const newCommit = await ProjectDao.createCommit(req.params.projectId, req.params.branchName, message, authorId);
+        const { message } = req.body;
+        const newCommit = await ProjectDao.createCommit(req.params.projectId, req.params.branchName, message, req.user.id);
         res.status(201).json(newCommit);
     } catch (error) {
         next(error);

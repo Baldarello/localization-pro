@@ -32,6 +32,72 @@ router.get('/', authenticate, async (req, res, next) => {
     }
 });
 
+// GET /api/v1/users/me/notifications
+/**
+ * @swagger
+ * /users/me/notifications:
+ *   get:
+ *     summary: Get notifications for the current user
+ *     tags: [Users]
+ *     responses:
+ *       '200':
+ *         description: A list of notifications for the user.
+ *         content:
+ *           application/json:
+ *             schema:
+ *                type: array
+ *                items:
+ *                  $ref: '#/components/schemas/Notification'
+ *       '401':
+ *         description: Unauthorized
+ */
+router.get('/me/notifications', authenticate, async (req, res, next) => {
+    try {
+        const notifications = await UserDao.getNotificationsForUser(req.user.id);
+        res.json(notifications);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// POST /api/v1/users/me/notifications/read
+/**
+ * @swagger
+ * /users/me/notifications/read:
+ *   post:
+ *     summary: Mark notifications as read
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [notificationIds]
+ *             properties:
+ *               notificationIds:
+ *                 type: array
+ *                 items: { type: string }
+ *     responses:
+ *       '204':
+ *         description: Notifications marked as read.
+ *       '401':
+ *         description: Unauthorized
+ */
+router.post('/me/notifications/read', authenticate, async (req, res, next) => {
+    try {
+        const { notificationIds } = req.body;
+        if (!notificationIds || !Array.isArray(notificationIds)) {
+            return res.status(400).json({ message: 'notificationIds must be an array.'});
+        }
+        await UserDao.markNotificationsAsRead(req.user.id, notificationIds);
+        res.sendStatus(204);
+    } catch (error) {
+        next(error);
+    }
+});
+
+
 // PUT /api/v1/users/:userId/profile
 /**
  * @swagger

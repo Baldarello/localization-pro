@@ -1,6 +1,5 @@
-import { Project, User, Branch, Commit, TeamMembership } from '../models/index.js';
+import { Project, User, Branch, Commit, TeamMembership, Comment, Notification } from '../models/index.js';
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
-import { col, fn } from 'sequelize';
 import sequelize from '../Sequelize.js';
 import { sendEmail } from '../../helpers/mailer.js';
 
@@ -52,19 +51,26 @@ export const getProjectById = async (projectId) => {
     return formatProject(project);
 };
 
-export const getAllProjects = async () => {
-    const projects = await Project.findAll({
-        include: [
-            { model: Branch, as: 'branches', include: [{ model: Commit, as: 'commits' }] },
-            {
-                model: User,
-                as: 'users',
-                through: { attributes: ['role', 'languages'] }
-            }
-        ]
+export const getAllProjects = async (userId) => {
+    const user = await User.findByPk(userId, {
+        include: [{
+            model: Project,
+            as: 'projects',
+            include: [
+                { model: Branch, as: 'branches', include: [{ model: Commit, as: 'commits' }] },
+                {
+                    model: User,
+                    as: 'users',
+                    attributes: ['id', 'name', 'email', 'avatarInitials'],
+                    through: { attributes: ['role', 'languages'] }
+                }
+            ]
+        }]
     });
-    // This is a simplified version for the dashboard card.
-    return projects.map(p => formatProject(p));
+    if (!user) return [];
+
+    const sortedProjects = user.projects.sort((a, b) => a.name.localeCompare(b.name));
+    return sortedProjects.map(p => formatProject(p));
 };
 
 export const createProject = async (name, userId) => {
@@ -405,4 +411,70 @@ export const mergeBranches = async (projectId, sourceBranchName, targetBranchNam
     targetBranch.workingTerms = targetTerms;
     targetBranch.changed('workingTerms', true);
     await targetBranch.save();
+};
+
+// --- Comments & Notifications ---
+
+export const getCommentsForTerm = async (projectId, termId) => {
+    const comments = await Comment.findAll({
+        where: { projectId, termId },
+        include: [{
+            model: User,
+            as: 'author',
+            attributes: ['id', 'name', 'avatarInitials']
+        }],
+        order: [['createdAt', 'ASC']]
+    });
+    return comments.map(c => c.get({ plain: true }));
+};
+
+const findMentions = (content) => {
+    const mentionRegex = /@([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/g;
+    const matches = content.match(mentionRegex);
+    if (!matches) return [];
+    // remove '@' prefix
+    return matches.map(m => m.substring(1));
+};
+
+export const createComment = async (projectId, termId, content, parentId, authorId, branchName) => {
+    const project = await Project.findByPk(projectId, { include: [{ model: User, as: 'users' }] });
+    if (!project) throw new Error('Project not found');
+    
+    const newComment = await Comment.create({
+        id: `comment-${Date.now()}`,
+        content,
+        termId,
+        branchName,
+        parentId,
+        authorId,
+        projectId,
+    });
+
+    // Handle mentions and create notifications
+    const mentionedEmails = findMentions(content);
+    if (mentionedEmails.length > 0) {
+        const projectMemberEmails = new Set(project.users.map(u => u.email));
+        const validMentionedUsers = await User.findAll({
+            where: { email: mentionedEmails }
+        });
+
+        for (const mentionedUser of validMentionedUsers) {
+            // Only notify if the mentioned user is part of the project team and is not the author
+            if (projectMemberEmails.has(mentionedUser.email) && mentionedUser.id !== authorId) {
+                await Notification.create({
+                    id: `notif-${Date.now()}-${mentionedUser.id}`,
+                    type: 'mention',
+                    read: false,
+                    recipientId: mentionedUser.id,
+                    commentId: newComment.id,
+                });
+            }
+        }
+    }
+
+    const fullComment = await Comment.findByPk(newComment.id, {
+        include: [{ model: User, as: 'author', attributes: ['id', 'name', 'avatarInitials'] }]
+    });
+
+    return fullComment.get({ plain: true });
 };
