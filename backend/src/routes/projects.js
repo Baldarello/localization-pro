@@ -267,7 +267,7 @@ router.put('/:projectId/currentBranch', authenticate, async (req, res, next) => 
  */
 router.post('/:projectId/terms', authenticate, async (req, res, next) => {
     try {
-        const newTerm = await ProjectDao.addTerm(req.params.projectId, req.body.termText);
+        const newTerm = await ProjectDao.addTerm(req.params.projectId, req.body.termText, req.user.id);
         res.status(201).json(newTerm);
     } catch (error) {
         next(error);
@@ -304,7 +304,7 @@ router.post('/:projectId/terms', authenticate, async (req, res, next) => {
  */
 router.put('/:projectId/terms/bulk', authenticate, async (req, res, next) => {
     try {
-        await ProjectDao.bulkUpdateTerms(req.params.projectId, req.body);
+        await ProjectDao.bulkUpdateTerms(req.params.projectId, req.body, req.user.id);
         res.sendStatus(204);
     } catch (error) {
         next(error);
@@ -349,7 +349,7 @@ router.put('/:projectId/terms/bulk', authenticate, async (req, res, next) => {
  */
 router.put('/:projectId/terms/:termId', authenticate, async (req, res, next) => {
     try {
-        await ProjectDao.updateTermText(req.params.projectId, req.params.termId, req.body.text);
+        await ProjectDao.updateTermText(req.params.projectId, req.params.termId, req.body.text, req.user.id);
         res.sendStatus(204);
     } catch (error) {
         next(error);
@@ -383,7 +383,7 @@ router.put('/:projectId/terms/:termId', authenticate, async (req, res, next) => 
  */
 router.delete('/:projectId/terms/:termId', authenticate, async (req, res, next) => {
     try {
-        await ProjectDao.deleteTerm(req.params.projectId, req.params.termId);
+        await ProjectDao.deleteTerm(req.params.projectId, req.params.termId, req.user.id);
         res.sendStatus(204);
     } catch (error) {
         next(error);
@@ -428,7 +428,7 @@ router.delete('/:projectId/terms/:termId', authenticate, async (req, res, next) 
  */
 router.put('/:projectId/terms/:termId/context', authenticate, async (req, res, next) => {
     try {
-        await ProjectDao.updateTermContext(req.params.projectId, req.params.termId, req.body.context);
+        await ProjectDao.updateTermContext(req.params.projectId, req.params.termId, req.body.context, req.user.id);
         res.sendStatus(204);
     } catch (error) {
         next(error);
@@ -478,7 +478,7 @@ router.put('/:projectId/terms/:termId/context', authenticate, async (req, res, n
  */
 router.put('/:projectId/terms/:termId/translations/:langCode', authenticate, async (req, res, next) => {
     try {
-        await ProjectDao.updateTranslation(req.params.projectId, req.params.termId, req.params.langCode, req.body.value);
+        await ProjectDao.updateTranslation(req.params.projectId, req.params.termId, req.params.langCode, req.body.value, req.user.id);
         res.sendStatus(204);
     } catch (error) {
         next(error);
@@ -852,7 +852,7 @@ router.post('/:projectId/branches/from-commit', authenticate, async (req, res, n
 router.post('/:projectId/branches/merge', authenticate, async (req, res, next) => {
     try {
         const { sourceBranchName, targetBranchName } = req.body;
-        await ProjectDao.mergeBranches(req.params.projectId, sourceBranchName, targetBranchName);
+        await ProjectDao.mergeBranches(req.params.projectId, sourceBranchName, targetBranchName, req.user.id);
         res.sendStatus(204);
     } catch (error) {
         next(error);
@@ -889,7 +889,7 @@ router.post('/:projectId/branches/merge', authenticate, async (req, res, next) =
  */
 router.delete('/:projectId/branches/:branchName(*)/commits/latest', authenticate, async (req, res, next) => {
     try {
-        await ProjectDao.deleteLatestCommit(req.params.projectId, req.params.branchName);
+        await ProjectDao.deleteLatestCommit(req.params.projectId, req.params.branchName, req.user.id);
         res.sendStatus(204);
     } catch (error) {
         next(error);

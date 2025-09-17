@@ -1,6 +1,7 @@
 
 
 
+
 import { makeAutoObservable, runInAction, computed } from 'mobx';
 import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
@@ -32,6 +33,9 @@ export class ProjectStore {
     translatingState: { termId: string; langCode: string } | null = null;
     comments: Comment[] = [];
 
+    // Real-time state
+    typingUsersOnSelectedTerm = new Map<string, string>(); // Map<userId, userName>
+
     constructor(rootStore: RootStore) {
         makeAutoObservable(this, {}, { autoBind: true });
         this.rootStore = rootStore;
@@ -54,6 +58,7 @@ export class ProjectStore {
         this.selectedProjectId = null;
         this.selectedTermId = null;
         this.comments = [];
+        this.typingUsersOnSelectedTerm.clear();
     }
 
     get selectedProject() {
@@ -172,22 +177,79 @@ export class ProjectStore {
         return this.selectedProject.team[user.id]?.languages || [];
     }
 
+    // --- Real-time Actions ---
+    notifyViewingBranch = () => {
+        if (this.selectedProject && this.currentBranch) {
+            this.rootStore.uiStore.sendWebSocketMessage({
+                type: 'client_viewing_branch',
+                payload: {
+                    projectId: this.selectedProject.id,
+                    branchName: this.currentBranch.name,
+                }
+            });
+        }
+    }
+
+    startTyping(userId: string, userName: string) {
+        this.typingUsersOnSelectedTerm.set(userId, userName);
+    }
+    
+    stopTyping(userId: string) {
+        this.typingUsersOnSelectedTerm.delete(userId);
+    }
+
+    async handleBranchUpdate(payload: { projectId: string, branchName: string }) {
+        if (this.selectedProjectId === payload.projectId && this.currentBranch?.name === payload.branchName) {
+            console.log("Refreshing current project due to external update...");
+            await this.refreshCurrentProject();
+            this.rootStore.uiStore.showAlert('This branch was updated by another user. Your view has been refreshed.', 'info');
+        }
+    }
+
+    async refreshCurrentProject() {
+        if (!this.selectedProjectId) return;
+        
+        try {
+            const updatedProject = await this.rootStore.apiClient.getProjectById(this.selectedProjectId);
+            if (updatedProject) {
+                runInAction(() => {
+                    const projectIndex = this.projects.findIndex(p => p.id === this.selectedProjectId);
+                    if (projectIndex !== -1) {
+                        this.projects[projectIndex] = updatedProject;
+                    }
+                    // Ensure selected term is still valid
+                    if (this.selectedTermId && !this.currentBranchTerms.some(t => t.id === this.selectedTermId)) {
+                        this.selectedTermId = this.currentBranchTerms[0]?.id || null;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Failed to refresh project data:", error);
+            this.rootStore.uiStore.showAlert('Could not refresh project data.', 'error');
+        }
+    }
+
     selectProject(projectId: string) {
         this.selectedProjectId = projectId;
         const project = this.projects.find(p => p.id === projectId);
         const currentTerms = project?.branches.find(b => b.name === project.currentBranchName)?.workingTerms || [];
         this.selectedTermId = currentTerms[0]?.id || null;
         this.comments = [];
+        this.typingUsersOnSelectedTerm.clear();
+        this.notifyViewingBranch();
     };
 
     deselectProject() {
         this.selectedProjectId = null;
         this.selectedTermId = null;
         this.comments = [];
+        this.typingUsersOnSelectedTerm.clear();
+        this.rootStore.uiStore.sendWebSocketMessage({ type: 'client_stopped_viewing' });
     }
     
     selectTerm(termId: string) {
         this.selectedTermId = termId;
+        this.typingUsersOnSelectedTerm.clear();
     }
 
     async addProject(name: string) {
@@ -234,8 +296,19 @@ export class ProjectStore {
         const term = branch?.workingTerms.find(t => t.id === termId);
 
         if (term) {
+            // Optimistic update
+            const oldValue = term.translations[langCode];
             term.translations[langCode] = value;
-            await this.rootStore.apiClient.updateTranslation(projectId, termId, langCode, value);
+            
+            try {
+                await this.rootStore.apiClient.updateTranslation(projectId, termId, langCode, value);
+            } catch (error) {
+                // Revert on failure
+                runInAction(() => {
+                    term.translations[langCode] = oldValue;
+                });
+                this.rootStore.uiStore.showAlert('Failed to save translation.', 'error');
+            }
         }
     };
 
@@ -245,10 +318,10 @@ export class ProjectStore {
         const term = this.currentBranch.workingTerms.find(t => t.id === termId);
         if (term) {
             const originalText = term.text;
-            term.text = newText;
+            term.text = newText; // Optimistic update
             const success = await this.rootStore.apiClient.updateTermText(this.selectedProject.id, termId, newText);
             if (!success) {
-                runInAction(() => { term.text = originalText });
+                runInAction(() => { term.text = originalText }); // Revert on failure
                 this.rootStore.uiStore.showAlert('Failed to update term key.', 'error');
             }
         }
@@ -260,10 +333,10 @@ export class ProjectStore {
         const term = this.currentBranch.workingTerms.find(t => t.id === termId);
         if (term) {
             const originalContext = term.context;
-            term.context = newContext;
+            term.context = newContext; // Optimistic update
             const success = await this.rootStore.apiClient.updateTermContext(this.selectedProject.id, termId, newContext);
             if (!success) {
-                runInAction(() => { term.context = originalContext; });
+                runInAction(() => { term.context = originalContext; }); // Revert on failure
                 this.rootStore.uiStore.showAlert('Failed to update context.', 'error');
             }
         }
@@ -767,6 +840,8 @@ export class ProjectStore {
                 if (this.selectedProject) {
                     this.selectedProject.currentBranchName = branchName;
                     this.selectedTermId = this.currentBranchTerms[0]?.id || null;
+                    this.typingUsersOnSelectedTerm.clear();
+                    this.notifyViewingBranch();
                 }
             });
         }

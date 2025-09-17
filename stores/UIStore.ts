@@ -147,6 +147,12 @@ export class UIStore {
     };
 
     // --- WebSocket Actions ---
+    sendWebSocketMessage = (payload: object) => {
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            this.websocket.send(JSON.stringify(payload));
+        }
+    };
+
     initializeWebSocket = () => {
         if (this.websocket && this.websocket.readyState !== WebSocket.CLOSED) {
             console.log("WebSocket connection already open.");
@@ -164,6 +170,10 @@ export class UIStore {
 
         this.websocket.onopen = () => {
             console.log("WebSocket connection established.");
+            // If user is already viewing a project, inform the backend
+            if (this.rootStore.projectStore.selectedProject && this.rootStore.projectStore.currentBranch) {
+                this.rootStore.projectStore.notifyViewingBranch();
+            }
         };
 
         this.websocket.onmessage = (event) => {
@@ -171,9 +181,27 @@ export class UIStore {
                 const message = JSON.parse(event.data);
                 console.log("WebSocket message received:", message);
 
-                if (message.type === 'new_notification') {
-                    this.fetchNotifications();
+                switch (message.type) {
+                    case 'new_notification':
+                        this.fetchNotifications();
+                        break;
+                    case 'server_branch_updated':
+                        // Check if the update is for the current branch and was made by another user
+                        if (message.modifiedBy !== this.rootStore.authStore.currentUser?.id) {
+                            this.rootStore.projectStore.handleBranchUpdate(message);
+                        }
+                        break;
+                    case 'server_user_typing_start':
+                        // Don't show your own typing indicator
+                        if (message.userId !== this.rootStore.authStore.currentUser?.id) {
+                            this.rootStore.projectStore.startTyping(message.userId, message.userName);
+                        }
+                        break;
+                    case 'server_user_typing_stop':
+                        this.rootStore.projectStore.stopTyping(message.userId);
+                        break;
                 }
+
             } catch (error) {
                 console.error("Error parsing WebSocket message:", error);
             }

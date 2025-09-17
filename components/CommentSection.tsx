@@ -1,5 +1,6 @@
 
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Box, Typography, TextField, Button, Avatar, Paper, Popover, List, ListItemButton, ListItemAvatar, ListItemText, Collapse } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -13,9 +14,10 @@ const CommentForm: React.FC<{
     submitLabel: string;
     placeholder: string;
 }> = ({ onSubmit, onCancel, submitLabel, placeholder }) => {
-    const { projectStore } = useStores();
+    const { projectStore, uiStore, authStore } = useStores();
     const [content, setContent] = useState('');
     const [mentionedUsers, setMentionedUsers] = useState<Map<string, User>>(new Map());
+    const typingTimeoutRef = useRef<number | null>(null);
 
     // State for the @mention popover
     const [mentionAnchor, setMentionAnchor] = useState<HTMLElement | null>(null);
@@ -36,6 +38,57 @@ const CommentForm: React.FC<{
             user.email.toLowerCase().includes(lowerCaseQuery)
         );
     }, [mentionQuery, teamMembers]);
+
+    // Effect for handling typing indicators
+    useEffect(() => {
+        const { selectedProject, selectedTerm, currentBranch } = projectStore;
+        const currentUser = authStore.currentUser;
+        
+        if (!selectedProject || !selectedTerm || !currentBranch || !currentUser) return;
+
+        const payload = {
+            type: 'client_typing_start',
+            payload: {
+                projectId: selectedProject.id,
+                branchName: currentBranch.name,
+                termId: selectedTerm.id,
+                userName: currentUser.name,
+            }
+        };
+        
+        // Clear previous timeout if it exists
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        if (content) {
+            // User is typing
+            uiStore.sendWebSocketMessage(payload);
+        }
+
+        // Set a new timeout to signal "stop typing"
+        typingTimeoutRef.current = window.setTimeout(() => {
+            uiStore.sendWebSocketMessage({
+                ...payload,
+                type: 'client_typing_stop',
+            });
+        }, 2000); // 2 seconds of inactivity
+
+        // Cleanup on unmount
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+            // Ensure we send a "stop" message if the component unmounts while typing
+            if (content) {
+                 uiStore.sendWebSocketMessage({
+                    ...payload,
+                    type: 'client_typing_stop',
+                });
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [content]);
 
 
     const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,8 +122,7 @@ const CommentForm: React.FC<{
         setMentionStartIndex(-1);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const processAndSubmit = () => {
         if (content.trim()) {
             let processedContent = content.trim();
             // Convert @username mentions back to @email.com for the backend
@@ -86,6 +138,18 @@ const CommentForm: React.FC<{
             setMentionedUsers(new Map());
         }
     };
+    
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        processAndSubmit();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !mentionAnchor) {
+            e.preventDefault();
+            processAndSubmit();
+        }
+    };
 
     return (
         <Box>
@@ -96,6 +160,7 @@ const CommentForm: React.FC<{
                     rows={3}
                     value={content}
                     onChange={handleContentChange}
+                    onKeyDown={handleKeyDown}
                     placeholder={placeholder}
                     autoFocus={!!onCancel}
                 />
@@ -144,7 +209,7 @@ const CommentView: React.FC<{ comment: Comment }> = observer(({ comment }) => {
     const { projectStore } = useStores();
     const { addComment } = projectStore;
     const [isReplying, setIsReplying] = useState(false);
-    const [repliesOpen, setRepliesOpen] = useState(false);
+    const [repliesOpen, setRepliesOpen] = useState(true);
     
     const handleReplySubmit = async (content: string) => {
         await addComment(content, comment.id);
@@ -201,16 +266,43 @@ const CommentView: React.FC<{ comment: Comment }> = observer(({ comment }) => {
 
 
 const CommentSection: React.FC = observer(() => {
-    const { projectStore } = useStores();
-    const { selectedTermComments, addComment } = projectStore;
+    const { projectStore, authStore } = useStores();
+    const { selectedTermComments, addComment, typingUsersOnSelectedTerm, selectedTerm } = projectStore;
 
     const handleCommentSubmit = async (content: string) => {
         await addComment(content, null);
     };
 
+    // Filter out the current user from the list of typers
+    const otherTypingUsers = useMemo(() => {
+        return Array.from(typingUsersOnSelectedTerm.entries())
+            .filter(([userId]) => userId !== authStore.currentUser?.id)
+            .map(([, userName]) => userName);
+    }, [typingUsersOnSelectedTerm, authStore.currentUser?.id]);
+    
+    // Clear typing users when the selected term changes
+    useEffect(() => {
+        return () => {
+            projectStore.typingUsersOnSelectedTerm.clear();
+        };
+    }, [selectedTerm, projectStore.typingUsersOnSelectedTerm]);
+
+
+    const typingIndicatorText = useMemo(() => {
+        if (otherTypingUsers.length === 0) return '';
+        if (otherTypingUsers.length === 1) return `${otherTypingUsers[0]} is typing...`;
+        if (otherTypingUsers.length === 2) return `${otherTypingUsers.join(' and ')} are typing...`;
+        return `${otherTypingUsers.slice(0, 2).join(', ')} and others are typing...`;
+    }, [otherTypingUsers]);
+
     return (
         <Box>
-            <Typography variant="h6" component="h4" sx={{ mb: 2 }}>Comments</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" component="h4">Comments</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', height: '20px' }}>
+                    {typingIndicatorText}
+                </Typography>
+            </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {selectedTermComments.length > 0 ? (
                     selectedTermComments.map(comment => (
@@ -225,7 +317,7 @@ const CommentSection: React.FC = observer(() => {
             <Box sx={{ mt: 4 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Add a Comment</Typography>
                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                    You can mention other project members using @ to trigger a user list.
+                    Mention users with @, submit with Enter, new line with Ctrl+Enter.
                 </Typography>
                 <CommentForm
                     onSubmit={handleCommentSubmit}

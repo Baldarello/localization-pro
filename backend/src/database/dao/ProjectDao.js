@@ -2,7 +2,7 @@ import { Project, User, Branch, Commit, TeamMembership, Comment, Notification, I
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import sequelize from '../Sequelize.js';
 import { sendEmail } from '../../helpers/mailer.js';
-import { sendToUser } from '../../config/WebSocketServer.js';
+import { sendToUser, broadcastBranchUpdate } from '../../config/WebSocketServer.js';
 
 const formatProject = (project) => {
     if (!project) return null;
@@ -167,7 +167,7 @@ const getCurrentBranch = async (projectId) => {
     return branch;
 };
 
-export const addTerm = async (projectId, termText) => {
+export const addTerm = async (projectId, termText, authorId) => {
     const branch = await getCurrentBranch(projectId);
     const newTerm = {
         id: `term-${Date.now()}`,
@@ -176,10 +176,11 @@ export const addTerm = async (projectId, termText) => {
     };
     branch.workingTerms = [...branch.workingTerms, newTerm];
     await branch.save();
+    broadcastBranchUpdate(projectId, branch.name, authorId);
     return newTerm;
 };
 
-export const updateTermText = async (projectId, termId, newText) => {
+export const updateTermText = async (projectId, termId, newText, authorId) => {
     const branch = await getCurrentBranch(projectId);
     const terms = branch.workingTerms;
     const termIndex = terms.findIndex(t => t.id === termId);
@@ -188,10 +189,11 @@ export const updateTermText = async (projectId, termId, newText) => {
         branch.workingTerms = terms;
         branch.changed('workingTerms', true);
         await branch.save();
+        broadcastBranchUpdate(projectId, branch.name, authorId);
     }
 };
 
-export const updateTermContext = async (projectId, termId, newContext) => {
+export const updateTermContext = async (projectId, termId, newContext, authorId) => {
     const branch = await getCurrentBranch(projectId);
     const terms = branch.workingTerms;
     const termIndex = terms.findIndex(t => t.id === termId);
@@ -200,16 +202,18 @@ export const updateTermContext = async (projectId, termId, newContext) => {
         branch.workingTerms = terms;
         branch.changed('workingTerms', true);
         await branch.save();
+        broadcastBranchUpdate(projectId, branch.name, authorId);
     }
 };
 
-export const deleteTerm = async (projectId, termId) => {
+export const deleteTerm = async (projectId, termId, authorId) => {
     const branch = await getCurrentBranch(projectId);
     branch.workingTerms = branch.workingTerms.filter(t => t.id !== termId);
     await branch.save();
+    broadcastBranchUpdate(projectId, branch.name, authorId);
 };
 
-export const updateTranslation = async (projectId, termId, langCode, value) => {
+export const updateTranslation = async (projectId, termId, langCode, value, authorId) => {
     const branch = await getCurrentBranch(projectId);
     const terms = branch.workingTerms;
     const termIndex = terms.findIndex(t => t.id === termId);
@@ -221,13 +225,15 @@ export const updateTranslation = async (projectId, termId, langCode, value) => {
         branch.workingTerms = terms;
         branch.changed('workingTerms', true);
         await branch.save();
+        broadcastBranchUpdate(projectId, branch.name, authorId);
     }
 };
 
-export const bulkUpdateTerms = async (projectId, newTerms) => {
+export const bulkUpdateTerms = async (projectId, newTerms, authorId) => {
     const branch = await getCurrentBranch(projectId);
     branch.workingTerms = newTerms;
     await branch.save();
+    broadcastBranchUpdate(projectId, branch.name, authorId);
 };
 
 
@@ -264,7 +270,7 @@ export const addMember = async (projectId, email, role, languages, inviterId) =>
             invitedById: inviterId
         });
 
-        const registrationUrl = `${process.env.FRONTEND_URL || 'https://localizationpro.tnl.one'}`;
+        const registrationUrl = 'https://localizationpro.tnl.one';
         const subject = `You've been invited to collaborate on ${project.name}`;
         const html = `
             <p>Hi there,</p>
@@ -342,6 +348,7 @@ export const createCommit = async (projectId, branchName, message, authorId) => 
         });
     }
 
+    broadcastBranchUpdate(projectId, branchName, authorId);
     return fullCommit.get({ plain: true });
 };
 
@@ -386,7 +393,7 @@ export const deleteBranch = async (projectId, branchName) => {
     await Branch.destroy({ where: { projectId, name: branchName } });
 };
 
-export const deleteLatestCommit = async (projectId, branchName) => {
+export const deleteLatestCommit = async (projectId, branchName, authorId) => {
     const t = await sequelize.transaction();
     try {
         const branch = await Branch.findOne({ 
@@ -414,13 +421,14 @@ export const deleteLatestCommit = async (projectId, branchName) => {
         await branch.save({ transaction: t });
         
         await t.commit();
+        broadcastBranchUpdate(projectId, branch.name, authorId);
     } catch (error) {
         await t.rollback();
         throw error;
     }
 };
 
-export const mergeBranches = async (projectId, sourceBranchName, targetBranchName) => {
+export const mergeBranches = async (projectId, sourceBranchName, targetBranchName, authorId) => {
     const sourceBranch = await Branch.findOne({ where: { projectId, name: sourceBranchName }, include: [{model: Commit, as: 'commits'}] });
     const targetBranch = await Branch.findOne({ where: { projectId, name: targetBranchName } });
     if (!sourceBranch || !targetBranch) throw new Error('One or both branches not found');
@@ -436,6 +444,7 @@ export const mergeBranches = async (projectId, sourceBranchName, targetBranchNam
     
     targetBranch.workingTerms = Array.from(targetTermsMap.values());
     await targetBranch.save();
+    broadcastBranchUpdate(projectId, targetBranch.name, authorId);
 };
 
 // --- Comments & Notifications ---
