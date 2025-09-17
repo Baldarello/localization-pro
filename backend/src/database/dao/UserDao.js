@@ -1,4 +1,4 @@
-import { User, Notification, Comment } from '../models/index.js';
+import { User, Notification, Comment, Invitation, TeamMembership } from '../models/index.js';
 import bcrypt from 'bcrypt';
 import { Op } from 'sequelize';
 
@@ -96,6 +96,24 @@ export const registerUser = async (name, email, password) => {
         avatarInitials,
         settings: { commitNotifications: true } // Default setting
     });
+
+    // --- NEW: Check for and process pending invitations ---
+    const pendingInvitations = await Invitation.findAll({ where: { email: newUser.email } });
+
+    if (pendingInvitations.length > 0) {
+        for (const invitation of pendingInvitations) {
+            // Add user to the project team
+            await TeamMembership.create({
+                projectId: invitation.projectId,
+                userId: newUser.id,
+                role: invitation.role,
+                languages: invitation.languages,
+            });
+
+            // Delete the consumed invitation
+            await invitation.destroy();
+        }
+    }
     
     const { password: _, ...userWithoutPassword } = newUser.get({ plain: true });
     return userWithoutPassword;

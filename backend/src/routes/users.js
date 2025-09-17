@@ -172,6 +172,8 @@ router.put('/:userId/profile', authenticate, async (req, res, next) => {
  *             properties:
  *               commitNotifications:
  *                 type: boolean
+ *               mentionNotifications:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Settings updated successfully

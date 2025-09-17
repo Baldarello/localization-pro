@@ -7,10 +7,10 @@ import logger from '../helpers/logger.js';
 
 // --- MOCK DATA ---
 const USERS_DATA = [
-    { id: 'user-1', name: 'Alice (Admin)', email: 'alice@example.com', avatarInitials: 'A', password: 'password', settings: { commitNotifications: true } },
-    { id: 'user-2', name: 'Bob (Editor)', email: 'bob@example.com', avatarInitials: 'B', password: 'password', settings: { commitNotifications: true } },
-    { id: 'user-3', name: 'Charlie (Translator)', email: 'charlie@example.com', avatarInitials: 'C', password: 'password', settings: { commitNotifications: false } },
-    { id: 'user-4', name: 'Diana (Translator)', email: 'diana@example.com', avatarInitials: 'D', password: 'password', settings: { commitNotifications: true } },
+    { id: 'user-1', name: 'Alice (Admin)', email: 'alice@example.com', avatarInitials: 'A', password: 'password', settings: { commitNotifications: true, mentionNotifications: true } },
+    { id: 'user-2', name: 'Bob (Editor)', email: 'bob@example.com', avatarInitials: 'B', password: 'password', settings: { commitNotifications: true, mentionNotifications: true } },
+    { id: 'user-3', name: 'Charlie (Translator)', email: 'charlie@example.com', avatarInitials: 'C', password: 'password', settings: { commitNotifications: false, mentionNotifications: false } },
+    { id: 'user-4', name: 'Diana (Translator)', email: 'diana@example.com', avatarInitials: 'D', password: 'password', settings: { commitNotifications: true, mentionNotifications: true } },
 ];
 
 // --- Project 1: E-Commerce Platform Data ---

@@ -589,7 +589,7 @@ router.post('/:projectId/terms/:termId/comments', authenticate, async (req, res,
  * @swagger
  * /projects/{projectId}/team:
  *   post:
- *     summary: Add a member to a project
+ *     summary: Add a member to a project or invite them if they don't have an account
  *     tags: [Team]
  *     parameters:
  *       - in: path
@@ -619,13 +619,13 @@ router.post('/:projectId/terms/:termId/comments', authenticate, async (req, res,
  *                 description: Optional initial languages to assign.
  *     responses:
  *       '200':
- *         description: Response indicating success or failure of the operation
+ *         description: User added or invitation sent successfully.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AddMemberResult'
  *       '400':
- *         description: User not found or already a member
+ *         description: User already a member or invitation already sent.
  *       '401':
  *         description: Unauthorized
  *       '404':
@@ -634,7 +634,7 @@ router.post('/:projectId/terms/:termId/comments', authenticate, async (req, res,
 router.post('/:projectId/team', authenticate, async (req, res, next) => {
     try {
         const { email, role, languages } = req.body;
-        const result = await ProjectDao.addMember(req.params.projectId, email, role, languages);
+        const result = await ProjectDao.addMember(req.params.projectId, email, role, languages, req.user.id);
         res.status(result.success ? 200 : 400).json(result);
     } catch (error) {
         next(error);

@@ -37,6 +37,8 @@ const isGoogleAuthEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGL
  *           properties:
  *             commitNotifications:
  *               type: boolean
+ *             mentionNotifications:
+ *               type: boolean
  *     UserRole:
  *       type: string
  *       enum: [translator, editor, admin]

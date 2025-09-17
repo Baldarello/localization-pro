@@ -1,5 +1,6 @@
 
 
+
 import { makeAutoObservable, runInAction, computed } from 'mobx';
 import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
@@ -393,13 +394,18 @@ export class ProjectStore {
 
         if (result.success) {
             runInAction(() => {
+                // Only update team if a user was actually added (not just invited)
                 if (this.selectedProject && result.user) {
                     this.selectedProject.team[result.user.id] = { role, languages };
+                    // Ensure the user exists in the allUsers list for display in TeamManager
+                    if (!this.allUsers.some(u => u.id === result.user!.id)) {
+                        this.allUsers.push(result.user);
+                    }
                 }
             });
             this.rootStore.uiStore.showAlert(result.message, 'success');
         } else {
-            this.rootStore.uiStore.showAlert(result.message, result.code === 'user_exists' ? 'warning' : 'error');
+            this.rootStore.uiStore.showAlert(result.message, result.code === 'user_exists' || result.code === 'invitation_exists' ? 'warning' : 'error');
         }
     };
 

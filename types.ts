@@ -32,6 +32,7 @@ export interface User {
     avatarInitials: string;
     settings?: {
         commitNotifications: boolean;
+        mentionNotifications: boolean;
     };
 }
 

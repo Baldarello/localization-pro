@@ -1,4 +1,4 @@
-import { Project, User, Branch, Commit, TeamMembership, Comment, Notification } from '../models/index.js';
+import { Project, User, Branch, Commit, TeamMembership, Comment, Notification, Invitation } from '../models/index.js';
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import sequelize from '../Sequelize.js';
 import { sendEmail } from '../../helpers/mailer.js';
@@ -232,18 +232,51 @@ export const bulkUpdateTerms = async (projectId, newTerms) => {
 
 // --- Team Management ---
 
-export const addMember = async (projectId, email, role, languages) => {
+export const addMember = async (projectId, email, role, languages, inviterId) => {
     const project = await Project.findByPk(projectId);
     if (!project) return { success: false, message: 'Project not found.', code: 'project_not_found' };
 
-    const userToAdd = await User.findOne({ where: { email } });
-    if (!userToAdd) return { success: false, message: 'No user found with this email address.', code: 'user_not_found' };
-    
-    const existing = await TeamMembership.findOne({ where: { projectId, userId: userToAdd.id } });
-    if (existing) return { user: userToAdd.get({plain: true}), success: false, message: 'This user is already a member of the project.', code: 'user_exists' };
+    const inviter = await User.findByPk(inviterId);
+    if (!inviter) return { success: false, message: 'Inviting user could not be identified.' };
 
-    await TeamMembership.create({ projectId, userId: userToAdd.id, role, languages });
-    return { user: userToAdd.get({plain: true}), success: true, message: `${userToAdd.name} was added to the project.` };
+    const userToAdd = await User.findOne({ where: { email } });
+
+    if (userToAdd) {
+        // User exists, so add them directly to the project team.
+        const existing = await TeamMembership.findOne({ where: { projectId, userId: userToAdd.id } });
+        if (existing) return { user: userToAdd.get({ plain: true }), success: false, message: 'This user is already a member of the project.', code: 'user_exists' };
+
+        await TeamMembership.create({ projectId, userId: userToAdd.id, role, languages });
+        return { user: userToAdd.get({ plain: true }), success: true, message: `${userToAdd.name} was added to the project.` };
+    } else {
+        // User does not exist, so create and send an invitation.
+        const existingInvitation = await Invitation.findOne({ where: { email, projectId } });
+        if (existingInvitation) {
+            return { success: false, message: `An invitation has already been sent to ${email} for this project.`, code: 'invitation_exists' };
+        }
+
+        await Invitation.create({
+            email,
+            projectId,
+            role,
+            languages,
+            invitedById: inviterId
+        });
+
+        const registrationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}`;
+        const subject = `You've been invited to collaborate on ${project.name}`;
+        const html = `
+            <p>Hi there,</p>
+            <p><b>${inviter.name}</b> has invited you to join the project "<b>${project.name}</b>" on Localization Manager Pro as a <b>${role}</b>.</p>
+            <p>To accept the invitation, please sign up for an account using this email address (${email}).</p>
+            <a href="${registrationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #1976d2; color: white; text-decoration: none; border-radius: 5px;">Click here to Register</a>
+            <br/><br/>
+            <p>Thanks,<br/>The Localization Manager Pro Team</p>`;
+
+        sendEmail(email, subject, html);
+        
+        return { user: null, success: true, message: `Invitation sent to ${email}. They will be added to the project upon registration.` };
+    }
 };
 
 export const removeMember = async (projectId, userId) => {
@@ -433,13 +466,16 @@ const findMentions = (content) => {
     const matches = content.match(mentionRegex);
     if (!matches) return [];
     // remove '@' prefix
-    return matches.map(m => m.substring(1));
+    return [...new Set(matches.map(m => m.substring(1)))]; // Return unique emails
 };
 
 export const createComment = async (projectId, termId, content, parentId, authorId, branchName) => {
     const project = await Project.findByPk(projectId, { include: [{ model: User, as: 'users' }] });
     if (!project) throw new Error('Project not found');
     
+    const branch = await Branch.findOne({ where: { projectId, name: branchName } });
+    if (!branch) throw new Error('Branch not found');
+
     const newComment = await Comment.create({
         id: `comment-${Date.now()}`,
         content,
@@ -450,7 +486,7 @@ export const createComment = async (projectId, termId, content, parentId, author
         projectId,
     });
 
-    // Handle mentions and create notifications
+    // Handle mentions: create notifications and send emails
     const mentionedEmails = findMentions(content);
     if (mentionedEmails.length > 0) {
         const projectMemberEmails = new Set(project.users.map(u => u.email));
@@ -458,9 +494,13 @@ export const createComment = async (projectId, termId, content, parentId, author
             where: { email: mentionedEmails }
         });
 
+        const author = await User.findByPk(authorId);
+        const term = branch.workingTerms.find(t => t.id === termId);
+
         for (const mentionedUser of validMentionedUsers) {
             // Only notify if the mentioned user is part of the project team and is not the author
             if (projectMemberEmails.has(mentionedUser.email) && mentionedUser.id !== authorId) {
+                // Create in-app notification
                 await Notification.create({
                     id: `notif-${Date.now()}-${mentionedUser.id}`,
                     type: 'mention',
@@ -468,6 +508,23 @@ export const createComment = async (projectId, termId, content, parentId, author
                     recipientId: mentionedUser.id,
                     commentId: newComment.id,
                 });
+
+                // Send email notification if user has them enabled
+                if (mentionedUser.settings?.mentionNotifications) {
+                    const subject = `You were mentioned in ${project.name}`;
+                    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+                    const html = `
+                        <p>Hi ${mentionedUser.name},</p>
+                        <p><b>${author.name}</b> mentioned you in a comment on the term "<b>${term?.text || 'a term'}</b>" in the project "<b>${project.name}</b>".</p>
+                        <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; color: #666;">
+                            <i>${content.replace(/\n/g, '<br>')}</i>
+                        </blockquote>
+                        <a href="${frontendUrl}" style="display: inline-block; padding: 10px 20px; background-color: #1976d2; color: white; text-decoration: none; border-radius: 5px;">View Notification</a>
+                        <hr>
+                        <p><small>You can disable these notifications in your profile settings.</small></p>
+                    `;
+                    sendEmail(mentionedUser.email, subject, html);
+                }
             }
         }
     }

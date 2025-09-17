@@ -39,7 +39,7 @@ User.init({
   },
   settings: {
     type: DataTypes.JSON,
-    defaultValue: { commitNotifications: true },
+    defaultValue: { commitNotifications: true, mentionNotifications: true },
   },
 }, {
   sequelize,

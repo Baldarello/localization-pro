@@ -7,7 +7,7 @@ export interface AddMemberResult {
     user: User | null;
     success: boolean;
     message: string;
-    code?: 'user_exists' | 'user_not_found' | 'project_not_found';
+    code?: 'user_exists' | 'project_not_found' | 'invitation_exists';
 }
 
 export interface AuthConfig {

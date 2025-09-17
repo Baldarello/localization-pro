@@ -5,6 +5,7 @@ import Commit from './Commit.js';
 import TeamMembership from './TeamMembership.js';
 import Comment from './Comment.js';
 import Notification from './Notification.js';
+import Invitation from './Invitation.js';
 
 
 // Project <-> Branch (One-to-Many)
@@ -42,5 +43,13 @@ User.hasMany(Notification, { as: 'notifications', foreignKey: 'recipientId' });
 Notification.belongsTo(Comment, { foreignKey: 'commentId', onDelete: 'CASCADE' });
 Comment.hasOne(Notification, { foreignKey: 'commentId' });
 
+// Invitation Associations
+Invitation.belongsTo(Project, { foreignKey: 'projectId', onDelete: 'CASCADE' });
+Project.hasMany(Invitation, { foreignKey: 'projectId' });
+
+Invitation.belongsTo(User, { as: 'inviter', foreignKey: 'invitedById', onDelete: 'SET NULL' });
+User.hasMany(Invitation, { as: 'sentInvitations', foreignKey: 'invitedById' });
+
+
 // We can export all models from here
-export { User, Project, Branch, Commit, TeamMembership, Comment, Notification };
+export { User, Project, Branch, Commit, TeamMembership, Comment, Notification, Invitation };

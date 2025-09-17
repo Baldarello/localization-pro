@@ -67,8 +67,12 @@ const ProfilePage: React.FC = observer(() => {
         }
     };
 
-    const handleNotificationChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        await updateUserSettings({ commitNotifications: event.target.checked });
+    const handleSettingsChange = (key: 'commitNotifications' | 'mentionNotifications', value: boolean) => {
+        if (!currentUser || !currentUser.settings) return;
+        updateUserSettings({
+            ...currentUser.settings,
+            [key]: value,
+        });
     };
 
     return (
@@ -172,17 +176,26 @@ const ProfilePage: React.FC = observer(() => {
             <Paper sx={{ p: 3, mb: 4 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <NotificationsIcon color="primary" sx={{ mr: 1.5 }} />
-                    <Typography variant="h6">Notifications</Typography>
+                    <Typography variant="h6">Email Notifications</Typography>
                 </Box>
                 <Divider sx={{ mb: 3 }} />
-                <FormControlLabel
+                 <FormControlLabel
                     control={
                         <Switch
                             checked={currentUser.settings?.commitNotifications ?? true}
-                            onChange={handleNotificationChange}
+                            onChange={(e) => handleSettingsChange('commitNotifications', e.target.checked)}
                         />
                     }
-                    label="Receive email notifications for new commits"
+                    label="Receive email notifications for new commits on projects"
+                />
+                 <FormControlLabel
+                    control={
+                        <Switch
+                            checked={currentUser.settings?.mentionNotifications ?? true}
+                            onChange={(e) => handleSettingsChange('mentionNotifications', e.target.checked)}
+                        />
+                    }
+                    label="Receive an email when someone @mentions you in a comment"
                 />
             </Paper>
 
