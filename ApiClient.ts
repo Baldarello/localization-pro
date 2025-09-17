@@ -1,7 +1,7 @@
 import { Project, Term, Language, User, UserRole, Branch, Commit } from './types';
 
 // The base URL is now dynamically set by the Vite build process
-export const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api/v1';
+export const API_BASE_URL = process.env.API_BASE_URL || 'https://localizationpro-api.tnl.one/api/v1';
 
 export interface AddMemberResult {
     user: User | null;

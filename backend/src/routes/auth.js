@@ -5,6 +5,7 @@ import { sendEmail } from '../helpers/mailer.js';
 import logger from '../helpers/logger.js';
 
 const router = Router();
+const isGoogleAuthEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
 // --- Existing Swagger Docs ---
 /**
@@ -240,46 +241,46 @@ router.post('/login', async (req, res, next) => {
  *                   description: Whether Google OAuth is configured and enabled.
  */
 router.get('/config', (req, res) => {
-    const googleAuthEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-    res.json({ googleAuthEnabled });
+    res.json({ googleAuthEnabled: isGoogleAuthEnabled });
 });
 
+// Conditionally register Google Auth routes
+if (isGoogleAuthEnabled) {
+    /**
+     * @swagger
+     * /auth/google:
+     *   get:
+     *     summary: Initiate Google OAuth login
+     *     tags: [Authentication]
+     *     description: Redirects the user to Google for authentication. The user will be redirected back to the `/auth/google/callback` endpoint.
+     *     security: []
+     *     responses:
+     *       302:
+     *         description: Redirect to Google's authentication service.
+     */
+    router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-// GET /api/v1/auth/google
-/**
- * @swagger
- * /auth/google:
- *   get:
- *     summary: Initiate Google OAuth login
- *     tags: [Authentication]
- *     description: Redirects the user to Google for authentication. The user will be redirected back to the `/auth/google/callback` endpoint.
- *     security: []
- *     responses:
- *       302:
- *         description: Redirect to Google's authentication service.
- */
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+    /**
+     * @swagger
+     * /auth/google/callback:
+     *   get:
+     *     summary: Google OAuth callback URL
+     *     tags: [Authentication]
+     *     description: Google redirects to this URL after authentication. Passport.js handles the user lookup or creation, establishes a session, and redirects the user back to the frontend application.
+     *     security: []
+     *     responses:
+     *       302:
+     *         description: Redirect to the frontend application.
+     */
+    router.get('/google/callback',
+        passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=true` }),
+        (req, res) => {
+            // Successful authentication, redirect home.
+            res.redirect(process.env.FRONTEND_URL || 'http://localhost:5173');
+        }
+    );
+}
 
-// GET /api/v1/auth/google/callback
-/**
- * @swagger
- * /auth/google/callback:
- *   get:
- *     summary: Google OAuth callback URL
- *     tags: [Authentication]
- *     description: Google redirects to this URL after authentication. Passport.js handles the user lookup or creation, establishes a session, and redirects the user back to the frontend application.
- *     security: []
- *     responses:
- *       302:
- *         description: Redirect to the frontend application.
- */
-router.get('/google/callback', 
-  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=true` }),
-  (req, res) => {
-    // Successful authentication, redirect home.
-    res.redirect(process.env.FRONTEND_URL || 'http://localhost:5173');
-  }
-);
 
 // GET /api/v1/auth/me
 /**
