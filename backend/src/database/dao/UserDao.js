@@ -25,6 +25,34 @@ export const getAllUsers = async () => {
     return users.map(u => u.get({ plain: true }));
 };
 
+export const findUserByEmail = async (email) => {
+    return await User.findOne({ where: { email } });
+};
+
+export const registerUser = async (name, email, password) => {
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+        throw new Error('An account with this email already exists.');
+    }
+
+    const nameParts = name.split(' ');
+    const avatarInitials = nameParts.length > 1
+        ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+        : name.substring(0, 2).toUpperCase();
+    
+    // The beforeCreate hook will hash the password
+    const newUser = await User.create({
+        id: `user-${Date.now()}`,
+        name,
+        email,
+        password,
+        avatarInitials,
+        settings: { commitNotifications: true } // Default setting
+    });
+    
+    return newUser.get({ plain: true });
+};
+
 export const updateUserName = async (userId, newName) => {
     const user = await User.findByPk(userId);
     if (user) {
@@ -33,6 +61,17 @@ export const updateUserName = async (userId, newName) => {
         user.avatarInitials = nameParts.length > 1
             ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
             : newName.substring(0, 2).toUpperCase();
+        await user.save();
+        return user.get({ plain: true });
+    }
+    return null;
+};
+
+export const updateUserSettings = async (userId, settings) => {
+    const user = await User.findByPk(userId);
+    if (user) {
+        // Merge settings to preserve other potential settings in the future
+        user.settings = { ...user.settings, ...settings };
         await user.save();
         return user.get({ plain: true });
     }

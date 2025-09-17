@@ -6,13 +6,16 @@ import EmailIcon from '@mui/icons-material/Email';
 import { useStores } from '../stores/StoreProvider';
 
 const ForgotPasswordPage: React.FC = () => {
-    const { uiStore } = useStores();
+    const { uiStore, authStore } = useStores();
     const [email, setEmail] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, this would call an API.
-        uiStore.showAlert(`If an account with email ${email} exists, a reset link has been sent.`, 'success');
+        if (!email) {
+            uiStore.showAlert('Please enter your email address.', 'warning');
+            return;
+        }
+        await authStore.forgotPassword(email);
         setEmail('');
     };
 

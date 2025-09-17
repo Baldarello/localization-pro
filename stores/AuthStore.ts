@@ -32,6 +32,22 @@ export class AuthStore {
         }
     };
 
+    register = async (name: string, email: string, pass: string) => {
+        const { user, message } = await this.rootStore.apiClient.register(name, email, pass);
+        if (user) {
+            this.rootStore.uiStore.showAlert('Registration successful! Please log in.', 'success');
+            this.rootStore.uiStore.setView('login');
+        } else {
+            this.rootStore.uiStore.showAlert(message, 'error');
+        }
+    };
+
+    forgotPassword = async (email: string) => {
+        const { message } = await this.rootStore.apiClient.forgotPassword(email);
+        // The API always returns a success-style message to prevent user enumeration.
+        this.rootStore.uiStore.showAlert(message, 'success');
+    };
+
     logout = () => {
         this.currentUser = null;
         // Clear the user ID from the ApiClient
@@ -50,6 +66,19 @@ export class AuthStore {
             this.rootStore.uiStore.showAlert('Name updated successfully!', 'success');
         } else {
             this.rootStore.uiStore.showAlert('Failed to update name.', 'error');
+        }
+    };
+
+    updateUserSettings = async (settings: { commitNotifications: boolean }) => {
+        if (!this.currentUser) return;
+        const updatedUser = await this.rootStore.apiClient.updateUserSettings(this.currentUser.id, settings);
+        if (updatedUser) {
+            runInAction(() => {
+                this.currentUser = updatedUser;
+            });
+            this.rootStore.uiStore.showAlert('Settings updated!', 'success');
+        } else {
+            this.rootStore.uiStore.showAlert('Failed to update settings.', 'error');
         }
     };
 

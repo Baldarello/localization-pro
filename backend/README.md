@@ -21,6 +21,34 @@ This folder contains the Node.js backend for the Localization Manager Pro applic
     ```
     You only need to run this command once during the initial setup.
 
+## Configuration
+
+The backend requires an environment file to store sensitive configuration like email credentials.
+
+1.  **Create an environment file:**
+    Inside the `backend/` directory, create a copy of `.env.example` and name it `.env`.
+    ```sh
+    cp .env.example .env
+    ```
+
+2.  **Edit the `.env` file:**
+    Open `backend/.env` and fill in the values for your environment.
+
+### Environment Variables
+
+The following table lists all the environment variables used by the backend:
+
+| Variable        | Description                                                                                             | Example                           |
+| --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `PORT`          | The port on which the backend server will run.                                                          | `3001`                            |
+| `EMAIL_ENABLED` | Set to `true` to enable all email-sending features. If `false`, no emails will be sent.                 | `true`                            |
+| `EMAIL_HOST`    | The hostname of your SMTP server.                                                                       | `smtp.mailgun.org`                |
+| `EMAIL_PORT`    | The port for your SMTP server (e.g., 587 for TLS, 465 for SSL).                                         | `587`                             |
+| `EMAIL_SECURE`  | Set to `true` if your SMTP server uses SSL (typically on port 465).                                       | `true`                            |
+| `EMAIL_USER`    | The username for authenticating with your SMTP server.                                                  | `postmaster@sandbox.mailgun.org`  |
+| `EMAIL_PASS`    | The password for authenticating with your SMTP server.                                                  | `your-smtp-password`              |
+| `EMAIL_FROM`    | The "From" address that will appear on emails sent by the application.                                  | `"MyApp" <noreply@myapp.com>`     |
+
 ## Running the Server
 
 ### For Development

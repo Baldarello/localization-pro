@@ -30,6 +30,9 @@ export interface User {
     name: string;
     email: string;
     avatarInitials: string;
+    settings?: {
+        commitNotifications: boolean;
+    };
 }
 
 export enum UserRole {

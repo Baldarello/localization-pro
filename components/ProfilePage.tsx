@@ -7,6 +7,7 @@ import {
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
 import PaletteIcon from '@mui/icons-material/Palette';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import SaveIcon from '@mui/icons-material/Save';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
@@ -15,7 +16,7 @@ import ThemeSelector from './ThemeSelector';
 
 const ProfilePage: React.FC = observer(() => {
     const { authStore, uiStore } = useStores();
-    const { currentUser, updateCurrentUserName, changePassword } = authStore;
+    const { currentUser, updateCurrentUserName, changePassword, updateUserSettings } = authStore;
 
     const [isEditingName, setIsEditingName] = useState(false);
     const [name, setName] = useState(currentUser?.name || '');
@@ -64,6 +65,10 @@ const ProfilePage: React.FC = observer(() => {
         if (success) {
             setPasswordData({ current: '', newPass: '', confirmPass: '' });
         }
+    };
+
+    const handleNotificationChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        await updateUserSettings({ commitNotifications: event.target.checked });
     };
 
     return (
@@ -162,6 +167,23 @@ const ProfilePage: React.FC = observer(() => {
                         Change Password
                     </Button>
                 </Box>
+            </Paper>
+
+            <Paper sx={{ p: 3, mb: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <NotificationsIcon color="primary" sx={{ mr: 1.5 }} />
+                    <Typography variant="h6">Notifications</Typography>
+                </Box>
+                <Divider sx={{ mb: 3 }} />
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={currentUser.settings?.commitNotifications ?? true}
+                            onChange={handleNotificationChange}
+                        />
+                    }
+                    label="Receive email notifications for new commits"
+                />
             </Paper>
 
             <Paper sx={{ p: 3 }}>

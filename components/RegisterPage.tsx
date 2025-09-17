@@ -8,22 +8,18 @@ import PersonIcon from '@mui/icons-material/Person';
 import { useStores } from '../stores/StoreProvider';
 
 const RegisterPage: React.FC = () => {
-    const { uiStore } = useStores();
+    const { uiStore, authStore } = useStores();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name || !email || !password) {
             uiStore.showAlert('Please fill in all fields.', 'warning');
             return;
         }
-        // In a real app, this would call an API.
-        uiStore.showAlert('Registration successful! Please log in.', 'success');
-        setTimeout(() => {
-           uiStore.setView('login');
-        }, 2000);
+        await authStore.register(name, email, password);
     };
 
     return (

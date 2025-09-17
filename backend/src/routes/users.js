@@ -85,6 +85,53 @@ router.put('/:userId/profile', authenticate, async (req, res, next) => {
     }
 });
 
+/**
+ * @swagger
+ * /users/{userId}/settings:
+ *   put:
+ *     summary: Update user settings
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema: { type: string }
+ *         required: true
+ *         description: The user ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               commitNotifications:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Settings updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+router.put('/:userId/settings', authenticate, async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const updatedUser = await UserDao.updateUserSettings(userId, req.body);
+        if (updatedUser) {
+            res.json(updatedUser);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+});
+
 // PUT /api/v1/users/:userId/password
 /**
  * @swagger

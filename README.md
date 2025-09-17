@@ -13,6 +13,7 @@ This application features role-based access control, branching for parallel deve
 -   **Compare & Merge**: Visually compare branches and merge changes back into the main branch.
 -   **Commit History**: Track every change with a detailed commit log and a diff viewer.
 -   **AI-Powered Translations**: Get instant translation suggestions using Google's Gemini API.
+-   **Email Notifications**: Receive email updates for events like new commits, with user-configurable settings.
 -   **Data Import/Export**: Easily move data in and out using JSON or CSV formats.
 -   **Team Management**: Invite and manage users for each project with language-specific permissions.
 -   **Customizable Theming**: Personalize the UI with different color themes and dark/light modes.
@@ -21,7 +22,7 @@ This application features role-based access control, branching for parallel deve
 ## 🛠️ Tech Stack
 
 -   **Frontend**: React, TypeScript, MobX, Material-UI (MUI), Vite
--   **Backend**: Node.js, Express.js, Sequelize ORM (with SQLite)
+-   **Backend**: Node.js, Express.js, Sequelize ORM (with SQLite), Nodemailer
 -   **AI**: Google Gemini API
 
 ---
@@ -59,20 +60,53 @@ Follow these instructions to get the project up and running on your local machin
 
 ### Configuration
 
-1.  **Set up Environment Variables:**
-    Create a file named `.env` in the root of the project directory. This file is used by the frontend to access your API key.
+This project requires two environment files: one for the frontend and one for the backend.
 
-    ```
-    GEMINI_API_KEY=your_google_gemini_api_key_here
-    ```
-    > **Important**: The AI translation feature will not work without a valid Gemini API key.
+#### 1. Frontend (`.env` in the root directory)
 
-2.  **Initialize and Seed the Database:**
-    The backend uses a self-contained SQLite database. To create the database file and populate it with sample projects and users, run the following command from the **root** project directory:
-    ```sh
-    npm run seed:backend
-    ```
-    This command only needs to be run once during the initial setup. It will create a `database.sqlite` file inside the `backend/` directory.
+Create a file named `.env` in the project's **root** directory.
+
+```env
+# .env
+GEMINI_API_KEY=your_google_gemini_api_key_here
+```
+
+| Variable         | Description                                                                    |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `GEMINI_API_KEY` | **Required.** Your API key for Google Gemini, used for AI translation features. |
+
+> **Important**: The AI translation feature will not work without a valid Gemini API key.
+
+#### 2. Backend (`.env` in the `backend/` directory)
+
+Navigate to the `backend/` directory, copy the example file, and then edit the new `.env` file with your specific configuration.
+
+```sh
+cd backend
+cp .env.example .env
+```
+
+The `.env.example` file outlines the required variables:
+
+| Variable        | Description                                                                                             | Example                           |
+| --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `PORT`          | The port on which the backend server will run.                                                          | `3001`                            |
+| `EMAIL_ENABLED` | Set to `true` to enable all email-sending features. If `false`, no emails will be sent.                 | `true`                            |
+| `EMAIL_HOST`    | The hostname of your SMTP server.                                                                       | `smtp.mailgun.org`                |
+| `EMAIL_PORT`    | The port for your SMTP server (e.g., 587 for TLS, 465 for SSL).                                         | `587`                             |
+| `EMAIL_SECURE`  | Set to `true` if your SMTP server uses SSL (typically on port 465).                                       | `true`                            |
+| `EMAIL_USER`    | The username for authenticating with your SMTP server.                                                  | `postmaster@sandbox.mailgun.org`  |
+| `EMAIL_PASS`    | The password for authenticating with your SMTP server.                                                  | `your-smtp-password`              |
+| `EMAIL_FROM`    | The "From" address that will appear on emails sent by the application.                                  | `"MyApp" <noreply@myapp.com>`     |
+
+
+### Initialize and Seed the Database
+
+The backend uses a self-contained SQLite database. To create the database file and populate it with sample projects and users, run the following command from the **root** project directory:
+```sh
+npm run seed:backend
+```
+This command only needs to be run once during the initial setup. It will create a `database.sqlite` file inside the `backend/` directory.
 
 ### Running the Application
 
@@ -103,9 +137,10 @@ The project is organized into a monorepo-like structure with a clear separation 
 ├── backend/              # Node.js, Express, Sequelize backend source
 │   ├── src/
 │   │   ├── database/     # Sequelize models, DAOs, and seed script
-│   │   ├── helpers/      # Utility modules (logger, etc.)
+│   │   ├── helpers/      # Utility modules (logger, mailer)
 │   │   ├── middleware/   # Express middleware
 │   │   └── routes/       # API route definitions
+│   ├── .env.example      # Backend environment variables template
 │   ├── app.js            # Express application setup
 │   └── package.json      # Backend dependencies
 ├── public/               # Static assets for the frontend
@@ -114,7 +149,7 @@ The project is organized into a monorepo-like structure with a clear separation 
 │   ├── stores/           # MobX state management stores
 │   ├── App.tsx           # Main application component
 │   └── index.tsx         # Frontend entry point
-├── .env                  # Environment variables (you create this file)
+├── .env                  # Frontend environment variables (you create this file)
 ├── index.html            # Main HTML file for the frontend
 ├── openapi.json          # OpenAPI specification for the API
 └── package.json          # Root project scripts & dependencies

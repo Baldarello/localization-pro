@@ -67,10 +67,41 @@ class ApiClient {
         }
     }
     
+    async register(name: string, email: string, pass: string): Promise<{user: User | null, message: string}> {
+        try {
+            const user = await this.apiFetch('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({ name, email, pass }),
+            });
+            return { user, message: 'Registration successful!' };
+        } catch (error: any) {
+            return { user: null, message: error.message || 'Registration failed.' };
+        }
+    }
+
+    async forgotPassword(email: string): Promise<{success: boolean, message: string}> {
+        try {
+            const result = await this.apiFetch('/auth/forgot-password', {
+                method: 'POST',
+                body: JSON.stringify({ email }),
+            });
+            return { success: true, message: result.message };
+        } catch (error: any) {
+            return { success: false, message: error.message };
+        }
+    }
+
     async updateCurrentUserName(userId: string, newName: string): Promise<User | null> {
         return await this.apiFetch(`/users/${userId}/profile`, {
             method: 'PUT',
             body: JSON.stringify({ name: newName }),
+        });
+    }
+
+    async updateUserSettings(userId: string, settings: { commitNotifications: boolean }): Promise<User | null> {
+        return await this.apiFetch(`/users/${userId}/settings`, {
+            method: 'PUT',
+            body: JSON.stringify(settings),
         });
     }
 

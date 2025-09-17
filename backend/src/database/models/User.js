@@ -30,6 +30,10 @@ User.init({
     type: DataTypes.STRING,
     allowNull: false,
   },
+  settings: {
+    type: DataTypes.JSON,
+    defaultValue: { commitNotifications: true },
+  },
 }, {
   sequelize,
   modelName: 'User',

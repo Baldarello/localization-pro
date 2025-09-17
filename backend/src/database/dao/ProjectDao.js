@@ -2,6 +2,7 @@ import { Project, User, Branch, Commit, TeamMembership } from '../models/index.j
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import { col, fn } from 'sequelize';
 import sequelize from '../Sequelize.js';
+import { sendEmail } from '../../helpers/mailer.js';
 
 const formatProject = (project) => {
     if (!project) return null;
@@ -243,6 +244,36 @@ export const createCommit = async (projectId, branchName, message, authorId) => 
         include: [{ model: User, as: 'author' }]
     });
     
+    // --- Send notifications ---
+    // Fetch the project with all team members to check their notification settings
+    const project = await Project.findByPk(projectId, {
+        include: [{ 
+            model: User, 
+            as: 'users',
+            attributes: ['id', 'email', 'name', 'settings'],
+        }]
+    });
+
+    if (project && project.users) {
+        const author = fullCommit.author;
+        const subject = `New commit in ${project.name} on branch "${branchName}"`;
+        const html = `
+            <p>Hi there,</p>
+            <p>A new commit has been made in <strong>${project.name}</strong> on branch "<strong>${branchName}</strong>" by <strong>${author.name}</strong>.</p>
+            <p><strong>Message:</strong> ${message}</p>
+            <p>You can view the changes in the project's history tab.</p>
+            <hr>
+            <p><small>You are receiving this because you have commit notifications enabled. You can change this in your profile settings.</small></p>
+        `;
+
+        project.users.forEach(user => {
+            // Send to everyone except the author, if they have notifications enabled.
+            if (user.id !== authorId && user.settings?.commitNotifications) {
+                sendEmail(user.email, subject, html.replace('Hi there', `Hi ${user.name}`));
+            }
+        });
+    }
+
     return fullCommit.get({ plain: true });
 };
 
