@@ -1,5 +1,6 @@
 
 
+
 import { makeAutoObservable, runInAction } from 'mobx';
 import { Project, Term, Language, User, UserRole, Branch, Commit } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
@@ -228,14 +229,24 @@ export class ProjectStore {
 
     async updateProjectLanguages(newLanguages: Language[]) {
         if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
-        const updatedProject = await this.rootStore.apiClient.updateProjectLanguages(this.selectedProject.id, newLanguages);
-        if (updatedProject) {
-            runInAction(() => {
-                const projectIndex = this.projects.findIndex(p => p.id === updatedProject.id);
-                if (projectIndex !== -1) {
-                    this.projects[projectIndex] = updatedProject;
-                }
-            });
+        try {
+            const updatedProject = await this.rootStore.apiClient.updateProjectLanguages(this.selectedProject.id, newLanguages);
+            if (updatedProject) {
+                runInAction(() => {
+                    const projectIndex = this.projects.findIndex(p => p.id === updatedProject.id);
+                    if (projectIndex !== -1) {
+                        // Create a new array to ensure MobX detects the change robustly.
+                        const newProjects = this.projects.slice();
+                        newProjects[projectIndex] = updatedProject;
+                        this.projects = newProjects;
+                    }
+                });
+            } else {
+                throw new Error("API did not return an updated project.");
+            }
+        } catch (error) {
+            console.error('Failed to update project languages:', error);
+            this.rootStore.uiStore.showAlert('Failed to update project languages.', 'error');
         }
     };
     

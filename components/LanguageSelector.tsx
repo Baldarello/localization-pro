@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { AVAILABLE_LANGUAGES } from '../constants';
@@ -27,7 +28,10 @@ const LanguageSelector: React.FC = observer(() => {
 
         let newLanguages;
         if (isSelected(lang.code)) {
-            if (projectLanguages.length === 1 && lang.code === defaultLanguageCode) return;
+            // Prevent removing the very last language
+            if (projectLanguages.length === 1) {
+                return; 
+            }
             newLanguages = projectLanguages.filter(l => l.code !== lang.code);
         } else {
             newLanguages = [...projectLanguages, lang];

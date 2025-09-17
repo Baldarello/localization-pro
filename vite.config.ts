@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.API_BASE_URL': JSON.stringify(env.REACT_APP_IS_PROD === 'true' ? 'https://localization-pro.tnl.one/api/v1' : 'http://localhost:3001/api/v1'),
+        'process.env.API_BASE_URL': JSON.stringify(env.REACT_APP_IS_PROD === 'true' ? 'https://localizationpro-api.tnl.one/api/v1' : 'http://localhost:3001/api/v1'),
       },
       resolve: {
         alias: {
