@@ -105,7 +105,6 @@ const TeamManager: React.FC = observer(() => {
                                                     })}
                                                     {unassignedLangs.length > 0 && (
                                                         <FormControl size="small" sx={{ minWidth: 120, ml: 'auto' }}>
-                                                            <InputLabel sx={{ ml: 1, mt: -0.5 }}>+ Add</InputLabel>
                                                             <Select
                                                                 value=""
                                                                 onChange={(e) => handleAddLanguage(member.id, e.target.value as string)}

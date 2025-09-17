@@ -52,3 +52,8 @@ export interface Project {
     currentBranchName: string;
     team: { [userId: string]: { role: UserRole; languages: string[] } }; // Maps user ID to role and assigned languages
 }
+
+export type UncommittedChange =
+    | { type: 'added'; term: Term }
+    | { type: 'removed'; originalTerm: Term }
+    | { type: 'modified'; term: Term; originalTerm: Term };

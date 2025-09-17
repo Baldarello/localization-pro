@@ -1,11 +1,6 @@
 
-
-
-
-
-
 import { makeAutoObservable, runInAction } from 'mobx';
-import { Project, Term, Language, User, UserRole, Branch, Commit } from '../types';
+import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
 import { RootStore } from './RootStore';
 import { GoogleGenAI } from '@google/genai';
@@ -80,34 +75,37 @@ export class ProjectStore {
         return this.currentBranchTerms.find(t => t.id === this.selectedTermId);
     }
 
-    get uncommittedChangesCount(): number {
-        if (!this.currentBranch || !this.latestCommit) return 0;
-        
+    get uncommittedChanges(): UncommittedChange[] {
+        if (!this.currentBranch || !this.latestCommit) return [];
+
         const workingTermsMap = new Map(this.currentBranch.workingTerms.map(t => [t.id, t]));
         const committedTermsMap = new Map(this.latestCommit.terms.map(t => [t.id, t]));
 
-        let changes = 0;
-        
-        // Check for modifications and deletions
-        for (const [id, committedTerm] of committedTermsMap.entries()) {
-            if (!workingTermsMap.has(id)) {
-                changes++; // Deleted
-            } else {
-                const workingTerm = workingTermsMap.get(id)!;
-                if (!areTermsEqual(committedTerm, workingTerm)) {
-                    changes++; // Modified
-                }
+        const changes: UncommittedChange[] = [];
+        const allIds = new Set([...workingTermsMap.keys(), ...committedTermsMap.keys()]);
+
+        for (const id of allIds) {
+            const workingTerm = workingTermsMap.get(id);
+            const committedTerm = committedTermsMap.get(id);
+
+            if (workingTerm && !committedTerm) {
+                changes.push({ type: 'added', term: workingTerm });
+            } else if (!workingTerm && committedTerm) {
+                changes.push({ type: 'removed', originalTerm: committedTerm });
+            } else if (workingTerm && committedTerm && !areTermsEqual(committedTerm, workingTerm)) {
+                changes.push({ type: 'modified', term: workingTerm, originalTerm: committedTerm });
             }
         }
 
-        // Check for additions
-        for (const id of workingTermsMap.keys()) {
-            if (!committedTermsMap.has(id)) {
-                changes++; // Added
-            }
-        }
-        
-        return changes;
+        return changes.sort((a, b) => {
+            const textA = a.type === 'added' ? a.term.text : a.originalTerm.text;
+            const textB = b.type === 'added' ? b.term.text : b.originalTerm.text;
+            return textA.localeCompare(textB);
+        });
+    }
+
+    get uncommittedChangesCount(): number {
+        return this.uncommittedChanges.length;
     }
 
     get currentUserRole() {
@@ -308,6 +306,40 @@ export class ProjectStore {
         } else {
             this.rootStore.uiStore.showAlert('Failed to commit changes.', 'error');
         }
+    }
+
+    discardChange(change: UncommittedChange) {
+        if (!this.currentBranch) return;
+
+        runInAction(() => {
+            switch (change.type) {
+                case 'added': {
+                    const termIndex = this.currentBranch!.workingTerms.findIndex(t => t.id === change.term.id);
+                    if (termIndex > -1) {
+                        this.currentBranch!.workingTerms.splice(termIndex, 1);
+                    }
+                    break;
+                }
+                case 'removed': {
+                    // Add it back from the original state
+                    this.currentBranch!.workingTerms.push(change.originalTerm);
+                    break;
+                }
+                case 'modified': {
+                    const termIndex = this.currentBranch!.workingTerms.findIndex(t => t.id === change.term.id);
+                    if (termIndex > -1) {
+                        // Replace with the original version
+                        this.currentBranch!.workingTerms[termIndex] = change.originalTerm;
+                    }
+                    break;
+                }
+            }
+            
+            // If no changes are left, close the commit dialog
+            if (this.uncommittedChanges.length === 0) {
+                this.rootStore.uiStore.closeCommitDialog();
+            }
+        });
     }
     
     async addMember(email: string, role: UserRole, languages: string[]) {

@@ -1,12 +1,20 @@
 
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Button, TextField, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Box, Typography } from '@mui/material';
+import {
+    Button, TextField, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Box,
+    Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Tooltip, Paper
+} from '@mui/material';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import EditIcon from '@mui/icons-material/Edit';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import UndoIcon from '@mui/icons-material/Undo';
 import { useStores } from '../stores/StoreProvider';
+import { UncommittedChange } from '../types';
 
 const CommitDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
-    const { currentBranch, uncommittedChangesCount, commitChanges } = projectStore;
+    const { currentBranch, uncommittedChanges, commitChanges, discardChange } = projectStore;
     const [message, setMessage] = useState('');
 
     const handleCommit = async () => {
@@ -21,16 +29,72 @@ const CommitDialog: React.FC = observer(() => {
         uiStore.closeCommitDialog();
     };
 
+    const handleDiscardChange = (change: UncommittedChange) => {
+        discardChange(change);
+    };
+
     if (!currentBranch) return null;
+
+    const renderChange = (change: UncommittedChange) => {
+        let icon;
+        let termText;
+        let changeType;
+
+        switch (change.type) {
+            case 'added':
+                icon = <AddCircleOutlineIcon color="success" />;
+                termText = change.term.text;
+                changeType = "Added";
+                break;
+            case 'removed':
+                icon = <RemoveCircleOutlineIcon color="error" />;
+                termText = change.originalTerm.text;
+                changeType = "Removed";
+                break;
+            case 'modified':
+                icon = <EditIcon color="warning" />;
+                termText = change.term.text;
+                changeType = "Modified";
+                break;
+        }
+
+        return (
+            <ListItem
+                key={change.type === 'removed' ? change.originalTerm.id : change.term.id}
+                secondaryAction={
+                    <Tooltip title="Discard this change">
+                        <IconButton edge="end" aria-label="discard" onClick={() => handleDiscardChange(change)}>
+                            <UndoIcon />
+                        </IconButton>
+                    </Tooltip>
+                }
+            >
+                <ListItemIcon>{icon}</ListItemIcon>
+                <ListItemText primary={termText} secondary={changeType} />
+            </ListItem>
+        );
+    };
 
     return (
         <Dialog open={uiStore.isCommitDialogOpen} onClose={handleClose} fullWidth maxWidth="sm">
             <DialogTitle>Commit Changes to "{currentBranch.name}"</DialogTitle>
             <DialogContent>
                 <DialogContentText sx={{ mb: 2 }}>
-                    You have <Typography component="span" sx={{ fontWeight: 'bold' }}>{uncommittedChangesCount}</Typography> uncommitted change(s).
+                    You have <Typography component="span" sx={{ fontWeight: 'bold' }}>{uncommittedChanges.length}</Typography> uncommitted change(s).
                     Provide a summary of your changes to create a new commit in the branch history.
                 </DialogContentText>
+
+                {uncommittedChanges.length > 0 && (
+                    <Box sx={{ mt: 2, mb: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>Changes:</Typography>
+                        <Paper variant="outlined" sx={{ maxHeight: 200, overflow: 'auto' }}>
+                            <List dense>
+                                {uncommittedChanges.map(renderChange)}
+                            </List>
+                        </Paper>
+                    </Box>
+                )}
+                
                 <TextField
                     autoFocus
                     margin="dense"
@@ -48,7 +112,7 @@ const CommitDialog: React.FC = observer(() => {
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose}>Cancel</Button>
-                <Button onClick={handleCommit} variant="contained" disabled={!message.trim()}>Commit</Button>
+                <Button onClick={handleCommit} variant="contained" disabled={!message.trim() || uncommittedChanges.length === 0}>Commit</Button>
             </DialogActions>
         </Dialog>
     );
