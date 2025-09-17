@@ -1,7 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, Typography, TextField, Button, Avatar, Paper, Popover, List, ListItemButton, ListItemAvatar, ListItemText } from '@mui/material';
+import { Box, Typography, TextField, Button, Avatar, Paper, Popover, List, ListItemButton, ListItemAvatar, ListItemText, Collapse } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useStores } from '../stores/StoreProvider';
 import { Comment, User } from '../types';
 
@@ -13,6 +15,7 @@ const CommentForm: React.FC<{
 }> = ({ onSubmit, onCancel, submitLabel, placeholder }) => {
     const { projectStore } = useStores();
     const [content, setContent] = useState('');
+    const [mentionedUsers, setMentionedUsers] = useState<Map<string, User>>(new Map());
 
     // State for the @mention popover
     const [mentionAnchor, setMentionAnchor] = useState<HTMLElement | null>(null);
@@ -57,9 +60,10 @@ const CommentForm: React.FC<{
     const handleMentionSelect = (user: User) => {
         const textBeforeMention = content.substring(0, mentionStartIndex);
         const textAfterMention = content.substring(mentionStartIndex + 1 + mentionQuery.length);
-        const newContent = `${textBeforeMention}@${user.email} ${textAfterMention}`;
+        const newContent = `${textBeforeMention}@${user.name} ${textAfterMention}`;
         
         setContent(newContent);
+        setMentionedUsers(prev => new Map(prev).set(user.name, user)); // Store user object to resolve back to email on submit
         setMentionAnchor(null);
         setMentionQuery('');
         setMentionStartIndex(-1);
@@ -68,8 +72,18 @@ const CommentForm: React.FC<{
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (content.trim()) {
-            onSubmit(content.trim());
+            let processedContent = content.trim();
+            // Convert @username mentions back to @email.com for the backend
+            mentionedUsers.forEach((user, name) => {
+                // Escape special regex characters in the name before creating the RegExp
+                const escapedName = name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const mentionRegex = new RegExp(`@${escapedName}(?=\\s|$)`, 'g');
+                processedContent = processedContent.replace(mentionRegex, `@${user.email}`);
+            });
+
+            onSubmit(processedContent);
             setContent('');
+            setMentionedUsers(new Map());
         }
     };
 
@@ -130,6 +144,7 @@ const CommentView: React.FC<{ comment: Comment }> = observer(({ comment }) => {
     const { projectStore } = useStores();
     const { addComment } = projectStore;
     const [isReplying, setIsReplying] = useState(false);
+    const [repliesOpen, setRepliesOpen] = useState(false);
     
     const handleReplySubmit = async (content: string) => {
         await addComment(content, comment.id);
@@ -161,11 +176,23 @@ const CommentView: React.FC<{ comment: Comment }> = observer(({ comment }) => {
                     />
                 )}
                 {comment.replies && comment.replies.length > 0 && (
-                    <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {comment.replies.map(reply => (
-                            <CommentView key={reply.id} comment={reply} />
-                        ))}
-                    </Box>
+                    <>
+                        <Button
+                            size="small"
+                            onClick={() => setRepliesOpen(!repliesOpen)}
+                            startIcon={repliesOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                            sx={{ ml: 1, color: 'text.secondary' }}
+                        >
+                            {repliesOpen ? 'Hide replies' : `Show ${comment.replies.length} replies`}
+                        </Button>
+                        <Collapse in={repliesOpen} timeout="auto" unmountOnExit>
+                            <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2, pl: 2, borderLeft: '2px solid', borderColor: 'divider' }}>
+                                {comment.replies.map(reply => (
+                                    <CommentView key={reply.id} comment={reply} />
+                                ))}
+                            </Box>
+                        </Collapse>
+                    </>
                 )}
             </Box>
         </Box>

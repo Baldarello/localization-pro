@@ -2,6 +2,7 @@ import { Project, User, Branch, Commit, TeamMembership, Comment, Notification, I
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import sequelize from '../Sequelize.js';
 import { sendEmail } from '../../helpers/mailer.js';
+import { sendToUser } from '../../config/WebSocketServer.js';
 
 const formatProject = (project) => {
     if (!project) return null;
@@ -399,17 +400,19 @@ export const deleteLatestCommit = async (projectId, branchName) => {
 
         branch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         if (branch.commits.length <= 1) {
-            throw new Error('Cannot delete the initial commit');
+            throw new Error('Cannot delete the initial commit of a branch');
         }
 
         const latestCommit = branch.commits[0];
-        const newLatestCommit = branch.commits[1];
+        const parentCommit = branch.commits[1];
 
-        branch.workingTerms = newLatestCommit.terms;
-        await branch.save({ transaction: t });
-        
+        // Delete the latest commit
         await Commit.destroy({ where: { id: latestCommit.id }, transaction: t });
 
+        // Restore the working terms to the parent commit's state
+        branch.workingTerms = parentCommit.terms;
+        await branch.save({ transaction: t });
+        
         await t.commit();
     } catch (error) {
         await t.rollback();
@@ -420,118 +423,85 @@ export const deleteLatestCommit = async (projectId, branchName) => {
 export const mergeBranches = async (projectId, sourceBranchName, targetBranchName) => {
     const sourceBranch = await Branch.findOne({ where: { projectId, name: sourceBranchName }, include: [{model: Commit, as: 'commits'}] });
     const targetBranch = await Branch.findOne({ where: { projectId, name: targetBranchName } });
-    if (!sourceBranch || !targetBranch) throw new Error('Branch not found');
+    if (!sourceBranch || !targetBranch) throw new Error('One or both branches not found');
+    
+    sourceBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const sourceTermsMap = new Map(sourceBranch.commits[0].terms.map(t => [t.id, t]));
+    const targetTermsMap = new Map(targetBranch.workingTerms.map(t => [t.id, t]));
 
-    sourceBranch.commits.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-    const sourceTerms = sourceBranch.commits[0]?.terms || [];
-    const targetTerms = targetBranch.workingTerms;
-
-    const sourceTermsMap = new Map(sourceTerms.map(t => [t.text, t]));
-    const targetTermsMap = new Map(targetTerms.map(t => [t.id, t]));
-
-    for (const [key, sourceTerm] of sourceTermsMap.entries()) {
-        const existingTargetTerm = Array.from(targetTermsMap.values()).find(t => t.text === key);
-        if (existingTargetTerm) {
-            if (!existingTargetTerm.translations) {
-                existingTargetTerm.translations = {};
-            }
-            Object.assign(existingTargetTerm.translations, sourceTerm.translations);
-        } else {
-            targetTerms.push({ ...sourceTerm, id: `term-${Date.now()}-${key}` });
-        }
+    // Simple merge: source overrides target
+    for (const [id, term] of sourceTermsMap.entries()) {
+        targetTermsMap.set(id, term);
     }
     
-    targetBranch.workingTerms = targetTerms;
-    targetBranch.changed('workingTerms', true);
+    targetBranch.workingTerms = Array.from(targetTermsMap.values());
     await targetBranch.save();
 };
 
 // --- Comments & Notifications ---
-
 export const getCommentsForTerm = async (projectId, termId) => {
     const comments = await Comment.findAll({
         where: { projectId, termId },
-        include: [{
-            model: User,
-            as: 'author',
-            attributes: ['id', 'name', 'avatarInitials']
-        }],
+        include: [{ model: User, as: 'author', attributes: ['id', 'name', 'avatarInitials'] }],
         order: [['createdAt', 'ASC']]
     });
     return comments.map(c => c.get({ plain: true }));
 };
 
-const findMentions = (content) => {
-    const mentionRegex = /@([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/g;
-    const matches = content.match(mentionRegex);
-    if (!matches) return [];
-    // remove '@' prefix
-    return [...new Set(matches.map(m => m.substring(1)))]; // Return unique emails
-};
-
 export const createComment = async (projectId, termId, content, parentId, authorId, branchName) => {
-    const project = await Project.findByPk(projectId, { include: [{ model: User, as: 'users' }] });
-    if (!project) throw new Error('Project not found');
-    
-    const branch = await Branch.findOne({ where: { projectId, name: branchName } });
-    if (!branch) throw new Error('Branch not found');
-
     const newComment = await Comment.create({
         id: `comment-${Date.now()}`,
         content,
         termId,
         branchName,
-        parentId,
         authorId,
         projectId,
+        parentId,
     });
+    
+    // --- Handle mentions and create notifications ---
+    const mentionRegex = /@([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/g;
+    let match;
+    const mentionedEmails = new Set();
+    while ((match = mentionRegex.exec(content)) !== null) {
+        mentionedEmails.add(match[1]);
+    }
 
-    // Handle mentions: create notifications and send emails
-    const mentionedEmails = findMentions(content);
-    if (mentionedEmails.length > 0) {
-        const projectMemberEmails = new Set(project.users.map(u => u.email));
-        const validMentionedUsers = await User.findAll({
-            where: { email: mentionedEmails }
-        });
-
-        const author = await User.findByPk(authorId);
-        const term = branch.workingTerms.find(t => t.id === termId);
-
-        for (const mentionedUser of validMentionedUsers) {
-            // Only notify if the mentioned user is part of the project team and is not the author
-            if (projectMemberEmails.has(mentionedUser.email) && mentionedUser.id !== authorId) {
-                // Create in-app notification
+    if (mentionedEmails.size > 0) {
+        const mentionedUsers = await User.findAll({ where: { email: [...mentionedEmails] } });
+        for (const user of mentionedUsers) {
+            // Don't notify the user who wrote the comment
+            if (user.id !== authorId) {
                 await Notification.create({
-                    id: `notif-${Date.now()}-${mentionedUser.id}`,
-                    type: 'mention',
+                    id: `notif-${Date.now()}-${user.id}`,
                     read: false,
-                    recipientId: mentionedUser.id,
-                    commentId: newComment.id,
+                    type: 'mention',
+                    recipientId: user.id,
+                    commentId: newComment.id
                 });
+                
+                // Send real-time WebSocket notification
+                sendToUser(user.id, { type: 'new_notification' });
 
-                // Send email notification if user has them enabled
-                if (mentionedUser.settings?.mentionNotifications) {
-                    const subject = `You were mentioned in ${project.name}`;
-                    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+                // Also send an email if user has it enabled
+                if (user.settings?.mentionNotifications) {
+                    const author = await User.findByPk(authorId);
+                    const subject = `You were mentioned by ${author.name} in ${branchName}`;
                     const html = `
-                        <p>Hi ${mentionedUser.name},</p>
-                        <p><b>${author.name}</b> mentioned you in a comment on the term "<b>${term?.text || 'a term'}</b>" in the project "<b>${project.name}</b>".</p>
-                        <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; color: #666;">
-                            <i>${content.replace(/\n/g, '<br>')}</i>
-                        </blockquote>
-                        <a href="${frontendUrl}" style="display: inline-block; padding: 10px 20px; background-color: #1976d2; color: white; text-decoration: none; border-radius: 5px;">View Notification</a>
-                        <hr>
-                        <p><small>You can disable these notifications in your profile settings.</small></p>
-                    `;
-                    sendEmail(mentionedUser.email, subject, html);
+                        <p>Hi ${user.name},</p>
+                        <p>You were mentioned in a comment in the project you are a part of.</p>
+                        <p><b>${author.name}:</b> "${content}"</p>
+                        <p>You can view the comment in the application.</p>`;
+                    sendEmail(user.email, subject, html);
                 }
             }
         }
     }
 
+    // Fetch the full comment to return
     const fullComment = await Comment.findByPk(newComment.id, {
         include: [{ model: User, as: 'author', attributes: ['id', 'name', 'avatarInitials'] }]
     });
-
+    
     return fullComment.get({ plain: true });
 };

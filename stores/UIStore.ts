@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { RootStore } from './RootStore';
 import { AlertSeverity, Notification } from '../types';
 import { ThemeName } from '../theme';
+import { API_BASE_URL } from '../ApiClient';
 
 type View = 'login' | 'register' | 'forgotPassword' | 'app' | 'profile';
 type Theme = 'light' | 'dark';
@@ -17,6 +18,11 @@ export class UIStore {
     isApiSpecModalOpen = false;
     isCommitDialogOpen = false;
     isImportExportDialogOpen = false;
+    
+    private notificationInterval: number | null = null;
+    private websocket: WebSocket | null = null;
+    private reconnectionTimeout: number | null = null;
+    private shouldReconnect = false;
 
     notifications: Notification[] = [];
 
@@ -116,6 +122,89 @@ export class UIStore {
     hideAlert = () => {
         this.isAlertOpen = false;
     };
+
+    startNotificationPolling = () => {
+        // Prevent multiple intervals from starting
+        if (this.notificationInterval) {
+            return;
+        }
+        this.fetchNotifications(); // Fetch immediately on start
+        this.notificationInterval = window.setInterval(() => {
+            // Only fetch if the user is still logged in
+            if (this.rootStore.authStore.currentUser) {
+                this.fetchNotifications();
+            } else {
+                this.stopNotificationPolling();
+            }
+        }, 15000); // Poll every 15 seconds
+    };
+
+    stopNotificationPolling = () => {
+        if (this.notificationInterval) {
+            window.clearInterval(this.notificationInterval);
+            this.notificationInterval = null;
+        }
+    };
+
+    // --- WebSocket Actions ---
+    initializeWebSocket = () => {
+        if (this.websocket && this.websocket.readyState !== WebSocket.CLOSED) {
+            console.log("WebSocket connection already open.");
+            return;
+        }
+
+        this.shouldReconnect = true; // Enable reconnection attempts by default
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const apiUrl = new URL(API_BASE_URL);
+        const wsUrl = `${wsProtocol}//${apiUrl.host}`;
+        
+        console.log(`Attempting to connect WebSocket to ${wsUrl}`);
+        this.websocket = new WebSocket(wsUrl);
+
+        this.websocket.onopen = () => {
+            console.log("WebSocket connection established.");
+        };
+
+        this.websocket.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                console.log("WebSocket message received:", message);
+
+                if (message.type === 'new_notification') {
+                    this.fetchNotifications();
+                }
+            } catch (error) {
+                console.error("Error parsing WebSocket message:", error);
+            }
+        };
+
+        this.websocket.onerror = (error) => {
+            console.error("WebSocket error:", error);
+        };
+
+        this.websocket.onclose = () => {
+            console.log("WebSocket connection closed.");
+            if (this.shouldReconnect) {
+                console.log("Attempting to reconnect WebSocket in 5 seconds...");
+                this.reconnectionTimeout = window.setTimeout(this.initializeWebSocket, 5000);
+            }
+        };
+    };
+
+    closeWebSocket = () => {
+        if (this.reconnectionTimeout) {
+            window.clearTimeout(this.reconnectionTimeout);
+            this.reconnectionTimeout = null;
+        }
+        this.shouldReconnect = false; // Prevent reconnection attempts on manual close
+        if (this.websocket) {
+            this.websocket.close();
+            this.websocket = null;
+        }
+        console.log("WebSocket connection closed manually.");
+    };
+
 
     // --- Notification Actions ---
     fetchNotifications = async () => {

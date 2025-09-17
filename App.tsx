@@ -27,12 +27,18 @@ const App: React.FC = observer(() => {
         authStore.checkAuthStatus().then(() => {
             if (authStore.currentUser) {
                 uiStore.fetchNotifications();
+                uiStore.startNotificationPolling(); // Start polling for notifications
             } else if (viewParam === 'register') {
                 uiStore.setView('register');
                 // Clean the URL to remove the query parameter after it's been used
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
+        
+        // Cleanup function to stop polling when the app unmounts
+        return () => {
+            uiStore.stopNotificationPolling();
+        };
     }, [authStore, uiStore]);
 
     const handleCloseAlert = () => {

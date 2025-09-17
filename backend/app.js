@@ -37,7 +37,7 @@ if (!sessionSecret) {
     }
 }
 
-app.use(session({
+export const sessionParser = session({
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false, // Don't create session until something stored
@@ -46,7 +46,9 @@ app.use(session({
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     }
-}));
+});
+
+app.use(sessionParser);
 
 // Passport middleware
 app.use(passport.initialize());

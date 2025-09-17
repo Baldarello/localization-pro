@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import 'dotenv/config'; // Load .env file
-import app from '../app.js';
+import app, { sessionParser } from '../app.js';
 import http from 'http';
 import logger from '../src/helpers/logger.js';
 import sequelize from '../src/database/Sequelize.js';
+import { initializeWebSocketServer } from '../src/config/WebSocketServer.js';
 // This import is crucial: it registers all models with Sequelize before sync is called.
 import '../src/database/models/index.js';
 
@@ -82,6 +83,9 @@ async function startServer() {
     // based on the defined Sequelize models. It does not delete existing data.
     await sequelize.sync();
     logger.info('Database synchronized successfully.');
+
+    // Initialize the WebSocket server and attach it to the HTTP server
+    initializeWebSocketServer(server, sessionParser);
 
     /**
      * Listen on provided port, on all network interfaces.

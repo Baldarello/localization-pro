@@ -28,6 +28,8 @@ export class AuthStore {
             });
             await this.rootStore.projectStore.initializeData();
             this.rootStore.uiStore.setView('app');
+            this.rootStore.uiStore.initializeWebSocket(); // Connect WebSocket on login
+            this.rootStore.uiStore.startNotificationPolling(); // Start polling on login
         } else {
             this.rootStore.uiStore.showAlert('Invalid email or password.', 'error');
         }
@@ -49,6 +51,7 @@ export class AuthStore {
                 });
                 await this.rootStore.projectStore.initializeData();
                 this.rootStore.uiStore.setView('app');
+                this.rootStore.uiStore.initializeWebSocket(); // Connect WebSocket on session restore
             }
         } catch (error) {
             console.log('User not authenticated');
@@ -76,6 +79,8 @@ export class AuthStore {
     };
 
     logout = async () => {
+        this.rootStore.uiStore.closeWebSocket(); // Disconnect WebSocket
+        this.rootStore.uiStore.stopNotificationPolling(); // Stop polling
         await this.rootStore.apiClient.logout();
         runInAction(() => {
             this.currentUser = null;
