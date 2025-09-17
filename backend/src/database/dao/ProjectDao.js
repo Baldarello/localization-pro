@@ -108,9 +108,13 @@ export const updateProjectLanguages = async (projectId, newLanguages) => {
 
     // Update team members' language assignments
     for (const user of project.users) {
-        const updatedLangs = user.TeamMembership.languages.filter(code => newLangCodes.includes(code));
-        user.TeamMembership.languages = updatedLangs;
-        await user.TeamMembership.save();
+        // Safety check for languages array to prevent server crash
+        if (user.TeamMembership) {
+            const currentLangs = user.TeamMembership.languages || [];
+            const updatedLangs = currentLangs.filter(code => newLangCodes.includes(code));
+            user.TeamMembership.languages = updatedLangs;
+            await user.TeamMembership.save();
+        }
     }
     
     project.languages = newLanguages;

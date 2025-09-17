@@ -49,14 +49,22 @@ class ApiClient {
 
             if (!response.ok) {
                 const errorBody = await response.json().catch(() => ({ message: response.statusText }));
-                throw new Error(errorBody.message || 'An API error occurred');
+                const error: any = new Error(errorBody.message || 'An API error occurred');
+                error.status = response.status;
+                throw error;
             }
             if (response.status === 204) { // No Content
                 return null;
             }
             return response.json();
-        } catch (error) {
-            console.error(`API call to ${endpoint} failed:`, error);
+        } catch (error: any) {
+            // Special handling for the expected 401 on /auth/me on initial app load.
+            // This is a normal state, not an error.
+            if (endpoint === '/auth/me' && error.status === 401) {
+                console.warn(`API call to /auth/me returned status 401: ${error.message}. This is expected if the user is not logged in.`);
+            } else {
+                 console.error(`API call to ${endpoint} failed:`, error);
+            }
             throw error;
         }
     }
