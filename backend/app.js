@@ -22,12 +22,23 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Session middleware
-if (!process.env.SESSION_SECRET) {
-    logger.error('FATAL ERROR: SESSION_SECRET is not defined in the environment variables.');
-    process.exit(1);
+let sessionSecret = process.env.SESSION_SECRET;
+
+if (!sessionSecret) {
+    if (process.env.NODE_ENV === 'production') {
+        logger.error('FATAL ERROR: SESSION_SECRET is not defined in the environment variables. This is required for production.');
+        process.exit(1);
+    } else {
+        sessionSecret = 'a-very-insecure-dev-secret-do-not-use-in-prod';
+        logger.warn('**********************************************************************************');
+        logger.warn('WARNING: SESSION_SECRET is not defined. Using an insecure default secret for development.');
+        logger.warn('Please set a proper secret in your backend/.env file for production environments.');
+        logger.warn('**********************************************************************************');
+    }
 }
+
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false, // Don't create session until something stored
     cookie: {

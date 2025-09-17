@@ -1,8 +1,6 @@
 # Project Maintenance Guide
 
 ## API Documentation
-The project includes comprehensive API documentation using Swagger/OpenAPI specification. The documentation is automatically generated and provides interactive testing capabilities.
-
 ### Accessing API Documentation
 Once the server is running, you can access the interactive API documentation at:
 ```
@@ -83,6 +81,14 @@ EMAIL_FROM=your-email@example.com
 PORT=3000
 NODE_ENV=development
 ```
+
+### Handling Missing Environment Variables
+
+The application should be robust against missing environment variables. The general principle is:
+
+-   **Required for Core Functionality (Production):** If a variable is essential for security or core functionality in a production environment (e.g., `SESSION_SECRET`), the application **must** refuse to start and log a fatal error.
+-   **Required for Core Functionality (Development):** In a development environment, it is acceptable to use a hardcoded, insecure default value for essential variables to facilitate easier setup. A clear and prominent warning must be logged to the console in this case.
+-   **Optional/Feature-Specific:** If a variable enables an optional feature (e.g., `GOOGLE_CLIENT_ID` for Google OAuth), its absence should not crash the server. Instead, the application should gracefully disable the corresponding feature and log a warning that the feature is disabled.
 
 ### Required Environment Variables
 The following environment variables are **required** and must be set:
@@ -403,7 +409,3 @@ Use the `.http` files in the `test/` directory to test API endpoints. Current te
 - **Winston**: Advanced logging library with file rotation
 - **Nodemailer**: Email sending functionality
 - **Express-validator**: Request validation middleware
-
-## Database
-
-The project uses SQLite database stored in `database.sqlite` file. The database is automatically created when the application starts for the first time.
