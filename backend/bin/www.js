@@ -3,24 +3,9 @@ import 'dotenv/config'; // Load .env file
 import app from '../app.js';
 import http from 'http';
 import logger from '../src/helpers/logger.js';
-
-/**
- * Get port from environment and store in Express.
- */
-const port = normalizePort(process.env.PORT || '3001');
-app.set('port', port);
-
-/**
- * Create HTTP server.
- */
-const server = http.createServer(app);
-
-/**
- * Listen on provided port, on all network interfaces.
- */
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+import sequelize from '../src/database/Sequelize.js';
+// This import is crucial: it registers all models with Sequelize before sync is called.
+import '../src/database/models/index.js';
 
 /**
  * Normalize a port into a number, string, or false.
@@ -40,6 +25,14 @@ function normalizePort(val) {
 
   return false;
 }
+
+const port = normalizePort(process.env.PORT || '3001');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+const server = http.createServer(app);
 
 /**
  * Event listener for HTTP server "error" event.
@@ -78,3 +71,28 @@ function onListening() {
     : 'port ' + addr.port;
   logger.info('Backend server listening on ' + bind);
 }
+
+/**
+ * Synchronize database and start server.
+ */
+async function startServer() {
+  try {
+    logger.info('Synchronizing database schemas...');
+    // This command creates database tables if they don't exist,
+    // based on the defined Sequelize models. It does not delete existing data.
+    await sequelize.sync();
+    logger.info('Database synchronized successfully.');
+
+    /**
+     * Listen on provided port, on all network interfaces.
+     */
+    server.listen(port);
+    server.on('error', onError);
+    server.on('listening', onListening);
+  } catch (error) {
+    logger.error('Failed to start server due to database synchronization error:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
