@@ -1,6 +1,8 @@
 
 
 
+
+
 import { makeAutoObservable, runInAction } from 'mobx';
 import { Project, Term, Language, User, UserRole, Branch, Commit } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
@@ -593,10 +595,19 @@ export class ProjectStore {
         if (!this.selectedProject) return;
         const newBranch = await this.rootStore.apiClient.createBranch(this.selectedProject.id, newBranchName, sourceBranchName);
         if (newBranch) {
-            runInAction(() => {
-                this.selectedProject?.branches.push(newBranch);
-                this.rootStore.uiStore.showAlert(`Branch "${newBranchName}" created successfully.`, 'success');
-            });
+            // The API returns an incomplete branch object. Refetch the project to get the full state.
+            const updatedProject = await this.rootStore.apiClient.getProjectById(this.selectedProject.id);
+            if (updatedProject) {
+                runInAction(() => {
+                    const projectIndex = this.projects.findIndex(p => p.id === this.selectedProject!.id);
+                    if (projectIndex !== -1) {
+                        this.projects[projectIndex] = updatedProject;
+                    }
+                    this.rootStore.uiStore.showAlert(`Branch "${newBranchName}" created successfully.`, 'success');
+                });
+            } else {
+                 this.rootStore.uiStore.showAlert(`Branch created, but failed to refresh project data.`, 'warning');
+            }
         } else {
             this.rootStore.uiStore.showAlert(`Failed to create branch "${newBranchName}". It may already exist.`, 'error');
         }
@@ -606,10 +617,19 @@ export class ProjectStore {
         if (!this.selectedProject) return;
         const newBranch = await this.rootStore.apiClient.createBranchFromCommit(this.selectedProject.id, commitId, newBranchName);
         if (newBranch) {
-            runInAction(() => {
-                this.selectedProject?.branches.push(newBranch);
-                this.rootStore.uiStore.showAlert(`Branch "${newBranchName}" created from commit ${commitId.slice(-7)}.`, 'success');
-            });
+             // The API returns an incomplete branch object. Refetch the project to get the full state.
+            const updatedProject = await this.rootStore.apiClient.getProjectById(this.selectedProject.id);
+            if (updatedProject) {
+                runInAction(() => {
+                    const projectIndex = this.projects.findIndex(p => p.id === this.selectedProject!.id);
+                    if (projectIndex !== -1) {
+                        this.projects[projectIndex] = updatedProject;
+                    }
+                    this.rootStore.uiStore.showAlert(`Branch "${newBranchName}" created from commit ${commitId.slice(-7)}.`, 'success');
+                });
+            } else {
+                 this.rootStore.uiStore.showAlert(`Branch created, but failed to refresh project data.`, 'warning');
+            }
         } else {
             this.rootStore.uiStore.showAlert(`Failed to create branch. It may already exist.`, 'error');
         }

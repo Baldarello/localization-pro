@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
@@ -88,7 +90,7 @@ const BranchManagerDialog: React.FC = observer(() => {
 
         const base = project.branches.find(b => b.name === baseBranch);
         const compare = project.branches.find(b => b.name === compareBranch);
-        if (!base || !compare || base.commits.length === 0 || compare.commits.length === 0) return null;
+        if (!base || !compare || !base.commits || base.commits.length === 0 || !compare.commits || compare.commits.length === 0) return null;
 
         const baseTerms = new Map(base.commits[0].terms.map(t => [t.text, t]));
         const compareTerms = new Map(compare.commits[0].terms.map(t => [t.text, t]));
@@ -202,7 +204,7 @@ const BranchManagerDialog: React.FC = observer(() => {
                                                 {branch.name === project.currentBranchName && <Chip label="current" size="small" color="secondary" />}
                                             </Box>
                                         }
-                                        secondary={`${branch.commits[0]?.terms.length || 0} terms, ${branch.commits.length} commit(s)`}
+                                        secondary={`${branch.commits?.[0]?.terms.length || 0} terms, ${branch.commits?.length || 0} commit(s)`}
                                     />
                                 </ListItem>
                             ))}

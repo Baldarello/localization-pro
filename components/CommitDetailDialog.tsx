@@ -150,7 +150,7 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
                 </DialogTitle>
                 <DialogContent dividers>
                     <Paper sx={{ p: 2, mb: 2, borderLeft: 4, borderColor: 'primary.main' }} variant="outlined">
-                        <Typography variant="h6">{commit.message.split('\n')[0]}</Typography>
+                        <Typography variant="h6">{(commit.message || '').split('\n')[0]}</Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                             <strong>{author?.name || 'Unknown'}</strong> committed on {commitDate.toLocaleString()}
                         </Typography>
