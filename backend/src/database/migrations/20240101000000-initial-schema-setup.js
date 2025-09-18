@@ -29,7 +29,7 @@ export async function up(queryInterface, Sequelize) {
     workingTerms: { type: DataTypes.JSON, allowNull: false, defaultValue: [] },
     projectId: { type: DataTypes.STRING, allowNull: false, references: { model: 'Projects', key: 'id' }, onDelete: 'CASCADE' },
   });
-  await queryInterface.addIndex('Branches', ['name', 'projectId'], { unique: true });
+  await queryInterface.addIndex('Branches', ['name', 'projectId'], { unique: true, name: 'branches_name_project_id' });
 
   await queryInterface.createTable('Commits', {
     id: { type: DataTypes.STRING, primaryKey: true, allowNull: false },
@@ -82,7 +82,7 @@ export async function up(queryInterface, Sequelize) {
     createdAt: { allowNull: false, type: DataTypes.DATE },
     updatedAt: { allowNull: false, type: DataTypes.DATE },
   });
-  await queryInterface.addIndex('Invitations', ['email', 'projectId'], { unique: true });
+  await queryInterface.addIndex('Invitations', ['email', 'projectId'], { unique: true, name: 'invitations_email_project_id' });
 
   await queryInterface.createTable('Notifications', {
     id: { type: DataTypes.STRING, primaryKey: true, allowNull: false },
@@ -97,11 +97,13 @@ export async function up(queryInterface, Sequelize) {
 
 export async function down(queryInterface, Sequelize) {
   await queryInterface.dropTable('Notifications');
+  await queryInterface.removeIndex('Invitations', 'invitations_email_project_id');
   await queryInterface.dropTable('Invitations');
   await queryInterface.dropTable('Comments');
   await queryInterface.dropTable('ApiKeys');
   await queryInterface.dropTable('TeamMemberships');
   await queryInterface.dropTable('Commits');
+  await queryInterface.removeIndex('Branches', 'branches_name_project_id');
   await queryInterface.dropTable('Branches');
   await queryInterface.dropTable('Projects');
   await queryInterface.dropTable('Users');
