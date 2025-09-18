@@ -1,8 +1,16 @@
 import { Router } from 'express';
 import * as ProjectDao from '../database/dao/ProjectDao.js';
 import { authenticate } from '../middleware/auth.js';
+import { TeamMembership } from '../database/models/index.js';
 
 const router = Router();
+
+// Helper to check if a user is an admin for a specific project
+const isProjectAdmin = async (userId, projectId) => {
+    if (!userId || !projectId) return false;
+    const membership = await TeamMembership.findOne({ where: { userId, projectId } });
+    return membership && membership.role === 'admin';
+};
 
 // --- Projects ---
 
@@ -227,6 +235,122 @@ router.put('/:projectId/currentBranch', authenticate, async (req, res, next) => 
         next(error);
     }
 });
+
+// --- API Keys ---
+/**
+ * @swagger
+ * /projects/{projectId}/api-keys:
+ *   get:
+ *     summary: Get all API keys for a project
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       '200':
+ *         description: A list of API keys for the project.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ApiKey'
+ *       '401': { description: "Unauthorized" }
+ *       '403': { description: "Forbidden" }
+ *       '404': { description: "Project not found" }
+ */
+router.get('/:projectId/api-keys', authenticate, async (req, res, next) => {
+    try {
+        if (!(await isProjectAdmin(req.user.id, req.params.projectId))) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        const apiKeys = await ProjectDao.getApiKeysForProject(req.params.projectId);
+        res.json(apiKeys);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * @swagger
+ * /projects/{projectId}/api-keys:
+ *   post:
+ *     summary: Create a new API key for a project
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, permissions]
+ *             properties:
+ *               name: { type: string, example: "CI/CD Key" }
+ *               permissions: { $ref: '#/components/schemas/ApiKeyPermissions' }
+ *     responses:
+ *       '201':
+ *         description: API Key created successfully. The `secret` is only returned on creation.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiKey'
+ *       '401': { description: "Unauthorized" }
+ *       '403': { description: "Forbidden" }
+ */
+router.post('/:projectId/api-keys', authenticate, async (req, res, next) => {
+    try {
+        if (!(await isProjectAdmin(req.user.id, req.params.projectId))) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        const { name, permissions } = req.body;
+        const newApiKey = await ProjectDao.createApiKey(req.params.projectId, { name, permissions });
+        res.status(201).json(newApiKey);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * @swagger
+ * /projects/{projectId}/api-keys/{keyId}:
+ *   delete:
+ *     summary: Revoke (delete) an API key
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: keyId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       '204':
+ *         description: API Key revoked successfully.
+ *       '401': { description: "Unauthorized" }
+ *       '403': { description: "Forbidden" }
+ */
+router.delete('/:projectId/api-keys/:keyId', authenticate, async (req, res, next) => {
+    try {
+        if (!(await isProjectAdmin(req.user.id, req.params.projectId))) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        await ProjectDao.deleteApiKey(req.params.projectId, req.params.keyId);
+        res.sendStatus(204);
+    } catch (error) {
+        next(error);
+    }
+});
+
+
 
 // --- Terms ---
 

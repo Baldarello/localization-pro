@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction, computed } from 'mobx';
-import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment } from '../types';
+import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment, ApiKey, ApiKeyPermissions } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
 import { RootStore } from './RootStore';
 import { GoogleGenAI } from '@google/genai';
@@ -933,6 +933,45 @@ export class ProjectStore {
         } catch (error) {
             console.error("Failed to post comment:", error);
             this.rootStore.uiStore.showAlert('Could not post comment.', 'error');
+        }
+    }
+
+    // --- API Key Actions ---
+    async createApiKey(name: string, permissions: ApiKeyPermissions): Promise<ApiKey | null> {
+        if (!this.selectedProject) return null;
+        try {
+            const newKey = await this.rootStore.apiClient.createApiKey(this.selectedProject.id, name, permissions);
+            // Add the new key (without the secret) to the local state
+            if (this.selectedProject) {
+                const { secret, ...keyForState } = newKey;
+                runInAction(() => {
+                    this.selectedProject?.apiKeys?.unshift(keyForState);
+                });
+            }
+            return newKey; // Return the full key with secret to the component
+        } catch (error) {
+            console.error("Failed to create API key:", error);
+            this.rootStore.uiStore.showAlert('Could not create API key.', 'error');
+            return null;
+        }
+    }
+
+    async deleteApiKey(keyId: string) {
+        if (!this.selectedProject) return;
+        try {
+            const success = await this.rootStore.apiClient.deleteApiKey(this.selectedProject.id, keyId);
+            if (success && this.selectedProject.apiKeys) {
+                runInAction(() => {
+                    const keyIndex = this.selectedProject!.apiKeys!.findIndex(k => k.id === keyId);
+                    if (keyIndex > -1) {
+                        this.selectedProject!.apiKeys!.splice(keyIndex, 1);
+                    }
+                });
+                 this.rootStore.uiStore.showAlert('API Key revoked successfully.', 'success');
+            }
+        } catch (error) {
+             console.error("Failed to delete API key:", error);
+            this.rootStore.uiStore.showAlert('Could not revoke API key.', 'error');
         }
     }
 }

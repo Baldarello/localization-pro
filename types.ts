@@ -1,4 +1,5 @@
 
+
 export interface Language {
     code: string;
     name: string;
@@ -44,6 +45,22 @@ export enum UserRole {
 
 export type AlertSeverity = 'info' | 'success' | 'warning' | 'error';
 
+export enum ApiKeyPermissions {
+    ReadOnly = 'readonly',
+    Edit = 'edit',
+    Admin = 'admin',
+}
+
+export interface ApiKey {
+    id: string;
+    name: string;
+    permissions: ApiKeyPermissions;
+    keyPrefix: string;
+    createdAt: string; // ISO string
+    lastUsedAt: string | null; // ISO string
+    secret?: string; // Only present on creation
+}
+
 export interface Project {
     id: string;
     name: string;
@@ -52,6 +69,7 @@ export interface Project {
     branches: Branch[];
     currentBranchName: string;
     team: { [userId: string]: { role: UserRole; languages: string[] } }; // Maps user ID to role and assigned languages
+    apiKeys?: ApiKey[];
 }
 
 export type UncommittedChange =

@@ -1,8 +1,10 @@
-import { Project, User, Branch, Commit, TeamMembership, Comment, Notification, Invitation } from '../models/index.js';
+import { Project, User, Branch, Commit, TeamMembership, Comment, Notification, Invitation, ApiKey } from '../models/index.js';
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import sequelize from '../Sequelize.js';
 import { sendEmail } from '../../helpers/mailer.js';
 import { sendToUser, broadcastBranchUpdate, broadcastCommentUpdate } from '../../config/WebSocketServer.js';
+import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 
 const formatProject = (project) => {
     if (!project) return null;
@@ -42,6 +44,11 @@ const findProjectById = async (projectId) => {
                 as: 'users',
                 attributes: ['id', 'name', 'email', 'avatarInitials'],
                 through: { attributes: ['role', 'languages'] }
+            },
+            {
+                model: ApiKey,
+                as: 'apiKeys',
+                attributes: { exclude: ['secretHash'] }
             }
         ]
     });
@@ -64,6 +71,11 @@ export const getAllProjects = async (userId) => {
                     as: 'users',
                     attributes: ['id', 'name', 'email', 'avatarInitials'],
                     through: { attributes: ['role', 'languages'] }
+                },
+                {
+                    model: ApiKey,
+                    as: 'apiKeys',
+                    attributes: { exclude: ['secretHash'] }
                 }
             ]
         }]
@@ -516,4 +528,42 @@ export const createComment = async (projectId, termId, content, parentId, author
     });
     
     return fullComment.get({ plain: true });
+};
+
+// --- API Keys ---
+export const getApiKeysForProject = async (projectId) => {
+    return await ApiKey.findAll({
+        where: { projectId },
+        attributes: { exclude: ['secretHash'] },
+        order: [['createdAt', 'DESC']]
+    });
+};
+
+export const createApiKey = async (projectId, { name, permissions }) => {
+    const keyPrefix = `tnt_key_${crypto.randomBytes(8).toString('hex')}`;
+    const secret = `tnt_sec_${crypto.randomBytes(24).toString('hex')}`;
+    
+    const salt = await bcrypt.genSalt(10);
+    const secretHash = await bcrypt.hash(secret, salt);
+
+    const newApiKey = await ApiKey.create({
+        id: `apikey-${Date.now()}`,
+        name,
+        permissions,
+        keyPrefix,
+        secretHash,
+        projectId,
+    });
+    
+    // Return the new key object along with the one-time plain text secret
+    const { secretHash: _, ...keyData } = newApiKey.get({ plain: true });
+    
+    return {
+        ...keyData,
+        secret, // This is only returned on creation
+    };
+};
+
+export const deleteApiKey = async (projectId, keyId) => {
+    await ApiKey.destroy({ where: { id: keyId, projectId } });
 };

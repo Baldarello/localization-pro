@@ -18,6 +18,7 @@ export class UIStore {
     isApiSpecModalOpen = false;
     isCommitDialogOpen = false;
     isImportExportDialogOpen = false;
+    isApiKeysManagerOpen = false;
     
     private notificationInterval: number | null = null;
     private websocket: WebSocket | null = null;
@@ -111,6 +112,14 @@ export class UIStore {
 
     closeImportExportDialog = () => {
         this.isImportExportDialogOpen = false;
+    };
+
+    openApiKeysManager = () => {
+        this.isApiKeysManagerOpen = true;
+    };
+
+    closeApiKeysManager = () => {
+        this.isApiKeysManagerOpen = false;
     };
 
     showAlert = (message: string, severity: AlertSeverity = 'info') => {

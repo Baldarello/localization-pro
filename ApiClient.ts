@@ -1,4 +1,4 @@
-import { Project, Term, Language, User, UserRole, Branch, Commit, Notification, Comment } from './types';
+import { Project, Term, Language, User, UserRole, Branch, Commit, Notification, Comment, ApiKey, ApiKeyPermissions } from './types';
 
 // The base URL is now dynamically set by the Vite build process
 export const API_BASE_URL = process.env.API_BASE_URL || 'https://localizationpro-api.tnl.one/api/v1';
@@ -401,6 +401,29 @@ class ApiClient {
             await this.apiFetch('/users/me/notifications/read', {
                 method: 'POST',
                 body: JSON.stringify({ notificationIds }),
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // --- API Keys ---
+    async getApiKeys(projectId: string): Promise<ApiKey[]> {
+        return await this.apiFetch(`/projects/${projectId}/api-keys`);
+    }
+
+    async createApiKey(projectId: string, name: string, permissions: ApiKeyPermissions): Promise<ApiKey> {
+        return await this.apiFetch(`/projects/${projectId}/api-keys`, {
+            method: 'POST',
+            body: JSON.stringify({ name, permissions }),
+        });
+    }
+
+    async deleteApiKey(projectId: string, keyId: string): Promise<boolean> {
+        try {
+            await this.apiFetch(`/projects/${projectId}/api-keys/${keyId}`, {
+                method: 'DELETE',
             });
             return true;
         } catch (error) {

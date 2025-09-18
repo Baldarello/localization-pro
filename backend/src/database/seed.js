@@ -1,7 +1,7 @@
 // This script is for initializing the database with seed data.
 // Run with `npm run db:seed` from the backend directory.
 import sequelize from './Sequelize.js';
-import { User, Project, Branch, Commit, TeamMembership, Comment, Notification } from './models/index.js';
+import { User, Project, Branch, Commit, TeamMembership, Comment, Notification, ApiKey } from './models/index.js';
 import { AVAILABLE_LANGUAGES } from '../constants.js'; // Adjust path as needed
 import logger from '../helpers/logger.js';
 

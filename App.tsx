@@ -14,6 +14,7 @@ import { useStores } from './stores/StoreProvider';
 import ApiSpecModal from './components/ApiSpecModal';
 import CommitDialog from './components/CommitDialog';
 import ImportExportDialog from './components/ImportExportDialog';
+import ApiKeysManagerDialog from './components/ApiKeysManagerDialog';
 
 const App: React.FC = observer(() => {
     const { uiStore, authStore, projectStore } = useStores();
@@ -105,6 +106,7 @@ const App: React.FC = observer(() => {
             <ApiSpecModal />
             <CommitDialog />
             <ImportExportDialog />
+            <ApiKeysManagerDialog />
         </ThemeProvider>
     );
 });

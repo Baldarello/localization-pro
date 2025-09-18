@@ -1,4 +1,5 @@
 
+
 import { Language } from './types';
 
 export const AVAILABLE_LANGUAGES: Language[] = [
@@ -23,3 +24,9 @@ export const getFlagCode = (langCode: string): string => {
         default: return langCode;
     }
 };
+
+export const ApiKeyPermissions = Object.freeze({
+    ReadOnly: 'readonly',
+    Edit: 'edit',
+    Admin: 'admin',
+});

@@ -16,3 +16,9 @@ export const UserRole = Object.freeze({
     Editor: 'editor',
     Admin: 'admin',
 });
+
+export const ApiKeyPermissions = Object.freeze({
+    ReadOnly: 'readonly',
+    Edit: 'edit',
+    Admin: 'admin',
+});

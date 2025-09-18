@@ -6,6 +6,7 @@ import TeamMembership from './TeamMembership.js';
 import Comment from './Comment.js';
 import Notification from './Notification.js';
 import Invitation from './Invitation.js';
+import ApiKey from './ApiKey.js';
 
 
 // Project <-> Branch (One-to-Many)
@@ -50,6 +51,10 @@ Project.hasMany(Invitation, { foreignKey: 'projectId' });
 Invitation.belongsTo(User, { as: 'inviter', foreignKey: 'invitedById', onDelete: 'SET NULL' });
 User.hasMany(Invitation, { as: 'sentInvitations', foreignKey: 'invitedById' });
 
+// API Key Associations
+Project.hasMany(ApiKey, { as: 'apiKeys', foreignKey: 'projectId', onDelete: 'CASCADE' });
+ApiKey.belongsTo(Project, { as: 'project', foreignKey: 'projectId' });
+
 
 // We can export all models from here
-export { User, Project, Branch, Commit, TeamMembership, Comment, Notification, Invitation };
+export { User, Project, Branch, Commit, TeamMembership, Comment, Notification, Invitation, ApiKey };

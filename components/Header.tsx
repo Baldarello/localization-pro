@@ -10,6 +10,7 @@ import ImportExportIcon from '@mui/icons-material/ImportExport';
 import PeopleIcon from '@mui/icons-material/People';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { useStores } from '../stores/StoreProvider';
 import BranchSelector from './BranchSelector';
 import { UserRole, Notification } from '../types';
@@ -73,6 +74,7 @@ const Header: React.FC = observer(() => {
     const handleManageBranches = createMenuAction(uiStore.openBranchManager);
     const handleImportExportClick = createMenuAction(uiStore.openImportExportDialog);
     const handleApiSpecClick = createMenuAction(uiStore.openApiSpecModal);
+    const handleApiKeysClick = createMenuAction(uiStore.openApiKeysManager);
 
     const handleMobileNotificationsClick = () => {
         handleAdminMenuClose();
@@ -182,6 +184,10 @@ const Header: React.FC = observer(() => {
                                                 <ListItemIcon><AccountTreeIcon fontSize="small" /></ListItemIcon>
                                                 <ListItemText>Manage Branches</ListItemText>
                                             </MenuItem>
+                                             <MenuItem onClick={handleApiKeysClick}>
+                                                <ListItemIcon><VpnKeyIcon fontSize="small" /></ListItemIcon>
+                                                <ListItemText>API Keys</ListItemText>
+                                            </MenuItem>
                                             <MenuItem onClick={handleManageTeam}>
                                                 <ListItemIcon><PeopleIcon fontSize="small" /></ListItemIcon>
                                                 <ListItemText>Manage Team</ListItemText>
@@ -233,6 +239,10 @@ const Header: React.FC = observer(() => {
                                             <MenuItem onClick={handleManageBranches}>
                                                 <ListItemIcon><AccountTreeIcon fontSize="small" /></ListItemIcon>
                                                 <ListItemText>Manage Branches</ListItemText>
+                                            </MenuItem>
+                                             <MenuItem onClick={handleApiKeysClick}>
+                                                <ListItemIcon><VpnKeyIcon fontSize="small" /></ListItemIcon>
+                                                <ListItemText>API Keys</ListItemText>
                                             </MenuItem>
                                             <MenuItem onClick={handleManageTeam}>
                                                 <ListItemIcon><PeopleIcon fontSize="small" /></ListItemIcon>
