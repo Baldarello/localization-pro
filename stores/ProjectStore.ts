@@ -31,6 +31,7 @@ export class ProjectStore {
 
     // Real-time state
     typingUsersOnSelectedTerm = new Map<string, string>(); // Map<userId, userName>
+    private typingTimeouts = new Map<string, number>(); // Map<userId, timeoutId>
 
     constructor(rootStore: RootStore) {
         makeAutoObservable(this, {}, { autoBind: true });
@@ -55,6 +56,8 @@ export class ProjectStore {
         this.selectedTermId = null;
         this.comments = [];
         this.typingUsersOnSelectedTerm.clear();
+        this.typingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        this.typingTimeouts.clear();
     }
 
     get selectedProject() {
@@ -187,11 +190,28 @@ export class ProjectStore {
     }
 
     startTyping(userId: string, userName: string) {
-        this.typingUsersOnSelectedTerm.set(userId, userName);
+        // If there's a timeout scheduled to remove this user, cancel it.
+        if (this.typingTimeouts.has(userId)) {
+            clearTimeout(this.typingTimeouts.get(userId)!);
+            this.typingTimeouts.delete(userId);
+        }
+        // Add or update the user in the typing map.
+        runInAction(() => {
+            this.typingUsersOnSelectedTerm.set(userId, userName);
+        });
     }
     
     stopTyping(userId: string) {
-        this.typingUsersOnSelectedTerm.delete(userId);
+        // Don't remove immediately. Set a timeout to remove after a delay.
+        const timeoutId = window.setTimeout(() => {
+            runInAction(() => {
+                this.typingUsersOnSelectedTerm.delete(userId);
+                this.typingTimeouts.delete(userId);
+            });
+        }, 3000); // 3 seconds delay
+
+        // Store the timeout ID so it can be cancelled if the user starts typing again.
+        this.typingTimeouts.set(userId, timeoutId);
     }
 
     async handleBranchUpdate(payload: { projectId: string, branchName: string }) {
@@ -232,6 +252,8 @@ export class ProjectStore {
         this.selectedTermId = currentTerms[0]?.id || null;
         this.comments = [];
         this.typingUsersOnSelectedTerm.clear();
+        this.typingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        this.typingTimeouts.clear();
         this.notifyViewingBranch();
     };
 
@@ -240,12 +262,16 @@ export class ProjectStore {
         this.selectedTermId = null;
         this.comments = [];
         this.typingUsersOnSelectedTerm.clear();
+        this.typingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        this.typingTimeouts.clear();
         this.rootStore.uiStore.sendWebSocketMessage({ type: 'client_stopped_viewing' });
     }
     
     selectTerm(termId: string) {
         this.selectedTermId = termId;
         this.typingUsersOnSelectedTerm.clear();
+        this.typingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        this.typingTimeouts.clear();
     }
 
     async addProject(name: string) {

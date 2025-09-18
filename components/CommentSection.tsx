@@ -196,7 +196,7 @@ const CommentForm: React.FC<{
 
 const CommentView: React.FC<{ comment: Comment }> = observer(({ comment }) => {
     const { projectStore } = useStores();
-    const { addComment } = projectStore;
+    const { addComment, allUsers } = projectStore;
     const [isReplying, setIsReplying] = useState(false);
     const [repliesOpen, setRepliesOpen] = useState(true);
     
@@ -204,6 +204,37 @@ const CommentView: React.FC<{ comment: Comment }> = observer(({ comment }) => {
         await addComment(content, comment.id);
         setIsReplying(false);
     };
+
+    const processedContent = useMemo(() => {
+        const mentionRegex = /@([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/g;
+        const parts = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = mentionRegex.exec(comment.content)) !== null) {
+            if (match.index > lastIndex) {
+                parts.push(comment.content.substring(lastIndex, match.index));
+            }
+
+            const email = match[1];
+            const user = allUsers.find(u => u.email === email);
+            const mentionText = user ? `@${user.name}` : match[0];
+
+            parts.push(
+                <Typography component="span" key={`mention-${match.index}`} sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    {mentionText}
+                </Typography>
+            );
+
+            lastIndex = mentionRegex.lastIndex;
+        }
+
+        if (lastIndex < comment.content.length) {
+            parts.push(comment.content.substring(lastIndex));
+        }
+
+        return parts.length > 0 ? parts : [comment.content];
+    }, [comment.content, allUsers]);
 
     return (
         <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
@@ -216,7 +247,7 @@ const CommentView: React.FC<{ comment: Comment }> = observer(({ comment }) => {
                     </Typography>
                 </Box>
                 <Paper variant="outlined" sx={{ p: 1.5, my: 0.5, bgcolor: 'action.hover', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                    {comment.content}
+                    {processedContent.map((part, index) => <React.Fragment key={index}>{part}</React.Fragment>)}
                 </Paper>
                 <Button size="small" onClick={() => setIsReplying(!isReplying)}>
                     {isReplying ? 'Cancel' : 'Reply'}
