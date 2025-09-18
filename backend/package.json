@@ -7,12 +7,12 @@
   "scripts": {
     "start": "npm run db:migrate && node ./bin/www.js",
     "dev": "npm run db:migrate && nodemon ./bin/www.js",
-    "db:migrate": "sequelize-cli db:migrate --config src/database/config/config.js --migrations-path src/database/migrations --models-path src/database/models",
-    "db:migrate:undo": "sequelize-cli db:migrate:undo --config src/database/config/config.js --migrations-path src/database/migrations --models-path src/database/models",
-    "db:migrate:undo:all": "sequelize-cli db:migrate:undo:all --config src/database/config/config.js --migrations-path src/database/migrations --models-path src/database/models",
-    "db:migration:generate": "sequelize-cli migration:generate --config src/database/config/config.js --migrations-path src/database/migrations --models-path src/database/models",
-    "db:seed:all": "sequelize-cli db:seed:all --config src/database/config/config.js --seeders-path src/database/seeders",
-    "db:seed:generate": "sequelize-cli seed:generate --config src/database/config/config.js --seeders-path src/database/seeders",
+    "db:migrate": "sequelize-cli db:migrate --config src/database/config/config.cjs --migrations-path src/database/migrations --models-path src/database/models",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo --config src/database/config/config.cjs --migrations-path src/database/migrations --models-path src/database/models",
+    "db:migrate:undo:all": "sequelize-cli db:migrate:undo:all --config src/database/config/config.cjs --migrations-path src/database/migrations --models-path src/database/models",
+    "db:migration:generate": "sequelize-cli migration:generate --config src/database/config/config.cjs --migrations-path src/database/migrations --models-path src/database/models",
+    "db:seed:all": "sequelize-cli db:seed:all --config src/database/config/config.cjs --seeders-path src/database/seeders",
+    "db:seed:generate": "sequelize-cli seed:generate --config src/database/config/config.cjs --seeders-path src/database/seeders",
     "db:reset": "npm run db:migrate:undo:all && npm run db:migrate && npm run db:seed:all"
   },
   "dependencies": {

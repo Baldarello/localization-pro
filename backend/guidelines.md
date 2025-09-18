@@ -332,35 +332,45 @@ This project uses `sequelize-cli` to manage database schema changes. This ensure
 ### Developer Workflow
 When you make a change to a Sequelize model (e.g., add a column, create a new table), you **must** create a corresponding migration file to apply this change to the database.
 
+**Important:** Because this is an ES Module project (`"type": "module"` in `package.json`), all new migration and seeder files **must use the `.cjs` extension** to be treated as CommonJS modules.
+
 1.  **Generate a new migration file:**
     Navigate to the `backend/` directory and run the following command, replacing `your-migration-name` with a descriptive name (e.g., `add-user-age-column`):
     ```bash
     npm run db:migration:generate -- --name your-migration-name
     ```
+    This will create a `.js` file in `src/database/migrations/`.
 
-2.  **Edit the migration file:**
-    A new file will be created in `src/database/migrations/`. Open this file and fill in the `up` and `down` methods.
+2.  **Rename the file:**
+    Immediately rename the generated file from `.js` to `.cjs`. For example:
+    `2024...-your-migration-name.js` -> `2024...-your-migration-name.cjs`
+
+3.  **Edit the `.cjs` migration file:**
+    Open the file and fill in the `up` and `down` methods.
     -   The `up` method should contain the logic to apply your changes (e.g., `queryInterface.addColumn(...)`).
     -   The `down` method should contain the logic to revert your changes (e.g., `queryInterface.removeColumn(...)`).
 
-    **Example:**
+    If you need to use constants or helpers from other ES Modules in your migration, you **must** use a dynamic `import()` inside your `async` `up`/`down` methods:
     ```javascript
     'use strict';
     module.exports = {
       async up (queryInterface, Sequelize) {
-        await queryInterface.addColumn('Users', 'age', {
-          type: Sequelize.INTEGER,
-          allowNull: true,
+        // Use dynamic import for ES Modules
+        const { MyConstant } = await import('../../constants.js');
+
+        await queryInterface.addColumn('Users', 'newColumn', {
+          type: Sequelize.STRING,
+          defaultValue: MyConstant,
         });
       },
 
       async down (queryInterface, Sequelize) {
-        await queryInterface.removeColumn('Users', 'age');
+        await queryInterface.removeColumn('Users', 'newColumn');
       }
     };
     ```
 
-3.  **Apply the migration:**
+4.  **Apply the migration:**
     The migration will be applied automatically the next time you start the server (`npm run dev:backend`). You can also apply it manually:
     ```bash
     # from backend/ directory
