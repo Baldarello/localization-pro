@@ -6,7 +6,7 @@ import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
-    MenuItem, List, ListItem, ListItemText, Divider, Tabs, Tab, Chip, Tooltip, Alert, Grid, Paper, useMediaQuery
+    MenuItem, List, ListItem, ListItemText, Divider, Tabs, Tab, Chip, Tooltip, Alert, Grid, Paper, useMediaQuery, useTheme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
@@ -66,8 +66,9 @@ const BranchManagerDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { isBranchManagerOpen, closeBranchManager } = uiStore;
     const project = projectStore.selectedProject;
-    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    // FIX: Explicitly get theme with useTheme() to resolve TypeScript error with useMediaQuery.
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [tabIndex, setTabIndex] = useState(0);
     const [newBranchName, setNewBranchName] = useState('');

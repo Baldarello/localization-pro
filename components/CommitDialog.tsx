@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Button, TextField, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Box,
-    Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Tooltip, Paper, useMediaQuery
+    Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Tooltip, Paper, useMediaQuery, useTheme
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
@@ -17,8 +17,9 @@ const CommitDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { currentBranch, uncommittedChanges, commitChanges, discardChange } = projectStore;
     const [message, setMessage] = useState('');
-    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    // FIX: Explicitly get theme with useTheme() to resolve TypeScript error with useMediaQuery.
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const handleCommit = async () => {
         if (message.trim()) {

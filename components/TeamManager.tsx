@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { User, UserRole } from '../types';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
-    MenuItem, Avatar, ListItemText, Tooltip, SelectChangeEvent, List, ListItem, Divider, Paper, Chip, FormControl, InputLabel, OutlinedInput, Checkbox, useMediaQuery
+    MenuItem, Avatar, ListItemText, Tooltip, SelectChangeEvent, List, ListItem, Divider, Paper, Chip, FormControl, InputLabel, OutlinedInput, Checkbox, useMediaQuery, useTheme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PeopleIcon from '@mui/icons-material/People';
@@ -14,8 +14,9 @@ import { useStores } from '../stores/StoreProvider';
 const TeamManager: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { isTeamManagerOpen, closeTeamManager } = uiStore;
-    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    // FIX: Explicitly get theme with useTheme() to resolve TypeScript error with useMediaQuery.
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [newMemberEmail, setNewMemberEmail] = useState('');
     const [newMemberRole, setNewMemberRole] = useState<UserRole>(UserRole.Translator);

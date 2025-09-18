@@ -311,7 +311,7 @@ const HomePage: React.FC = () => {
                                             </ListItem>
                                         ))}
                                     </List>
-                                    <Button fullWidth variant="outlined" startIcon={<GitHubIcon />} onClick={() => window.open('https://github.com/your-org/tnt', '_blank')} sx={{ mt: 2 }}>
+                                    <Button fullWidth variant="outlined" startIcon={<GitHubIcon />} onClick={() => window.open('https://github.com/Baldarello/localization-pro', '_blank')} sx={{ mt: 2 }}>
                                         {pricingContent[lang].openSource.buttonText}
                                     </Button>
                                 </Paper>
