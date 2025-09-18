@@ -567,3 +567,54 @@ export const createApiKey = async (projectId, { name, permissions }) => {
 export const deleteApiKey = async (projectId, keyId) => {
     await ApiKey.destroy({ where: { id: keyId, projectId } });
 };
+
+// --- Last Edit Check ---
+
+export const findLastModifiedTranslation = async (projectId, langCode) => {
+    const project = await Project.findByPk(projectId, {
+        include: [{
+            model: Branch,
+            as: 'branches',
+            where: { name: 'main' },
+            include: [{ model: Commit, as: 'commits' }]
+        }]
+    });
+
+    if (!project || !project.branches || project.branches.length === 0) {
+        return null; // No project or no main branch
+    }
+
+    const mainBranch = project.branches[0];
+    if (!mainBranch.commits || mainBranch.commits.length === 0) {
+        return null; // No commits
+    }
+    
+    const commits = mainBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    for (let i = 0; i < commits.length; i++) {
+        const currentCommit = commits[i];
+        const parentCommit = commits[i + 1] || null;
+
+        const currentTermsMap = new Map(currentCommit.terms.map(t => [t.id, t]));
+        const parentTermsMap = parentCommit ? new Map(parentCommit.terms.map(t => [t.id, t])) : new Map();
+
+        for (const [termId, currentTerm] of currentTermsMap.entries()) {
+            const parentTerm = parentTermsMap.get(termId);
+            const currentValue = currentTerm.translations[langCode];
+            const parentValue = parentTerm ? parentTerm.translations[langCode] : undefined;
+
+            if (currentValue !== undefined && (parentValue === undefined || currentValue !== parentValue)) {
+                return {
+                    id: `${termId}-${langCode}`,
+                    value: currentValue,
+                    localeId: langCode,
+                    termId: termId,
+                    createdAt: currentCommit.timestamp,
+                    updatedAt: currentCommit.timestamp,
+                };
+            }
+        }
+    }
+
+    return null; // No changes found
+};
