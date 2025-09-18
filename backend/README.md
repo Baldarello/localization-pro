@@ -43,7 +43,7 @@ This project uses `sequelize-cli` to manage database schema changes.
     ```sh
     npm run db:migration:generate -- --name your-migration-name
     ```
-    This creates a new `.js` file in `src/database/migrations/`. **You must immediately rename the generated file to have a `.cjs` extension.** You then need to manually edit the `up` and `down` functions to define the schema change. See `guidelines.md` for more details.
+    This creates a new `.js` file in `src/database/migrations/`. You then need to manually edit this file to use ES Module syntax (`import`/`export`). See `guidelines.md` for a detailed example.
 
 -   **Manually Running Migrations**: While the server runs migrations automatically on startup, you can also run them manually:
     ```sh
