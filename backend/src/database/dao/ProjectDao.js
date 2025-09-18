@@ -539,7 +539,7 @@ export const getApiKeysForProject = async (projectId) => {
     });
 };
 
-export const createApiKey = async (projectId, { name, permissions }) => {
+export const createApiKey = async (projectId, { name, permissions }, userId) => {
     const keyPrefix = `tnt_key_${crypto.randomBytes(8).toString('hex')}`;
     const secret = `tnt_sec_${crypto.randomBytes(24).toString('hex')}`;
     
@@ -553,6 +553,7 @@ export const createApiKey = async (projectId, { name, permissions }) => {
         keyPrefix,
         secretHash,
         projectId,
+        createdById: userId,
     });
     
     // Return the new key object along with the one-time plain text secret
@@ -562,6 +563,35 @@ export const createApiKey = async (projectId, { name, permissions }) => {
         ...keyData,
         secret, // This is only returned on creation
     };
+};
+
+export const validateAndGetUserFromApiKey = async (keyPrefix, secret) => {
+    const apiKey = await ApiKey.findOne({
+        where: { keyPrefix },
+        include: [{ model: User, as: 'createdBy' }]
+    });
+
+    if (!apiKey) {
+        return null;
+    }
+
+    const isMatch = await bcrypt.compare(secret, apiKey.secretHash);
+    if (!isMatch) {
+        return null;
+    }
+
+    // Key is valid. Update lastUsedAt.
+    apiKey.lastUsedAt = new Date();
+    await apiKey.save();
+
+    if (!apiKey.createdBy) {
+        // Data integrity issue, key without a user.
+        return null;
+    }
+    
+    // Exclude password hash from returned user object
+    const { password, ...userWithoutPassword } = apiKey.createdBy.get({ plain: true });
+    return userWithoutPassword;
 };
 
 export const deleteApiKey = async (projectId, keyId) => {

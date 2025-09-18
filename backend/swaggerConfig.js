@@ -13,18 +13,32 @@ const swaggerDefinition = {
   ],
   components: {
     securitySchemes: {
-      apiKeyAuth: {
+      cookieAuth: {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'connect.sid',
+        description: "Session cookie for browser-based authentication."
+      },
+      apiKeyPrefix: {
         type: 'apiKey',
         in: 'header',
-        name: 'X-User-ID',
-        description: "User's ID for authentication. For testing, you can use 'user-1' (Admin), 'user-2' (Editor), or 'user-3' (Translator)."
+        name: 'X-Api-Key-Prefix',
+        description: "The public prefix of your API key (`tnt_key_...`). Must be used with the Authorization header."
       },
+      apiSecret: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'API-SECRET',
+        description: "The secret part of your API key (`tnt_sec_...`). Must be used with the X-Api-Key-Prefix header."
+      }
     },
   },
   security: [
+    { cookieAuth: [] },
     {
-      apiKeyAuth: [],
-    },
+      apiKeyPrefix: [],
+      apiSecret: []
+    }
   ],
 };
 

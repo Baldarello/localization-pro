@@ -90,16 +90,30 @@ const ShowKeyDialog: React.FC<{
     };
 
     return (
-        <Dialog open={!!apiKey} onClose={onClose}>
+        <Dialog open={!!apiKey} onClose={onClose} fullWidth maxWidth="sm">
             <DialogTitle>API Key Created Successfully</DialogTitle>
             <DialogContent>
                 <Alert severity="warning" sx={{ mb: 2 }}>
                     Please copy this secret key and store it in a safe place. You will not be able to see it again.
                 </Alert>
-                <Typography gutterBottom><strong>Key Prefix:</strong> {apiKey.keyPrefix}</Typography>
+                
+                <Typography variant="subtitle2" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>How to Use This Key</Typography>
+                <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover', fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                    <Typography component="code" sx={{ display: 'block', mb: 1 }}>
+                        # Include these two headers in your API requests:
+                    </Typography>
+                    <Typography component="code" sx={{ display: 'block' }}>
+                        X-Api-Key-Prefix: {apiKey.keyPrefix}
+                    </Typography>
+                    <Typography component="code" sx={{ display: 'block' }}>
+                        Authorization: Bearer {apiKey.secret}
+                    </Typography>
+                </Paper>
+
+                <Typography gutterBottom sx={{ mt: 3 }}><strong>Key Prefix:</strong> {apiKey.keyPrefix}</Typography>
                 <Typography gutterBottom><strong>Secret:</strong></Typography>
                 <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover', position: 'relative' }}>
-                    <Typography component="code" sx={{ wordBreak: 'break-all' }}>
+                    <Typography component="code" sx={{ wordBreak: 'break-all', fontFamily: 'monospace' }}>
                         {apiKey.secret}
                     </Typography>
                     <Tooltip title={copied ? 'Copied!' : 'Copy to clipboard'}>

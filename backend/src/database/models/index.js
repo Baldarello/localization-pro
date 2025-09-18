@@ -55,6 +55,9 @@ User.hasMany(Invitation, { as: 'sentInvitations', foreignKey: 'invitedById' });
 Project.hasMany(ApiKey, { as: 'apiKeys', foreignKey: 'projectId', onDelete: 'CASCADE' });
 ApiKey.belongsTo(Project, { as: 'project', foreignKey: 'projectId' });
 
+User.hasMany(ApiKey, { foreignKey: 'createdById' });
+ApiKey.belongsTo(User, { as: 'createdBy', foreignKey: 'createdById' });
+
 
 // We can export all models from here
 export { User, Project, Branch, Commit, TeamMembership, Comment, Notification, Invitation, ApiKey };

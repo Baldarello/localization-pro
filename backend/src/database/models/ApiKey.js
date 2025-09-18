@@ -30,6 +30,12 @@ ApiKey.init({
     type: DataTypes.DATE,
     allowNull: true,
   },
+  createdById: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    references: { model: 'Users', key: 'id' },
+    onDelete: 'CASCADE'
+  },
   // projectId is added via associations
 }, {
   sequelize,

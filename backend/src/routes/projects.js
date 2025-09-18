@@ -310,7 +310,7 @@ router.post('/:projectId/api-keys', authenticate, async (req, res, next) => {
             return res.status(403).json({ message: 'Forbidden' });
         }
         const { name, permissions } = req.body;
-        const newApiKey = await ProjectDao.createApiKey(req.params.projectId, { name, permissions });
+        const newApiKey = await ProjectDao.createApiKey(req.params.projectId, { name, permissions }, req.user.id);
         res.status(201).json(newApiKey);
     } catch (error) {
         next(error);

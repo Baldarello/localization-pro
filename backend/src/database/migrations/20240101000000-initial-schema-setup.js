@@ -58,6 +58,7 @@ export async function up(queryInterface, Sequelize) {
     createdAt: { allowNull: false, type: DataTypes.DATE },
     updatedAt: { allowNull: false, type: DataTypes.DATE },
     projectId: { type: DataTypes.STRING, allowNull: false, references: { model: 'Projects', key: 'id' }, onDelete: 'CASCADE' },
+    createdById: { type: DataTypes.STRING, allowNull: false, references: { model: 'Users', key: 'id' }, onDelete: 'CASCADE' },
   });
 
   await queryInterface.createTable('Comments', {
