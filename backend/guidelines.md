@@ -109,7 +109,7 @@ After configuring your environment variables:
    npm install mysql2
    ```
 
-2. **Start the application** - it will automatically create the database tables on first run.
+2. **Start the application** - it will automatically run database migrations on first run.
 
 ## Project Structure
 
@@ -324,25 +324,62 @@ const yourUtilityFunction = (param) => {
 module.exports = { yourUtilityFunction };
 ```
 
-## Database Configuration
+## Database Migrations
 
-**Location**: `src/database/Sequelize.js`
+### Overview
+This project uses `sequelize-cli` to manage database schema changes. This ensures that schema changes are versioned, repeatable, and safe to apply across different environments. The application **no longer uses `sequelize.sync()`**.
 
-This file contains the Sequelize configuration for SQLite database connection. The database file is stored as `database.sqlite` in the project root.
+### Developer Workflow
+When you make a change to a Sequelize model (e.g., add a column, create a new table), you **must** create a corresponding migration file to apply this change to the database.
+
+1.  **Generate a new migration file:**
+    Navigate to the `backend/` directory and run the following command, replacing `your-migration-name` with a descriptive name (e.g., `add-user-age-column`):
+    ```bash
+    npm run db:migration:generate -- --name your-migration-name
+    ```
+
+2.  **Edit the migration file:**
+    A new file will be created in `src/database/migrations/`. Open this file and fill in the `up` and `down` methods.
+    -   The `up` method should contain the logic to apply your changes (e.g., `queryInterface.addColumn(...)`).
+    -   The `down` method should contain the logic to revert your changes (e.g., `queryInterface.removeColumn(...)`).
+
+    **Example:**
+    ```javascript
+    'use strict';
+    module.exports = {
+      async up (queryInterface, Sequelize) {
+        await queryInterface.addColumn('Users', 'age', {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        });
+      },
+
+      async down (queryInterface, Sequelize) {
+        await queryInterface.removeColumn('Users', 'age');
+      }
+    };
+    ```
+
+3.  **Apply the migration:**
+    The migration will be applied automatically the next time you start the server (`npm run dev:backend`). You can also apply it manually:
+    ```bash
+    # from backend/ directory
+    npm run db:migrate
+    ```
 
 ## How to Maintain the Project
 
 ### Adding New Features
 
-1. **Create a Model** (if needed):
-   - Add new model file in `src/database/model/`
-   - Define the database schema using Sequelize
+1. **Create/Modify a Model**:
+   - Add or change a model file in `src/database/model/`
+   - **Create a corresponding migration file** for your schema changes (see above).
 
-2. **Create a DAO**:
+2. **Create/Modify a DAO**:
    - Add new DAO file in `src/database/dao/`
    - Implement database operations for the model
 
-3. **Create Routes**:
+3. **Create/Modify Routes**:
    - Add new route file in `src/routes/`
    - Define API endpoints that use DAO methods
    - Register the route in `app.js`
@@ -388,7 +425,7 @@ This file contains the Sequelize configuration for SQLite database connection. T
 # Install dependencies
 npm install
 
-# Start the server
+# Start the server (runs migrations automatically)
 npm start
 ```
 

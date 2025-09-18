@@ -618,3 +618,38 @@ export const findLastModifiedTranslation = async (projectId, langCode) => {
 
     return null; // No changes found
 };
+
+// --- Public Read APIs ---
+
+export const getTermsForLocale = async (projectId, langCode) => {
+    const project = await Project.findByPk(projectId, {
+        include: [{
+            model: Branch,
+            as: 'branches',
+            where: { name: 'main' },
+            include: [{ model: Commit, as: 'commits' }]
+        }]
+    });
+
+    if (!project || !project.branches || project.branches.length === 0) {
+        return null; // No project or no main branch
+    }
+
+    const mainBranch = project.branches[0];
+    if (!mainBranch.commits || mainBranch.commits.length === 0) {
+        return {}; // No commits, return empty object
+    }
+    
+    const commits = mainBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const latestCommit = commits[0];
+
+    const termsObject = {};
+    for (const term of latestCommit.terms) {
+        // Ensure we only include terms that have a translation for the requested language
+        if (term.translations[langCode]) {
+            termsObject[term.text] = term.translations[langCode];
+        }
+    }
+
+    return termsObject;
+};

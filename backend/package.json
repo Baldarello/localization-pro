@@ -5,9 +5,13 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "node ./bin/www.js",
-    "dev": "nodemon ./bin/www.js",
-    "db:seed": "node ./src/database/seed.js"
+    "start": "npm run db:migrate && node ./bin/www.js",
+    "dev": "npm run db:migrate && nodemon ./bin/www.js",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:migration:generate": "sequelize-cli migration:generate --name",
+    "db:seed:all": "sequelize-cli db:seed:all",
+    "db:seed:generate": "sequelize-cli seed:generate --name"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -27,6 +31,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "sequelize-cli": "^6.6.2"
   }
 }

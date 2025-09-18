@@ -15,11 +15,11 @@ This folder contains the Node.js backend for the TnT application. It uses Expres
     ```
 
 3.  **Initialize and Seed the Database:**
-    To create the `database.sqlite` file and populate it with initial data, run the following command from the **root** project directory:
+    To create the `database.sqlite` file, run the necessary database migrations, and populate it with initial data, run the following command from the **root** project directory:
     ```sh
-    npm run seed:backend
+    npm run backend:seed
     ```
-    You only need to run this command once during the initial setup.
+    This command runs `sequelize-cli db:seed:all`, which executes the seeder files. You only need to run this command once during the initial setup.
 
 ## Configuration
 
@@ -59,6 +59,27 @@ The following table lists all the environment variables used by the backend:
 > 6. Under "Authorized redirect URIs", add `http://localhost:3001/api/v1/auth/google/callback`.
 > 7. Click "Create". Your Client ID and Client Secret will be displayed.
 
+## Database Migrations
+
+This project uses `sequelize-cli` to manage database schema changes in a versioned manner. The `sequelize.sync()` command is **not** used.
+
+-   **Automatic Migrations**: When you start the server with `npm run dev:backend` or `npm run start:backend`, migrations are run automatically.
+-   **Creating a New Migration**: When you change a model (e.g., add a column), you must create a new migration file. Run this command from the `backend/` directory:
+    ```sh
+    npm run db:migration:generate -- --name your-migration-name
+    ```
+    This will create a new file in `src/database/migrations/`. You need to fill in the `up` and `down` functions manually.
+-   **Manually Running Migrations**:
+    ```sh
+    # from backend/ directory
+    npm run db:migrate
+    ```
+-   **Reverting a Migration**:
+    ```sh
+    # from backend/ directory
+    npm run db:migrate:undo
+    ```
+
 ## Running the Server
 
 ### For Development
@@ -66,12 +87,14 @@ To start the backend server with **nodemon** (which automatically restarts on fi
 ```sh
 npm run dev:backend
 ```
+This script will first run any pending database migrations and then start the server.
 
 ### For Production/Standard Start
 To start the backend server normally, use this command from the **root** directory:
 ```sh
 npm run start:backend
 ```
+This will also run migrations before starting the server.
 
 The server will start on `http://localhost:3001` by default.
 

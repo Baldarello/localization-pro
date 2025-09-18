@@ -3,9 +3,8 @@ import 'dotenv/config'; // Load .env file
 import app, { sessionParser } from '../app.js';
 import http from 'http';
 import logger from '../src/helpers/logger.js';
-import sequelize from '../src/database/Sequelize.js';
 import { initializeWebSocketServer } from '../src/config/WebSocketServer.js';
-// This import is crucial: it registers all models with Sequelize before sync is called.
+// This import is crucial: it registers all models with Sequelize before any DAO operations.
 import '../src/database/models/index.js';
 
 /**
@@ -74,16 +73,10 @@ function onListening() {
 }
 
 /**
- * Synchronize database and start server.
+ * Start server.
  */
-async function startServer() {
+function startServer() {
   try {
-    logger.info('Synchronizing database schemas...');
-    // This command creates database tables if they don't exist,
-    // based on the defined Sequelize models. It does not delete existing data.
-    await sequelize.sync();
-    logger.info('Database synchronized successfully.');
-
     // Initialize the WebSocket server and attach it to the HTTP server
     initializeWebSocketServer(server, sessionParser);
 
@@ -94,7 +87,7 @@ async function startServer() {
     server.on('error', onError);
     server.on('listening', onListening);
   } catch (error) {
-    logger.error('Failed to start server due to database synchronization error:', error);
+    logger.error('Failed to start server:', error);
     process.exit(1);
   }
 }
