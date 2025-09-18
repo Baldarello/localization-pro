@@ -162,8 +162,24 @@ export class UIStore {
         this.shouldReconnect = true; // Enable reconnection attempts by default
 
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const apiUrl = new URL(API_BASE_URL);
-        const wsUrl = `${wsProtocol}//${apiUrl.host}`;
+        let wsHost;
+
+        // If running on localhost, assume the dev backend is also on localhost.
+        // Otherwise, for any deployed environment, use the production host.
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+             try {
+                const apiUrl = new URL(API_BASE_URL);
+                wsHost = apiUrl.host; // e.g., localhost:3001
+             } catch (e) {
+                console.error("Could not parse API_BASE_URL to determine WebSocket host:", e);
+                // Fallback to a sensible default if API_BASE_URL is malformed
+                wsHost = 'localhost:3001';
+             }
+        } else {
+            wsHost = 'localizationpro-api.tnl.one';
+        }
+
+        const wsUrl = `${wsProtocol}//${wsHost}`;
         
         console.log(`Attempting to connect WebSocket to ${wsUrl}`);
         this.websocket = new WebSocket(wsUrl);
