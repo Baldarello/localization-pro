@@ -49,7 +49,7 @@ export const findOrCreateGoogleUser = async (profile) => {
         name: displayName,
         email,
         avatarInitials,
-        settings: { commitNotifications: true }
+        settings: { commitNotifications: true, mentionNotifications: true }
     });
     
     const { password, ...userWithoutPassword } = newUser.get({ plain: true });
@@ -94,7 +94,7 @@ export const registerUser = async (name, email, password) => {
         email,
         password,
         avatarInitials,
-        settings: { commitNotifications: true } // Default setting
+        settings: { commitNotifications: true, mentionNotifications: true }
     });
 
     // --- NEW: Check for and process pending invitations ---

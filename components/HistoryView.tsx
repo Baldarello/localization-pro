@@ -53,7 +53,7 @@ const HistoryView: React.FC = observer(() => {
                                         </ListItemAvatar>
                                         <ListItemText
                                             primary={
-                                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                                <Typography variant="body1" sx={{ fontWeight: 500, wordBreak: 'break-word' }}>
                                                     {summary}
                                                 </Typography>
                                             }

@@ -1,7 +1,8 @@
 
+
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment } from '@mui/material';
+import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
@@ -24,6 +25,8 @@ const TermList: React.FC = observer(() => {
     const [newTerm, setNewTerm] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [showUntranslatedOnly, setShowUntranslatedOnly] = useState(false);
+    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const handleAddTerm = (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,9 +61,10 @@ const TermList: React.FC = observer(() => {
     return (
         <Box
             sx={{
-                width: 360,
+                width: isMobile ? '100%' : 360,
+                height: '100%',
                 flexShrink: 0,
-                borderRight: 1,
+                borderRight: isMobile ? 'none' : 1,
                 borderColor: 'divider',
                 display: 'flex',
                 flexDirection: 'column',

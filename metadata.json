@@ -1,5 +1,5 @@
 {
-  "name": "Localization Manager Pro",
-  "description": "An elegant and efficient web application for managing project localizations. Easily add projects, define translation keys, and provide translations for multiple languages, inspired by the workflow of POEditor.",
+  "name": "TnT",
+  "description": "TnT: Terms and Translations. An elegant and efficient web application for managing project localizations. Easily add projects, define translation keys, and provide translations for multiple languages, inspired by the workflow of POEditor.",
   "requestFramePermissions": []
 }

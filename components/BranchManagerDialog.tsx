@@ -1,11 +1,12 @@
 
 
 
+
 import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
-    MenuItem, List, ListItem, ListItemText, Divider, Tabs, Tab, Chip, Tooltip, Alert, Grid, Paper
+    MenuItem, List, ListItem, ListItemText, Divider, Tabs, Tab, Chip, Tooltip, Alert, Grid, Paper, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
@@ -65,6 +66,8 @@ const BranchManagerDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { isBranchManagerOpen, closeBranchManager } = uiStore;
     const project = projectStore.selectedProject;
+    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const [tabIndex, setTabIndex] = useState(0);
     const [newBranchName, setNewBranchName] = useState('');
@@ -150,7 +153,7 @@ const BranchManagerDialog: React.FC = observer(() => {
     if (!project) return null;
 
     return (
-        <Dialog open={isBranchManagerOpen} onClose={closeBranchManager} fullWidth maxWidth="md">
+        <Dialog open={isBranchManagerOpen} onClose={closeBranchManager} fullWidth maxWidth="md" fullScreen={isMobile}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <AccountTreeIcon />
@@ -169,14 +172,14 @@ const BranchManagerDialog: React.FC = observer(() => {
                     <Box>
                         <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
                             <Typography variant="subtitle1" gutterBottom>Create New Branch</Typography>
-                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                                 <TextField
                                     label="New branch name"
                                     variant="outlined"
                                     size="small"
                                     value={newBranchName}
                                     onChange={(e) => setNewBranchName(e.target.value)}
-                                    sx={{ flexGrow: 1 }}
+                                    sx={{ flexGrow: 1, minWidth: '150px' }}
                                 />
                                 <Typography>from</Typography>
                                  <Select value={sourceBranch} onChange={(e) => setSourceBranch(e.target.value)} size="small">
@@ -213,7 +216,7 @@ const BranchManagerDialog: React.FC = observer(() => {
                 )}
                 {tabIndex === 1 && (
                      <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                              <Select value={baseBranch} onChange={(e) => setBaseBranch(e.target.value)} size="small" sx={{minWidth: 150}}>
                                 {project.branches.map(b => <MenuItem key={b.name} value={b.name}>{b.name}</MenuItem>)}
                             </Select>

@@ -1,9 +1,10 @@
 
+
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Button, TextField, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Box,
-    Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Tooltip, Paper
+    Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Tooltip, Paper, useMediaQuery
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
@@ -16,6 +17,8 @@ const CommitDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { currentBranch, uncommittedChanges, commitChanges, discardChange } = projectStore;
     const [message, setMessage] = useState('');
+    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const handleCommit = async () => {
         if (message.trim()) {
@@ -76,7 +79,7 @@ const CommitDialog: React.FC = observer(() => {
     };
 
     return (
-        <Dialog open={uiStore.isCommitDialogOpen} onClose={handleClose} fullWidth maxWidth="sm">
+        <Dialog open={uiStore.isCommitDialogOpen} onClose={handleClose} fullWidth maxWidth="sm" fullScreen={isMobile}>
             <DialogTitle>Commit Changes to "{currentBranch.name}"</DialogTitle>
             <DialogContent>
                 <DialogContentText sx={{ mb: 2 }}>

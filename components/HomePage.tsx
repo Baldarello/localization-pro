@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppBar, Toolbar, Typography, Button, Container, Box, Paper, SvgIcon, Select, MenuItem, SelectChangeEvent, ListItemIcon, ListItemText } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Container, Box, Paper, SvgIcon, Select, MenuItem, SelectChangeEvent, ListItemIcon, ListItemText, Divider, List, ListItem, Chip } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import PeopleIcon from '@mui/icons-material/People';
@@ -9,9 +9,12 @@ import ImportExportIcon from '@mui/icons-material/ImportExport';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CommentIcon from '@mui/icons-material/Comment';
+import CheckIcon from '@mui/icons-material/Check';
+import StarIcon from '@mui/icons-material/Star';
 import { useStores } from '../stores/StoreProvider';
 import { useTheme } from '@mui/material/styles';
 import { getFlagCode } from '../constants';
+import { GitHubIcon } from './icons';
 
 const features = [
     {
@@ -96,6 +99,59 @@ const featuresSectionTitle = {
     it: 'Tutto Ciò di Cui Hai Bisogno, in un Unico Posto'
 };
 
+const pricingContent = {
+    en: {
+        title: 'Choose Your Plan',
+        subtitle: 'Start for free and scale as you grow. Powerful localization for every team size.',
+        openSource: {
+            title: 'Open Source',
+            price: 'Forever Free',
+            description: 'Self-host on your own infrastructure for complete control and unlimited access.',
+            features: [ 'Unlimited Projects', 'Unlimited Terms', 'Unlimited Team Members', 'Full Feature Access' ],
+            buttonText: 'View on GitHub'
+        },
+        cloudFree: {
+            title: 'Cloud - Free',
+            price: 'Free',
+            description: 'Perfect for personal projects and small teams to get started. Generous limits, no credit card required.',
+            features: [ '3 Projects', '1,000 Terms per Project', '5 Team Members per Project', 'Community Support' ],
+            buttonText: 'Get Started for Free'
+        },
+        cloudPro: {
+            title: 'Cloud - Pro',
+            price: 'Coming Soon',
+            description: 'The ultimate solution for professional teams and businesses that need to scale.',
+            features: [ 'Unlimited Projects', 'Unlimited Terms', 'Unlimited Team Members', 'Priority Support & SLA' ],
+            buttonText: 'Pre-order Now'
+        }
+    },
+    it: {
+        title: 'Scegli il Tuo Piano',
+        subtitle: 'Inizia gratuitamente e cresci con le tue esigenze. Localizzazione potente per team di ogni dimensione.',
+        openSource: {
+            title: 'Open Source',
+            price: 'Gratis per Sempre',
+            description: 'Ospita sulla tua infrastruttura per un controllo completo e un accesso illimitato.',
+            features: [ 'Progetti Illimitati', 'Termini Illimitati', 'Membri del Team Illimitati', 'Accesso a Tutte le Funzionalità' ],
+            buttonText: 'Vedi su GitHub'
+        },
+        cloudFree: {
+            title: 'Cloud - Gratuito',
+            price: 'Gratis',
+            description: 'Perfetto per progetti personali e piccoli team. Limiti generosi, nessuna carta di credito richiesta.',
+            features: [ '3 Progetti', '1.000 Termini per Progetto', '5 Membri del Team per Progetto', 'Supporto Community' ],
+            buttonText: 'Inizia Gratuitamente'
+        },
+        cloudPro: {
+            title: 'Cloud - Pro',
+            price: 'In Arrivo',
+            description: 'La soluzione definitiva per team professionali e aziende che necessitano di scalare.',
+            features: [ 'Progetti Illimitati', 'Termini Illimitati', 'Membri del Team Illimitati', 'Supporto Prioritario e SLA' ],
+            buttonText: 'Preordina Ora'
+        }
+    }
+};
+
 const supportedLanguages: { code: 'en' | 'it', name: string }[] = [
     { code: 'en', name: 'English' },
     { code: 'it', name: 'Italiano' },
@@ -122,7 +178,7 @@ const HomePage: React.FC = () => {
                     <Toolbar disableGutters>
                         <TranslateIcon sx={{ mr: 2, color: 'primary.main' }} />
                         <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-                            Localization Manager Pro
+                            TnT
                         </Typography>
                         <Select
                             value={lang}
@@ -158,6 +214,9 @@ const HomePage: React.FC = () => {
                         <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
                             <Button color="inherit" onClick={() => uiStore.setView('login')} sx={{ mr: 1 }}>Login</Button>
                             <Button variant="contained" color="secondary" onClick={() => uiStore.setView('register')}>Sign Up</Button>
+                        </Box>
+                        <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                            <Button color="inherit" onClick={() => uiStore.setView('login')}>Login</Button>
                         </Box>
                     </Toolbar>
                 </Container>
@@ -226,12 +285,89 @@ const HomePage: React.FC = () => {
                         </Box>
                     </Container>
                 </Box>
+
+                <Box sx={{ py: { xs: 8, md: 12 } }}>
+                    <Container maxWidth="lg">
+                        <Typography variant="h3" component="h2" textAlign="center" sx={{ fontWeight: 'bold', mb: 2 }}>
+                            {pricingContent[lang].title}
+                        </Typography>
+                         <Typography variant="h5" color="text.secondary" textAlign="center" paragraph sx={{ mb: 8, ...(lang === 'it' && { fontStyle: 'italic' }) }}>
+                            {pricingContent[lang].subtitle}
+                        </Typography>
+                        
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -2, alignItems: 'stretch', justifyContent: 'center' }}>
+                            {/* Open Source Card */}
+                            <Box sx={{ width: { xs: '100%', md: '33.3333%' }, p: 2 }}>
+                                <Paper variant="outlined" sx={{ p: {xs: 2, sm: 4}, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold' }}>{pricingContent[lang].openSource.title}</Typography>
+                                    <Typography variant="h4" component="p" sx={{ my: 1 }}><Box component="span" sx={{ fontWeight: 'bold' }}>{pricingContent[lang].openSource.price}</Box></Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ minHeight: '4.5em' }}>{pricingContent[lang].openSource.description}</Typography>
+                                    <Divider sx={{ my: 2 }} />
+                                    <List dense sx={{ flexGrow: 1 }}>
+                                        {pricingContent[lang].openSource.features.map(feature => (
+                                            <ListItem key={feature} disableGutters>
+                                                <ListItemIcon sx={{ minWidth: 32 }}><CheckIcon color="primary" fontSize="small" /></ListItemIcon>
+                                                <ListItemText primary={feature} />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                    <Button fullWidth variant="outlined" startIcon={<GitHubIcon />} onClick={() => window.open('https://github.com/your-org/tnt', '_blank')} sx={{ mt: 2 }}>
+                                        {pricingContent[lang].openSource.buttonText}
+                                    </Button>
+                                </Paper>
+                            </Box>
+
+                             {/* Cloud Free Card (Highlighted) */}
+                            <Box sx={{ width: { xs: '100%', md: '33.3333%' }, p: 2 }}>
+                                <Paper elevation={4} sx={{ p: {xs: 2, sm: 4}, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', border: 2, borderColor: 'secondary.main', overflow: 'visible' }}>
+                                    <Chip icon={<StarIcon />} label="Most Popular" color="secondary" sx={{ position: 'absolute', top: 0, left: '50%', transform: 'translate(-50%, -50%)', fontWeight: 'bold' }} />
+                                    <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold' }}>{pricingContent[lang].cloudFree.title}</Typography>
+                                    <Typography variant="h4" component="p" sx={{ my: 1 }}><Box component="span" sx={{ fontWeight: 'bold' }}>{pricingContent[lang].cloudFree.price}</Box></Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ minHeight: '4.5em' }}>{pricingContent[lang].cloudFree.description}</Typography>
+                                    <Divider sx={{ my: 2 }} />
+                                    <List dense sx={{ flexGrow: 1 }}>
+                                        {pricingContent[lang].cloudFree.features.map(feature => (
+                                            <ListItem key={feature} disableGutters>
+                                                <ListItemIcon sx={{ minWidth: 32 }}><CheckIcon color="secondary" fontSize="small" /></ListItemIcon>
+                                                <ListItemText primary={feature} />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                    <Button fullWidth variant="contained" color="secondary" onClick={() => uiStore.setView('register')} sx={{ mt: 2 }}>
+                                        {pricingContent[lang].cloudFree.buttonText}
+                                    </Button>
+                                </Paper>
+                            </Box>
+
+                            {/* Cloud Pro Card */}
+                             <Box sx={{ width: { xs: '100%', md: '33.3333%' }, p: 2 }}>
+                                <Paper variant="outlined" sx={{ p: {xs: 2, sm: 4}, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold' }}>{pricingContent[lang].cloudPro.title}</Typography>
+                                    <Typography variant="h4" component="p" sx={{ my: 1 }}><Box component="span" sx={{ fontWeight: 'bold' }}>{pricingContent[lang].cloudPro.price}</Box></Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ minHeight: '4.5em' }}>{pricingContent[lang].cloudPro.description}</Typography>
+                                    <Divider sx={{ my: 2 }} />
+                                    <List dense sx={{ flexGrow: 1 }}>
+                                         {pricingContent[lang].cloudPro.features.map(feature => (
+                                            <ListItem key={feature} disableGutters>
+                                                <ListItemIcon sx={{ minWidth: 32 }}><CheckIcon color="primary" fontSize="small" /></ListItemIcon>
+                                                <ListItemText primary={feature} />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                    <Button fullWidth variant="contained" disabled sx={{ mt: 2 }}>
+                                        {pricingContent[lang].cloudPro.buttonText}
+                                    </Button>
+                                </Paper>
+                            </Box>
+                        </Box>
+                    </Container>
+                </Box>
             </main>
 
             <Box component="footer" sx={{ py: 4, textAlign: 'center' }}>
                 <Container maxWidth="lg">
                     <Typography variant="body2" color="text.secondary">
-                        &copy; {new Date().getFullYear()} Localization Manager Pro. All rights reserved.
+                        &copy; {new Date().getFullYear()} TnT. All rights reserved.
                     </Typography>
                 </Container>
             </Box>

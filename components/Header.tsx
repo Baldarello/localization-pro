@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import CodeIcon from '@mui/icons-material/Code';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -20,6 +20,8 @@ const Header: React.FC = observer(() => {
     const { currentUser, logout } = authStore;
     const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole, selectProject, switchBranch, selectTerm } = projectStore;
     const canManageProject = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
+    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [adminMenuAnchorEl, setAdminMenuAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -36,9 +38,11 @@ const Header: React.FC = observer(() => {
     const handleAdminMenuClick = (event: React.MouseEvent<HTMLElement>) => setAdminMenuAnchorEl(event.currentTarget);
     const handleAdminMenuClose = () => setAdminMenuAnchorEl(null);
 
-    const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setNotificationMenuAnchorEl(event.currentTarget);
-        uiStore.fetchNotifications();
+    const handleNotificationMenuOpen = (anchor: HTMLElement | null) => {
+        if (anchor) {
+            setNotificationMenuAnchorEl(anchor);
+            uiStore.fetchNotifications();
+        }
     };
     const handleNotificationMenuClose = () => setNotificationMenuAnchorEl(null);
 
@@ -59,14 +63,21 @@ const Header: React.FC = observer(() => {
         uiStore.setView('app');
     };
     
-    const handleManageTeam = () => {
-        uiStore.openTeamManager();
+    const createMenuAction = (handler: () => void) => () => {
+        handler();
         handleAdminMenuClose();
     };
-    const handleManageBranches = () => {
-        uiStore.openBranchManager();
+    
+    const handleManageTeam = createMenuAction(uiStore.openTeamManager);
+    const handleManageBranches = createMenuAction(uiStore.openBranchManager);
+    const handleImportExportClick = createMenuAction(uiStore.openImportExportDialog);
+    const handleApiSpecClick = createMenuAction(uiStore.openApiSpecModal);
+
+    const handleMobileNotificationsClick = () => {
         handleAdminMenuClose();
+        handleNotificationMenuOpen(adminMenuAnchorEl);
     };
+
 
     const handleNotificationClick = async (notification: Notification) => {
         if (selectedProjectId !== notification.projectId) {
@@ -102,7 +113,7 @@ const Header: React.FC = observer(() => {
                     <Button color="inherit" onClick={handleGoHome} sx={{ p: 1, textTransform: 'none', borderRadius: 2 }}>
                         <TranslateIcon sx={{ mr: 2, fontSize: 32 }} />
                         <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold' }}>
-                            Localization Manager Pro
+                            TnT
                         </Typography>
                     </Button>
                 )}
@@ -117,30 +128,21 @@ const Header: React.FC = observer(() => {
                                 color="secondary"
                                 variant="contained"
                                 size="small"
-                                startIcon={<SaveIcon />}
+                                startIcon={isMobile ? null : <SaveIcon />}
                                 onClick={uiStore.openCommitDialog}
-                                sx={{ color: 'common.white', mr: 1 }}
+                                sx={{ color: 'common.white', mr: 1, ...(isMobile && { minWidth: 'auto', px: 1 }) }}
                             >
-                                Commit ({uncommittedChangesCount})
+                                {isMobile ? <SaveIcon /> : 'Commit'}
+                                {isMobile ? 
+                                    <Box component="span" sx={{ ml: 0.5 }}>({uncommittedChangesCount})</Box> :
+                                    ` (${uncommittedChangesCount})`
+                                }
                             </Button>
                         )}
-                         {canManageProject && (
-                            <Tooltip title="Import / Export Data">
-                                <IconButton color="inherit" onClick={uiStore.openImportExportDialog}>
-                                    <ImportExportIcon />
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                        {currentUserRole === UserRole.Admin && (
+                        {isMobile ? (
                             <>
-                                <Tooltip title="Admin Controls">
-                                    <IconButton
-                                        color="inherit"
-                                        onClick={handleAdminMenuClick}
-                                        aria-controls={isAdminMenuOpen ? 'admin-controls-menu' : undefined}
-                                        aria-haspopup="true"
-                                        aria-expanded={isAdminMenuOpen ? 'true' : undefined}
-                                    >
+                                <Tooltip title="More Actions">
+                                    <IconButton color="inherit" onClick={handleAdminMenuClick}>
                                         <MoreVertIcon />
                                     </IconButton>
                                 </Tooltip>
@@ -149,40 +151,102 @@ const Header: React.FC = observer(() => {
                                     anchorEl={adminMenuAnchorEl}
                                     open={isAdminMenuOpen}
                                     onClose={handleAdminMenuClose}
-                                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                                    sx={{ mt: 1 }}
                                 >
-                                    <LanguageSelector asMenuItem onMenuAction={handleAdminMenuClose} />
-                                    <MenuItem onClick={handleManageBranches}>
-                                        <ListItemIcon><AccountTreeIcon fontSize="small" /></ListItemIcon>
-                                        <ListItemText>Manage Branches</ListItemText>
+                                    <MenuItem onClick={handleApiSpecClick}>
+                                        <ListItemIcon><CodeIcon fontSize="small" /></ListItemIcon>
+                                        <ListItemText>API Spec</ListItemText>
                                     </MenuItem>
-                                    <MenuItem onClick={handleManageTeam}>
-                                        <ListItemIcon><PeopleIcon fontSize="small" /></ListItemIcon>
-                                        <ListItemText>Manage Team</ListItemText>
-                                    </MenuItem>
+                                    {currentUser && (
+                                        <MenuItem onClick={handleMobileNotificationsClick}>
+                                            <ListItemIcon>
+                                                <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
+                                                    <NotificationsIcon fontSize="small" />
+                                                </Badge>
+                                            </ListItemIcon>
+                                            <ListItemText>Notifications</ListItemText>
+                                        </MenuItem>
+                                    )}
+                                    <Divider />
+                                    {canManageProject && (
+                                         <MenuItem onClick={handleImportExportClick}>
+                                            <ListItemIcon><ImportExportIcon fontSize="small" /></ListItemIcon>
+                                            <ListItemText>Import / Export</ListItemText>
+                                        </MenuItem>
+                                    )}
+                                    {currentUserRole === UserRole.Admin && (
+                                        <Box>
+                                            <Divider />
+                                            <LanguageSelector asMenuItem onMenuAction={handleAdminMenuClose} />
+                                            <MenuItem onClick={handleManageBranches}>
+                                                <ListItemIcon><AccountTreeIcon fontSize="small" /></ListItemIcon>
+                                                <ListItemText>Manage Branches</ListItemText>
+                                            </MenuItem>
+                                            <MenuItem onClick={handleManageTeam}>
+                                                <ListItemIcon><PeopleIcon fontSize="small" /></ListItemIcon>
+                                                <ListItemText>Manage Team</ListItemText>
+                                            </MenuItem>
+                                        </Box>
+                                    )}
                                 </Menu>
+                            </>
+                        ) : (
+                            <>
+                                <Tooltip title="View API Spec">
+                                    <IconButton color="inherit" onClick={uiStore.openApiSpecModal}>
+                                        <CodeIcon />
+                                    </IconButton>
+                                </Tooltip>
+                                {currentUser && (
+                                    <Tooltip title="Notifications">
+                                        <IconButton color="inherit" onClick={(e) => handleNotificationMenuOpen(e.currentTarget)}>
+                                            <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
+                                                <NotificationsIcon />
+                                            </Badge>
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                                {canManageProject && (
+                                    <Tooltip title="Import / Export Data">
+                                        <IconButton color="inherit" onClick={uiStore.openImportExportDialog}>
+                                            <ImportExportIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                                {currentUserRole === UserRole.Admin && (
+                                    <>
+                                        <Tooltip title="Admin Controls">
+                                            <IconButton color="inherit" onClick={handleAdminMenuClick}>
+                                                <MoreVertIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Menu
+                                            id="admin-controls-menu"
+                                            anchorEl={adminMenuAnchorEl}
+                                            open={isAdminMenuOpen}
+                                            onClose={handleAdminMenuClose}
+                                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                            sx={{ mt: 1 }}
+                                        >
+                                            <LanguageSelector asMenuItem onMenuAction={handleAdminMenuClose} />
+                                            <MenuItem onClick={handleManageBranches}>
+                                                <ListItemIcon><AccountTreeIcon fontSize="small" /></ListItemIcon>
+                                                <ListItemText>Manage Branches</ListItemText>
+                                            </MenuItem>
+                                            <MenuItem onClick={handleManageTeam}>
+                                                <ListItemIcon><PeopleIcon fontSize="small" /></ListItemIcon>
+                                                <ListItemText>Manage Team</ListItemText>
+                                            </MenuItem>
+                                        </Menu>
+                                    </>
+                                )}
                             </>
                         )}
                     </Box>
                 )}
-
-                <Tooltip title="View API Spec">
-                    <IconButton color="inherit" onClick={uiStore.openApiSpecModal} sx={{ mr: 1, ml: 1 }}>
-                        <CodeIcon />
-                    </IconButton>
-                </Tooltip>
-
+                 {/* The API spec and notification icons are now inside the isMobile ternary, so remove them from here */}
                 {currentUser && (
                     <>
-                        <Tooltip title="Notifications">
-                            <IconButton color="inherit" onClick={handleNotificationMenuOpen}>
-                                <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
-                                    <NotificationsIcon />
-                                </Badge>
-                            </IconButton>
-                        </Tooltip>
                          <Menu
                             anchorEl={notificationMenuAnchorEl}
                             open={isNotificationMenuOpen}

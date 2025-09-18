@@ -1,6 +1,6 @@
-# Localization Manager Pro
+# TnT (Terms and Translations)
 
-An elegant and efficient web application for managing project localizations. Inspired by the workflow of POEditor, it allows users to easily add projects, define translation keys, and provide translations for multiple languages.
+An elegant and efficient web application for managing project localizations, with a focus on terms and translations. Inspired by the workflow of POEditor, it allows users to easily add projects, define translation keys, and provide translations for multiple languages.
 
 This application features role-based access control, branching for parallel development, commit history, and AI-powered translation suggestions using the Gemini API.
 
@@ -43,8 +43,8 @@ Follow these instructions to get the project up and running on your local machin
 
 1.  **Clone the repository:**
     ```sh
-    git clone https://github.com/your-username/localization-manager-pro.git
-    cd localization-manager-pro
+    git clone https://github.com/your-username/tnt.git
+    cd tnt
     ```
 
 2.  **Install root dependencies:**

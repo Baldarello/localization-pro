@@ -274,6 +274,10 @@ export class ProjectStore {
         this.typingTimeouts.clear();
     }
 
+    deselectTerm() {
+        this.selectedTermId = null;
+    }
+
     async addProject(name: string) {
         const user = this.rootStore.authStore.currentUser;
         if (!user) return;

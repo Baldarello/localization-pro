@@ -1,6 +1,6 @@
-# Localization Manager Pro - Backend
+# TnT - Backend
 
-This folder contains the Node.js backend for the Localization Manager Pro application. It uses Express.js for the API server, Sequelize as the ORM with a self-contained SQLite database, and Passport.js for session-based authentication with Google OAuth.
+This folder contains the Node.js backend for the TnT application. It uses Express.js for the API server, Sequelize as the ORM with a self-contained SQLite database, and Passport.js for session-based authentication with Google OAuth.
 
 ## Setup
 

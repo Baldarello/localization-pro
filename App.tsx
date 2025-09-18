@@ -8,7 +8,7 @@ import ForgotPasswordPage from './components/ForgotPasswordPage';
 import ProjectsDashboard from './components/ProjectsDashboard';
 import ProjectDetailView from './components/ProjectDetailView';
 import ProfilePage from './components/ProfilePage';
-import { ThemeProvider, CssBaseline, Box, Alert, Snackbar } from '@mui/material';
+import { ThemeProvider, CssBaseline, Box, Alert, Snackbar, Container } from '@mui/material';
 import { createAppTheme } from './theme';
 import { useStores } from './stores/StoreProvider';
 import ApiSpecModal from './components/ApiSpecModal';
@@ -66,7 +66,9 @@ const App: React.FC = observer(() => {
                 <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
                     <Header />
                     <Box component="main" sx={{ flexGrow: 1, overflow: 'auto', bgcolor: 'background.default' }}>
-                        <ProfilePage />
+                        <Container maxWidth="md" sx={{ py: { xs: 2, sm: 4 } }}>
+                            <ProfilePage />
+                        </Container>
                     </Box>
                 </Box>
             );
@@ -75,7 +77,7 @@ const App: React.FC = observer(() => {
         return (
             <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
                 <Header />
-                <Box component="main" sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <Box component="main" sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                     {projectStore.selectedProject ? (
                         <ProjectDetailView />
                     ) : (

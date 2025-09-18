@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Box, Typography, Paper, Divider, Chip, List, ListItem, ListItemText, Dialog, DialogTitle,
-    DialogContent, DialogActions, Button, IconButton, TextField, Alert
+    DialogContent, DialogActions, Button, IconButton, TextField, Alert, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import RestoreIcon from '@mui/icons-material/Restore';
@@ -67,6 +67,8 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
     const [isRestoreDialogOpen, setRestoreDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [newBranchName, setNewBranchName] = useState(`restore-${commit.id.slice(0, 7)}`);
+    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const author = useMemo(() => allUsers.find(u => u.id === commit.authorId), [commit, allUsers]);
     const commitDate = useMemo(() => new Date(commit.timestamp), [commit]);
@@ -143,7 +145,7 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
 
     return (
         <>
-            <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" scroll="paper">
+            <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" scroll="paper" fullScreen={isMobile}>
                 <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     Commit Details
                     <IconButton onClick={onClose}><CloseIcon /></IconButton>
@@ -200,7 +202,7 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
             </Dialog>
 
             {/* Restore Sub-Dialog */}
-            <Dialog open={isRestoreDialogOpen} onClose={() => setRestoreDialogOpen(false)}>
+            <Dialog open={isRestoreDialogOpen} onClose={() => setRestoreDialogOpen(false)} fullScreen={isMobile}>
                 <DialogTitle>Create Branch from Commit</DialogTitle>
                 <DialogContent>
                     <Typography gutterBottom>Create a new branch based on the state of this commit. This is a safe way to restore old work without losing history.</Typography>
@@ -213,7 +215,7 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
             </Dialog>
 
             {/* Delete Sub-Dialog */}
-             <Dialog open={isDeleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+             <Dialog open={isDeleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} fullScreen={isMobile}>
                 <DialogTitle>Confirm Delete Commit</DialogTitle>
                 <DialogContent>
                     <Alert severity="warning">Are you sure you want to delete this commit? This will revert all working changes to the previous state. This action cannot be undone.</Alert>

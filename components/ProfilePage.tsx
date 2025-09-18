@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
-    Container, Paper, Box, Typography, TextField, Button, Avatar, Divider, Switch,
+    Paper, Box, Typography, TextField, Button, Avatar, Divider, Switch,
     FormControlLabel, InputAdornment, IconButton
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
@@ -76,7 +76,7 @@ const ProfilePage: React.FC = observer(() => {
     };
 
     return (
-        <Container maxWidth="md" sx={{ py: 4 }}>
+        <>
             <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
                 My Profile
             </Typography>
@@ -222,8 +222,7 @@ const ProfilePage: React.FC = observer(() => {
                     />
                 </Box>
             </Paper>
-
-        </Container>
+        </>
     );
 });
 

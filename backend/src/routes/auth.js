@@ -387,7 +387,7 @@ router.post('/register', async (req, res, next) => {
         const newUser = await UserDao.registerUser(name, email, pass);
 
         // Send welcome email
-        const subject = 'Welcome to Localization Manager Pro!';
+        const subject = 'Welcome to TnT!';
         const html = `<h1>Hi ${name},</h1><p>Thank you for registering. You can now log in to your account and start managing your projects.</p>`;
         sendEmail(email, subject, html);
         

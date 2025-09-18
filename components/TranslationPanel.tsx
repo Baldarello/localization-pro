@@ -1,13 +1,15 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, Paper, Divider } from '@mui/material';
+import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, Paper, Divider, useMediaQuery } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import StarIcon from '@mui/icons-material/Star';
 import EditIcon from '@mui/icons-material/Edit';
 import DoneIcon from '@mui/icons-material/Done';
 import CloseIcon from '@mui/icons-material/Close';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useStores } from '../stores/StoreProvider';
 import { UserRole } from '../types';
 import { getFlagCode } from '../constants';
@@ -25,12 +27,15 @@ const TranslationPanel: React.FC = observer(() => {
         updateTermContext,
         generateTranslation,
         translatingState,
+        deselectTerm,
     } = projectStore;
 
     const [isEditingKey, setIsEditingKey] = useState(false);
     const [editedKeyText, setEditedKeyText] = useState('');
     const [isEditingContext, setIsEditingContext] = useState(false);
     const [editedContext, setEditedContext] = useState('');
+    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     useEffect(() => {
         if (term) {
@@ -88,7 +93,16 @@ const TranslationPanel: React.FC = observer(() => {
     };
 
     return (
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, sm: 3 }, height: '100%' }}>
+             {isMobile && (
+                <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={deselectTerm}
+                    sx={{ mb: 2 }}
+                >
+                    Back to Terms
+                </Button>
+            )}
             <Box sx={{ mb: 3, pb: 2, borderBottom: 1, borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: '48px' }}>
                     {isEditingKey && canEditKey ? (
@@ -111,7 +125,7 @@ const TranslationPanel: React.FC = observer(() => {
                         </>
                     ) : (
                         <>
-                            <Typography variant="h4" component="h3" sx={{ fontWeight: 'bold' }}>
+                            <Typography variant="h4" component="h3" sx={{ fontWeight: 'bold', wordBreak: 'break-word' }}>
                                 {term.text}
                             </Typography>
                             {canEditKey && (

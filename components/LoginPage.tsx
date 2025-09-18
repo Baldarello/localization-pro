@@ -34,7 +34,7 @@ const LoginPage: React.FC = observer(() => {
                 >
                     <TranslateIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
                     <Typography component="h1" variant="h5">
-                        Localization Pro
+                        TnT
                     </Typography>
                 </Box>
                 <Typography component="h2" variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>

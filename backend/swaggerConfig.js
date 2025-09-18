@@ -1,9 +1,9 @@
 const swaggerDefinition = {
   openapi: '3.0.0',
   info: {
-    title: 'Localization Manager Pro API',
+    title: 'TnT API',
     version: '1.0.0',
-    description: 'API for managing localization projects, terms, translations, and teams.',
+    description: 'TnT (Terms and Translations) API for managing localization projects, terms, translations, and teams.',
   },
   servers: [
     {

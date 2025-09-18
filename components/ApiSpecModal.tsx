@@ -1,10 +1,11 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, DialogActions, Button, Tabs, Tab, Chip, Paper,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, List, ListItemButton, ListItemText, ListSubheader,
-    CircularProgress, TextField, InputAdornment
+    CircularProgress, TextField, InputAdornment, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CodeIcon from '@mui/icons-material/Code';
@@ -120,6 +121,8 @@ const ApiReferenceView = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedEndpoint, setSelectedEndpoint] = useState<{ path: string, method: string } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     useEffect(() => {
         const fetchSpec = async () => {
@@ -181,8 +184,8 @@ const ApiReferenceView = () => {
     const currentEndpointDetails = selectedEndpoint ? spec.paths[selectedEndpoint.path]?.[selectedEndpoint.method] : null;
 
     return (
-        <Box sx={{ display: 'flex', height: '100%' }}>
-            <Box sx={{ width: 320, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', height: '100%', flexDirection: { xs: 'column', sm: 'row' } }}>
+            <Box sx={{ width: { xs: '100%', sm: 320 }, flexShrink: 0, borderRight: { sm: 1 }, borderBottom: { xs: 1, sm: 'none' }, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                     <TextField
                         fullWidth
@@ -221,7 +224,7 @@ const ApiReferenceView = () => {
                     </List>
                 </Box>
             </Box>
-            <Box sx={{ flexGrow: 1, p: 3, overflowY: 'auto' }}>
+            <Box sx={{ flexGrow: 1, p: { xs: 2, sm: 3 }, overflowY: 'auto' }}>
                 {currentEndpointDetails ? (
                     <EndpointContent details={currentEndpointDetails} path={selectedEndpoint!.path} method={selectedEndpoint!.method} spec={spec} />
                 ) : (
@@ -267,9 +270,12 @@ const RawSpecView: React.FC = () => {
 const ApiSpecModal: React.FC = observer(() => {
     const { uiStore } = useStores();
     const [tab, setTab] = useState(0);
+    // FIX: Use callback form of useMediaQuery to resolve issue with theme breakpoints.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+
 
     return (
-        <Dialog open={uiStore.isApiSpecModalOpen} onClose={uiStore.closeApiSpecModal} fullWidth maxWidth="xl" scroll="paper" sx={{ '& .MuiDialog-paper': { height: '90vh' } }}>
+        <Dialog open={uiStore.isApiSpecModalOpen} onClose={uiStore.closeApiSpecModal} fullWidth maxWidth="xl" scroll="paper" fullScreen={isMobile} sx={{ '& .MuiDialog-paper': { height: isMobile ? '100%' : '90vh' } }}>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CodeIcon />

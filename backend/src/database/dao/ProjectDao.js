@@ -270,15 +270,15 @@ export const addMember = async (projectId, email, role, languages, inviterId) =>
             invitedById: inviterId
         });
 
-        const registrationUrl = 'https://localizationpro.tnl.one';
+        const registrationUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const subject = `You've been invited to collaborate on ${project.name}`;
         const html = `
             <p>Hi there,</p>
-            <p><b>${inviter.name}</b> has invited you to join the project "<b>${project.name}</b>" on Localization Manager Pro as a <b>${role}</b>.</p>
+            <p><b>${inviter.name}</b> has invited you to join the project "<b>${project.name}</b>" on TnT as a <b>${role}</b>.</p>
             <p>To accept the invitation, please sign up for an account using this email address (${email}).</p>
             <a href="${registrationUrl}?view=register" style="display: inline-block; padding: 10px 20px; background-color: #1976d2; color: white; text-decoration: none; border-radius: 5px;">Click here to Register</a>
             <br/><br/>
-            <p>Thanks,<br/>The Localization Manager Pro Team</p>`;
+            <p>Thanks,<br/>The TnT Team</p>`;
 
         sendEmail(email, subject, html);
         
