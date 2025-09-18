@@ -104,11 +104,11 @@ Navigate to the `backend/` directory and create a new file named `.env`. Fill it
 
 ### Initialize and Seed the Database
 
-The backend uses a self-contained SQLite database. To create the database file and populate it with sample projects and users, run the following command from the **root** project directory:
+The backend uses a self-contained SQLite database. To create the database file, apply the schema, and populate it with sample data, run the following command from the **root** project directory:
 ```sh
-npm run seed:backend
+npm run setup:backend
 ```
-This command only needs to be run once during the initial setup. It will create a `database.sqlite` file inside the `backend/` directory.
+This command only needs to be run once during the initial setup. It will install backend dependencies, run all migrations, and seed the database, creating a `database.sqlite` file inside the `backend/` directory.
 
 ### Running the Application
 

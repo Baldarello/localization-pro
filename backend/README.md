@@ -2,24 +2,63 @@
 
 This folder contains the Node.js backend for the TnT application. It uses Express.js for the API server, Sequelize as the ORM with a self-contained SQLite database, and Passport.js for session-based authentication with Google OAuth.
 
-## Setup
+## Setup & Database Management
 
-1.  **Navigate to the backend directory:**
-    ```sh
-    cd backend
-    ```
+### Initial Setup
 
-2.  **Install dependencies:**
+1.  **Install Dependencies:**
+    From the `backend/` directory, run:
     ```sh
     npm install
     ```
 
-3.  **Initialize and Seed the Database:**
-    To create the `database.sqlite` file, run the necessary database migrations, and populate it with initial data, run the following command from the **root** project directory:
+2.  **Create and Seed the Database:**
+    To set up the database for the first time, run the following command from the **root** project directory:
     ```sh
-    npm run backend:seed
+    npm run setup:backend
     ```
-    This command runs `sequelize-cli db:seed:all`, which executes the seeder files. You only need to run this command once during the initial setup.
+    This single command will:
+    - Install all backend dependencies (`npm install`).
+    - Run all database migrations to create the tables (`db:migrate`).
+    - Populate the database with initial sample data (`db:seed:all`).
+
+    You only need to run this command once. After the initial setup, the server will handle running pending migrations automatically on startup.
+
+### Managing the Database
+
+All database commands should be run from within the `backend/` directory.
+
+#### Resetting the Database
+To completely wipe all data and reset the database to its initial, seeded state, run:
+```sh
+# From the backend/ directory
+npm run db:reset
+```
+**Warning:** This will destroy all data in your database. This is useful for development when you want a clean slate.
+
+#### Managing Migrations
+This project uses `sequelize-cli` to manage database schema changes.
+
+-   **Creating a New Migration**: When you change a Sequelize model (e.g., add a column), you **must** create a new migration file to reflect the change.
+    ```sh
+    npm run db:migration:generate -- --name your-migration-name
+    ```
+    This creates a new file in `src/database/migrations/`. You must manually edit the `up` and `down` functions to define the schema change and how to reverse it.
+
+-   **Manually Running Migrations**: While the server runs migrations automatically on startup, you can also run them manually:
+    ```sh
+    npm run db:migrate
+    ```
+
+-   **Reverting a Migration**: To undo the most recent migration:
+    ```sh
+    npm run db:migrate:undo
+    ```
+
+-   **Reverting All Migrations**: To undo all migrations that have been applied:
+    ```sh
+    npm run db:migrate:undo:all
+    ```
 
 ## Configuration
 
@@ -58,27 +97,6 @@ The following table lists all the environment variables used by the backend:
 > 5. Choose "Web application".
 > 6. Under "Authorized redirect URIs", add `http://localhost:3001/api/v1/auth/google/callback`.
 > 7. Click "Create". Your Client ID and Client Secret will be displayed.
-
-## Database Migrations
-
-This project uses `sequelize-cli` to manage database schema changes in a versioned manner. The `sequelize.sync()` command is **not** used.
-
--   **Automatic Migrations**: When you start the server with `npm run dev:backend` or `npm run start:backend`, migrations are run automatically.
--   **Creating a New Migration**: When you change a model (e.g., add a column), you must create a new migration file. Run this command from the `backend/` directory:
-    ```sh
-    npm run db:migration:generate -- --name your-migration-name
-    ```
-    This will create a new file in `src/database/migrations/`. You need to fill in the `up` and `down` functions manually.
--   **Manually Running Migrations**:
-    ```sh
-    # from backend/ directory
-    npm run db:migrate
-    ```
--   **Reverting a Migration**:
-    ```sh
-    # from backend/ directory
-    npm run db:migrate:undo
-    ```
 
 ## Running the Server
 
