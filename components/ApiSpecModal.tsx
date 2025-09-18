@@ -5,7 +5,7 @@ import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, DialogActions, Button, Tabs, Tab, Chip, Paper,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, List, ListItemButton, ListItemText, ListSubheader,
-    CircularProgress, TextField, InputAdornment, useMediaQuery, useTheme
+    CircularProgress, TextField, InputAdornment, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CodeIcon from '@mui/icons-material/Code';
@@ -121,9 +121,8 @@ const ApiReferenceView = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedEndpoint, setSelectedEndpoint] = useState<{ path: string, method: string } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    // FIX: Explicitly get theme with useTheme() to resolve TypeScript error with useMediaQuery.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Use callback form of useMediaQuery to avoid theme typing issues.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     useEffect(() => {
         const fetchSpec = async () => {
@@ -271,9 +270,8 @@ const RawSpecView: React.FC = () => {
 const ApiSpecModal: React.FC = observer(() => {
     const { uiStore } = useStores();
     const [tab, setTab] = useState(0);
-    // FIX: Explicitly get theme with useTheme() to resolve TypeScript error with useMediaQuery.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Use callback form of useMediaQuery to avoid theme typing issues.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
 
     return (

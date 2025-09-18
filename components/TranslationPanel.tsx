@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, Paper, Divider, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, Paper, Divider, useMediaQuery } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import StarIcon from '@mui/icons-material/Star';
 import EditIcon from '@mui/icons-material/Edit';
@@ -34,9 +34,8 @@ const TranslationPanel: React.FC = observer(() => {
     const [editedKeyText, setEditedKeyText] = useState('');
     const [isEditingContext, setIsEditingContext] = useState(false);
     const [editedContext, setEditedContext] = useState('');
-    // FIX: Explicitly get theme with useTheme() to resolve TypeScript error with useMediaQuery.
-    const themeInstance = useTheme();
-    const isMobile = useMediaQuery(themeInstance.breakpoints.down('sm'));
+    // FIX: Use callback form of useMediaQuery to avoid theme typing issues.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     useEffect(() => {
         if (term) {

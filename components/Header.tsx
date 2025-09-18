@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery, useTheme } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import CodeIcon from '@mui/icons-material/Code';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -21,9 +21,8 @@ const Header: React.FC = observer(() => {
     const { currentUser, logout } = authStore;
     const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole, selectProject, switchBranch, selectTerm } = projectStore;
     const canManageProject = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
-    // FIX: Explicitly get theme with useTheme() to resolve TypeScript error with useMediaQuery.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Use callback form of useMediaQuery to avoid theme typing issues.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [adminMenuAnchorEl, setAdminMenuAnchorEl] = React.useState<null | HTMLElement>(null);

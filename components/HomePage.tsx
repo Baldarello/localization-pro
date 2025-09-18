@@ -118,11 +118,14 @@ const pricingContent = {
             buttonText: 'Get Started for Free'
         },
         cloudPro: {
-            title: 'Cloud - Pro',
+            title: 'Cloud - Pro & Enterprise',
             price: 'Coming Soon',
-            description: 'The ultimate solution for professional teams and businesses that need to scale.',
+            description: 'The ultimate solution for professional teams, businesses, and enterprises that need to scale.',
             features: [ 'Unlimited Projects', 'Unlimited Terms', 'Unlimited Team Members', 'Priority Support & SLA' ],
-            buttonText: 'Pre-order Now'
+            buttonText: 'Contact for Info',
+            contactEmail: 'mmazzocchetti@tnl.one',
+            contactSubject: 'Inquiry about TnT Enterprise Plan',
+            contactBody: "Hello, I'm interested in learning more about the Enterprise plan, including pricing and premium support options. Thank you."
         }
     },
     it: {
@@ -143,11 +146,14 @@ const pricingContent = {
             buttonText: 'Inizia Gratuitamente'
         },
         cloudPro: {
-            title: 'Cloud - Pro',
+            title: 'Cloud - Pro & Enterprise',
             price: 'In Arrivo',
-            description: 'La soluzione definitiva per team professionali e aziende che necessitano di scalare.',
+            description: 'La soluzione definitiva per team professionali, aziende ed enterprise che necessitano di scalare.',
             features: [ 'Progetti Illimitati', 'Termini Illimitati', 'Membri del Team Illimitati', 'Supporto Prioritario e SLA' ],
-            buttonText: 'Preordina Ora'
+            buttonText: 'Contatta per Info',
+            contactEmail: 'mmazzocchetti@tnl.one',
+            contactSubject: 'Richiesta informazioni per il piano TnT Enterprise',
+            contactBody: "Salve, sarei interessato/a a ricevere maggiori informazioni riguardo al piano Enterprise, inclusi i prezzi e le opzioni di supporto premium. Grazie."
         }
     }
 };
@@ -165,6 +171,9 @@ const HomePage: React.FC = () => {
     const handleLangChange = (event: SelectChangeEvent) => {
         setLang(event.target.value as 'en' | 'it');
     };
+
+    const proPlanContent = pricingContent[lang].cloudPro;
+    const mailtoLink = `mailto:${proPlanContent.contactEmail}?subject=${encodeURIComponent(proPlanContent.contactSubject)}&body=${encodeURIComponent(proPlanContent.contactBody)}`;
 
     return (
         <Box sx={{ bgcolor: 'background.default', color: 'text.primary', minHeight: '100vh' }}>
@@ -342,20 +351,26 @@ const HomePage: React.FC = () => {
                             {/* Cloud Pro Card */}
                              <Box sx={{ width: { xs: '100%', md: '33.3333%' }, p: 2 }}>
                                 <Paper variant="outlined" sx={{ p: {xs: 2, sm: 4}, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                    <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold' }}>{pricingContent[lang].cloudPro.title}</Typography>
-                                    <Typography variant="h4" component="p" sx={{ my: 1 }}><Box component="span" sx={{ fontWeight: 'bold' }}>{pricingContent[lang].cloudPro.price}</Box></Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ minHeight: '4.5em' }}>{pricingContent[lang].cloudPro.description}</Typography>
+                                    <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold' }}>{proPlanContent.title}</Typography>
+                                    <Typography variant="h4" component="p" sx={{ my: 1 }}><Box component="span" sx={{ fontWeight: 'bold' }}>{proPlanContent.price}</Box></Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ minHeight: '4.5em' }}>{proPlanContent.description}</Typography>
                                     <Divider sx={{ my: 2 }} />
                                     <List dense sx={{ flexGrow: 1 }}>
-                                         {pricingContent[lang].cloudPro.features.map(feature => (
+                                         {proPlanContent.features.map(feature => (
                                             <ListItem key={feature} disableGutters>
                                                 <ListItemIcon sx={{ minWidth: 32 }}><CheckIcon color="primary" fontSize="small" /></ListItemIcon>
                                                 <ListItemText primary={feature} />
                                             </ListItem>
                                         ))}
                                     </List>
-                                    <Button fullWidth variant="contained" disabled sx={{ mt: 2 }}>
-                                        {pricingContent[lang].cloudPro.buttonText}
+                                    <Button
+                                        fullWidth
+                                        variant="contained"
+                                        sx={{ mt: 2 }}
+                                        component="a"
+                                        href={mailtoLink}
+                                    >
+                                        {proPlanContent.buttonText}
                                     </Button>
                                 </Paper>
                             </Box>
