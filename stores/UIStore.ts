@@ -173,19 +173,15 @@ export class UIStore {
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         let wsHost;
 
-        // If running on localhost, assume the dev backend is also on localhost.
-        // Otherwise, for any deployed environment, use the production host.
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-             try {
-                const apiUrl = new URL(API_BASE_URL);
-                wsHost = apiUrl.host; // e.g., localhost:3001
-             } catch (e) {
-                console.error("Could not parse API_BASE_URL to determine WebSocket host:", e);
-                // Fallback to a sensible default if API_BASE_URL is malformed
-                wsHost = 'localhost:3001';
-             }
-        } else {
-            wsHost = 'localizationpro-api.tnl.one';
+        try {
+            const apiUrl = new URL(API_BASE_URL);
+            wsHost = apiUrl.host; // e.g., 'localhost:3001' or 'localizationpro-api.tnl.one'
+        } catch (e) {
+            console.error("Could not parse API_BASE_URL to determine WebSocket host:", e);
+            // Fallback to a sensible default if API_BASE_URL is malformed or missing
+            wsHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'localhost:3001'
+                : 'localizationpro-api.tnl.one';
         }
 
         const wsUrl = `${wsProtocol}//${wsHost}`;

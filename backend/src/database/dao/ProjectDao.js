@@ -228,28 +228,28 @@ export const addTerm = async (projectId, termText, authorId) => {
 
 export const updateTermText = async (projectId, termId, newText, authorId) => {
     const branch = await getCurrentBranch(projectId);
-    const terms = branch.workingTerms;
-    const termIndex = terms.findIndex(t => t.id === termId);
-    if (termIndex > -1) {
-        terms[termIndex].text = newText;
-        branch.workingTerms = terms;
-        branch.changed('workingTerms', true);
-        await branch.save();
-        broadcastBranchUpdate(projectId, branch.name, authorId);
-    }
+    const newTerms = branch.workingTerms.map(t => {
+        if (t.id === termId) {
+            return { ...t, text: newText };
+        }
+        return t;
+    });
+    branch.workingTerms = newTerms;
+    await branch.save();
+    broadcastBranchUpdate(projectId, branch.name, authorId);
 };
 
 export const updateTermContext = async (projectId, termId, newContext, authorId) => {
     const branch = await getCurrentBranch(projectId);
-    const terms = branch.workingTerms;
-    const termIndex = terms.findIndex(t => t.id === termId);
-    if (termIndex > -1) {
-        terms[termIndex].context = newContext;
-        branch.workingTerms = terms;
-        branch.changed('workingTerms', true);
-        await branch.save();
-        broadcastBranchUpdate(projectId, branch.name, authorId);
-    }
+    const newTerms = branch.workingTerms.map(t => {
+        if (t.id === termId) {
+            return { ...t, context: newContext };
+        }
+        return t;
+    });
+    branch.workingTerms = newTerms;
+    await branch.save();
+    broadcastBranchUpdate(projectId, branch.name, authorId);
 };
 
 export const deleteTerm = async (projectId, termId, authorId) => {
@@ -261,18 +261,16 @@ export const deleteTerm = async (projectId, termId, authorId) => {
 
 export const updateTranslation = async (projectId, termId, langCode, value, authorId) => {
     const branch = await getCurrentBranch(projectId);
-    const terms = branch.workingTerms;
-    const termIndex = terms.findIndex(t => t.id === termId);
-    if (termIndex > -1) {
-        if (!terms[termIndex].translations) {
-            terms[termIndex].translations = {};
+    const newTerms = branch.workingTerms.map(t => {
+        if (t.id === termId) {
+            const newTranslations = { ...(t.translations || {}), [langCode]: value };
+            return { ...t, translations: newTranslations };
         }
-        terms[termIndex].translations[langCode] = value;
-        branch.workingTerms = terms;
-        branch.changed('workingTerms', true);
-        await branch.save();
-        broadcastBranchUpdate(projectId, branch.name, authorId);
-    }
+        return t;
+    });
+    branch.workingTerms = newTerms;
+    await branch.save();
+    broadcastBranchUpdate(projectId, branch.name, authorId);
 };
 
 export const bulkUpdateTerms = async (projectId, newTerms, authorId) => {
@@ -723,7 +721,7 @@ export const getTermsForLocale = async (projectId, langCode) => {
         }]
     });
 
-    if (!project || !project.branches || project.branches.length === 0) {
+    if (!project || !project.branches || !project.branches.length === 0) {
         return null; // No project or no main branch
     }
 
