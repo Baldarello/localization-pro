@@ -89,13 +89,12 @@ router.get('/check-last-edit/:id', authenticate, async (req, res, next) => {
  *           application/json:
  *             schema:
  *               type: object
- *               description: "An object where the key is the locale code."
- *               properties:
- *                 "{locale_code}":
- *                   type: object
- *                   description: "An object mapping term keys to translated strings."
- *                   additionalProperties:
- *                     type: string
+ *               description: "An object where the key is the locale code, mapping to an object of translations."
+ *               additionalProperties:
+ *                 type: object
+ *                 description: "An object mapping term keys to translated strings."
+ *                 additionalProperties:
+ *                   type: string
  *               example:
  *                 it:
  *                   add_to_cart: "Aggiungi al carrello"

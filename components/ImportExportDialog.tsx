@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { useStores } from '../stores/StoreProvider';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, Tabs, Tab,
-    Select, MenuItem, Checkbox, FormControl, InputLabel, ListItemText, OutlinedInput, FormControlLabel, SelectChangeEvent, Alert, Chip, useMediaQuery
+    Select, MenuItem, Checkbox, FormControl, InputLabel, ListItemText, OutlinedInput, FormControlLabel, SelectChangeEvent, Alert, Chip, useMediaQuery, useTheme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
@@ -36,8 +36,9 @@ const ImportExportDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { isImportExportDialogOpen, closeImportExportDialog } = uiStore;
     const project = projectStore.selectedProject;
-    // FIX: Use callback form of useMediaQuery to avoid theme typing issues.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    // FIX: Correctly use useMediaQuery by getting the theme from the useTheme() hook to avoid type errors.
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [tabIndex, setTabIndex] = useState(0);
 
@@ -123,7 +124,7 @@ const ImportExportDialog: React.FC = observer(() => {
                     </Tabs>
                 </Box>
                 <TabPanel value={tabIndex} index={0}>
-                    <Typography variant="subtitle1" gutterBottom>Export translations from the latest commit.</Typography>
+                    <Typography variant="subtitle1" gutterBottom>Export translations from the current working branch.</Typography>
                     <FormControl fullWidth margin="normal">
                         <InputLabel id="format-select-label">Format</InputLabel>
                         <Select
@@ -164,7 +165,7 @@ const ImportExportDialog: React.FC = observer(() => {
                         >
                             {project.languages.map((lang) => (
                                 <MenuItem key={lang.code} value={lang.code}>
-                                    <Checkbox checked={exportLangs.indexOf(lang.code) > -1 && exportFormat === 'csv'} />
+                                    {exportFormat === 'csv' && <Checkbox checked={exportLangs.indexOf(lang.code) > -1} />}
                                     <ListItemText primary={lang.name} />
                                 </MenuItem>
                             ))}

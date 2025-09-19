@@ -633,12 +633,12 @@ export class ProjectStore {
     // --- Import/Export Actions ---
 
     async exportTranslations(languageCodes: string[], format: 'json' | 'csv') {
-        if (!this.selectedProject || !this.currentBranch || !this.latestCommit) {
+        if (!this.selectedProject || !this.currentBranch) {
             this.rootStore.uiStore.showAlert('Could not find project data to export.', 'error');
             return;
         }
 
-        const terms = this.latestCommit.terms;
+        const terms = this.currentBranch.workingTerms;
         const projectName = this.selectedProject.name.replace(/\s/g, '_');
         const branchName = this.currentBranch.name.replace(/\//g, '_');
         const timestamp = new Date().toISOString().slice(0, 10);

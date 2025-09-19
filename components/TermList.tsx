@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery, Alert } from '@mui/material';
+import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery, Alert, useTheme } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
@@ -25,8 +25,9 @@ const TermList: React.FC = observer(() => {
     const [newTerm, setNewTerm] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [showUntranslatedOnly, setShowUntranslatedOnly] = useState(false);
-    // FIX: Use callback form of useMediaQuery to avoid theme typing issues.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    // FIX: Correctly use useMediaQuery by getting the theme from the useTheme() hook to avoid type errors.
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const handleAddTerm = (e: React.FormEvent) => {
         e.preventDefault();
