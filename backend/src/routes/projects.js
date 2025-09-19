@@ -1050,7 +1050,7 @@ router.post('/:projectId/branches/merge', authenticate, async (req, res, next) =
  *       '404':
  *         description: Project or branch not found
  */
-router.delete('/:projectId/branches/:branchName(*)/commits/latest', authenticate, async (req, res, next) => {
+router.delete('/:projectId/branches/:branchName/commits/latest', authenticate, async (req, res, next) => {
     try {
         await ProjectDao.deleteLatestCommit(req.params.projectId, req.params.branchName, req.user.id);
         res.sendStatus(204);
@@ -1100,7 +1100,7 @@ router.delete('/:projectId/branches/:branchName(*)/commits/latest', authenticate
  *       '404':
  *         description: Project or branch not found
  */
-router.post('/:projectId/branches/:branchName(*)/commits', authenticate, async (req, res, next) => {
+router.post('/:projectId/branches/:branchName/commits', authenticate, async (req, res, next) => {
     try {
         const { message } = req.body;
         const newCommit = await ProjectDao.createCommit(req.params.projectId, req.params.branchName, message, req.user.id);
@@ -1138,7 +1138,7 @@ router.post('/:projectId/branches/:branchName(*)/commits', authenticate, async (
  *       '404':
  *         description: Project or branch not found
  */
-router.delete('/:projectId/branches/:branchName(*)', authenticate, async (req, res, next) => {
+router.delete('/:projectId/branches/:branchName', authenticate, async (req, res, next) => {
     try {
         await ProjectDao.deleteBranch(req.params.projectId, req.params.branchName);
         res.sendStatus(204);
