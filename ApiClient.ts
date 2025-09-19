@@ -1,4 +1,5 @@
 import { Project, Term, Language, User, UserRole, Branch, Commit, Notification, Comment, ApiKey, ApiKeyPermissions } from './types';
+import type { UIStore } from './stores/UIStore';
 
 // The base URL is now dynamically set by the Vite build process
 export const API_BASE_URL = process.env.API_BASE_URL || 'https://localizationpro-api.tnl.one/api/v1';
@@ -26,9 +27,14 @@ class ApiClient {
     // It's kept here as the backend still uses it for mock authentication. This could be removed
     // if the backend fully switches to session-only auth for all endpoints.
     private currentUserId: string | null = null;
+    private uiStore: UIStore | null = null;
     
     public getBaseUrl(): string {
         return API_BASE_URL;
+    }
+
+    public setUiStore(uiStore: UIStore) {
+        this.uiStore = uiStore;
     }
 
     public setAuth(userId: string | null) {
@@ -36,6 +42,7 @@ class ApiClient {
     }
 
     private async apiFetch(endpoint: string, options: RequestInit = {}) {
+        this.uiStore?.startLoading();
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             ...options.headers,
@@ -72,6 +79,8 @@ class ApiClient {
                  console.error(`API call to ${endpoint} failed:`, error);
             }
             throw error;
+        } finally {
+            this.uiStore?.stopLoading();
         }
     }
 

@@ -1013,4 +1013,126 @@ export class ProjectStore {
             this.rootStore.uiStore.showAlert('Could not revoke API key.', 'error');
         }
     }
+    
+    // --- AI Batch Actions ---
+
+    private async runAiBatchOperation(
+        operation: (term: Term) => Promise<{ termId: string; newTranslation: string } | null>,
+        targetLangCode: string
+    ) {
+        const termsToProcess = this.currentBranch?.workingTerms.slice() || [];
+        const total = termsToProcess.length;
+        if (total === 0) {
+            this.rootStore.uiStore.showAlert('No terms to process.', 'info');
+            return;
+        }
+
+        this.rootStore.uiStore.setAiActionState(true, 'Starting AI operation...', 0);
+        const results = new Map<string, string>();
+
+        try {
+            for (let i = 0; i < total; i++) {
+                const term = termsToProcess[i];
+                // Introduce a small delay to avoid hitting rate limits too quickly
+                if (i > 0) await new Promise(resolve => setTimeout(resolve, 50));
+                
+                const progress = Math.round(((i + 1) / total) * 100);
+                this.rootStore.uiStore.setAiActionState(true, `Processing term ${i + 1} of ${total}: "${term.text}"`, progress);
+                const result = await operation(term);
+                if (result) {
+                    results.set(result.termId, result.newTranslation);
+                }
+            }
+
+            // Apply changes
+            runInAction(() => {
+                if (!this.currentBranch) return;
+                const newWorkingTerms = this.currentBranch.workingTerms.map(term => {
+                    if (results.has(term.id)) {
+                        const newTranslations = { ...term.translations, [targetLangCode]: results.get(term.id)! };
+                        return { ...term, translations: newTranslations };
+                    }
+                    return term;
+                });
+                this.currentBranch.workingTerms = newWorkingTerms;
+            });
+
+            this.rootStore.uiStore.setAiActionState(false, 'Operation complete!', 100);
+            this.rootStore.uiStore.showAlert(`Successfully processed ${results.size} terms. Review and commit the new changes.`, 'success');
+            this.rootStore.uiStore.closeAiActionsDialog();
+        } catch (error) {
+            console.error('AI Batch Operation Failed:', error);
+            this.rootStore.uiStore.setAiActionState(false, 'An error occurred.', 0);
+            this.rootStore.uiStore.showAlert('An error occurred during the AI operation. Check the console for details.', 'error');
+        }
+    }
+
+    async translateToNewLanguage(targetLangCode: string) {
+        if (!this.selectedProject || !this.currentBranch) return;
+
+        const sourceLangCode = this.selectedProject.defaultLanguageCode;
+        const sourceLang = AVAILABLE_LANGUAGES.find(l => l.code === sourceLangCode)?.name;
+        const targetLang = AVAILABLE_LANGUAGES.find(l => l.code === targetLangCode)?.name;
+
+        if (!sourceLang || !targetLang) {
+            this.rootStore.uiStore.showAlert('Could not determine source or target language.', 'error');
+            return;
+        }
+
+        const newLangObject = AVAILABLE_LANGUAGES.find(l => l.code === targetLangCode);
+        if (!newLangObject) return;
+        const newLanguages = [...this.selectedProject.languages, newLangObject];
+        await this.updateProjectLanguages(newLanguages);
+
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const operation = async (term: Term) => {
+            const sourceText = term.translations[sourceLangCode];
+            if (!sourceText) return null;
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: `Translate the following text from ${sourceLang} to ${targetLang}. Return only the translated string, without any extra formatting or quotation marks.\n\nText: "${sourceText}"`,
+            });
+            return { termId: term.id, newTranslation: response.text.trim() };
+        };
+        await this.runAiBatchOperation(operation, targetLangCode);
+    }
+
+    async reviewLanguage(targetLangCode: string) {
+        if (!this.selectedProject || !this.currentBranch) return;
+        const sourceLangCode = this.selectedProject.defaultLanguageCode;
+        const sourceLang = AVAILABLE_LANGUAGES.find(l => l.code === sourceLangCode)?.name;
+        const targetLang = AVAILABLE_LANGUAGES.find(l => l.code === targetLangCode)?.name;
+        if (!sourceLang || !targetLang) return;
+
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const operation = async (term: Term) => {
+            const sourceText = term.translations[sourceLangCode];
+            const existingTranslation = term.translations[targetLangCode];
+            if (!sourceText || !existingTranslation) return null;
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: `You are a professional proofreader. Review and correct the following ${targetLang} translation for the source text in ${sourceLang}. Return only the corrected translation. If the translation is already perfect, return it unchanged.\n\nSource Text (${sourceLang}): "${sourceText}"\n\nExisting Translation (${targetLang}): "${existingTranslation}"`,
+            });
+            return { termId: term.id, newTranslation: response.text.trim() };
+        };
+        await this.runAiBatchOperation(operation, targetLangCode);
+    }
+
+    async changeLanguageTone(targetLangCode: string, tone: string) {
+        if (!this.selectedProject || !this.currentBranch) return;
+        const targetLang = AVAILABLE_LANGUAGES.find(l => l.code === targetLangCode)?.name;
+        if (!targetLang) return;
+
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const operation = async (term: Term) => {
+            const existingTranslation = term.translations[targetLangCode];
+            if (!existingTranslation) return null;
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: `Rewrite the following ${targetLang} text to have a more "${tone}" tone. Return only the rewritten string.\n\nText: "${existingTranslation}"`,
+            });
+            return { termId: term.id, newTranslation: response.text.trim() };
+        };
+        await this.runAiBatchOperation(operation, targetLangCode);
+    }
 }

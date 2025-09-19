@@ -13,5 +13,6 @@ export class RootStore {
         this.uiStore = new UIStore(this);
         this.authStore = new AuthStore(this);
         this.projectStore = new ProjectStore(this);
+        this.apiClient.setUiStore(this.uiStore);
     }
 }

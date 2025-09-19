@@ -1,137 +1,86 @@
 import { Language } from './types';
 
 export const AVAILABLE_LANGUAGES: Language[] = [
-    { code: 'af', name: 'Afrikaans' },
-    { code: 'sq', name: 'Albanian' },
-    { code: 'ar', name: 'Arabic' },
-    { code: 'hy', name: 'Armenian' },
+    { code: 'af', name: 'Afrikaans', flagCode: 'za' },
+    { code: 'sq', name: 'Albanian', flagCode: 'al' },
+    { code: 'ar', name: 'Arabic', flagCode: 'sa' },
+    { code: 'hy', name: 'Armenian', flagCode: 'am' },
     { code: 'az', name: 'Azerbaijani' },
-    { code: 'eu', name: 'Basque' },
-    { code: 'be', name: 'Belarusian' },
-    { code: 'bn', name: 'Bengali' },
-    { code: 'bs', name: 'Bosnian' },
+    { code: 'eu', name: 'Basque', flagCode: 'es' },
+    { code: 'be', name: 'Belarusian', flagCode: 'by' },
+    { code: 'bn', name: 'Bengali', flagCode: 'bd' },
+    { code: 'bs', name: 'Bosnian', flagCode: 'ba' },
     { code: 'bg', name: 'Bulgarian' },
-    { code: 'ca', name: 'Catalan' },
-    { code: 'zh', name: 'Chinese' },
+    { code: 'ca', name: 'Catalan', flagCode: 'es' },
+    { code: 'zh', name: 'Chinese', flagCode: 'cn' },
     { code: 'hr', name: 'Croatian' },
-    { code: 'cs', name: 'Czech' },
-    { code: 'da', name: 'Danish' },
+    { code: 'cs', name: 'Czech', flagCode: 'cz' },
+    { code: 'da', name: 'Danish', flagCode: 'dk' },
     { code: 'nl', name: 'Dutch' },
-    { code: 'en', name: 'English' },
-    { code: 'et', name: 'Estonian' },
+    { code: 'en', name: 'English', flagCode: 'gb' },
+    { code: 'et', name: 'Estonian', flagCode: 'ee' },
     { code: 'fi', name: 'Finnish' },
     { code: 'fr', name: 'French' },
-    { code: 'gl', name: 'Galician' },
-    { code: 'ka', name: 'Georgian' },
+    { code: 'gl', name: 'Galician', flagCode: 'es' },
+    { code: 'ka', name: 'Georgian', flagCode: 'ge' },
     { code: 'de', name: 'German' },
-    { code: 'el', name: 'Greek' },
-    { code: 'gu', name: 'Gujarati' },
-    { code: 'he', name: 'Hebrew' },
-    { code: 'hi', name: 'Hindi' },
+    { code: 'el', name: 'Greek', flagCode: 'gr' },
+    { code: 'gu', name: 'Gujarati', flagCode: 'in' },
+    { code: 'he', name: 'Hebrew', flagCode: 'il' },
+    { code: 'hi', name: 'Hindi', flagCode: 'in' },
     { code: 'hu', name: 'Hungarian' },
     { code: 'is', name: 'Icelandic' },
     { code: 'id', name: 'Indonesian' },
-    { code: 'ga', name: 'Irish' },
+    { code: 'ga', name: 'Irish', flagCode: 'ie' },
     { code: 'it', name: 'Italian' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'kn', name: 'Kannada' },
-    { code: 'kk', name: 'Kazakh' },
-    { code: 'km', name: 'Khmer' },
-    { code: 'ko', name: 'Korean' },
-    { code: 'ky', name: 'Kyrgyz' },
-    { code: 'lo', name: 'Lao' },
+    { code: 'ja', name: 'Japanese', flagCode: 'jp' },
+    { code: 'kn', name: 'Kannada', flagCode: 'in' },
+    { code: 'kk', name: 'Kazakh', flagCode: 'kz' },
+    { code: 'km', name: 'Khmer', flagCode: 'kh' },
+    { code: 'ko', name: 'Korean', flagCode: 'kr' },
+    { code: 'ky', name: 'Kyrgyz', flagCode: 'kg' },
+    { code: 'lo', name: 'Lao', flagCode: 'la' },
     { code: 'lv', name: 'Latvian' },
     { code: 'lt', name: 'Lithuanian' },
     { code: 'mk', name: 'Macedonian' },
-    { code: 'ms', name: 'Malay' },
-    { code: 'ml', name: 'Malayalam' },
+    { code: 'ms', name: 'Malay', flagCode: 'my' },
+    { code: 'ml', name: 'Malayalam', flagCode: 'in' },
     { code: 'mt', name: 'Maltese' },
-    { code: 'mi', name: 'Maori' },
-    { code: 'mr', name: 'Marathi' },
+    { code: 'mi', name: 'Maori', flagCode: 'nz' },
+    { code: 'mr', name: 'Marathi', flagCode: 'in' },
     { code: 'mn', name: 'Mongolian' },
-    { code: 'ne', name: 'Nepali' },
+    { code: 'ne', name: 'Nepali', flagCode: 'np' },
     { code: 'no', name: 'Norwegian' },
-    { code: 'fa', name: 'Persian' },
+    { code: 'fa', name: 'Persian', flagCode: 'ir' },
     { code: 'pl', name: 'Polish' },
     { code: 'pt', name: 'Portuguese' },
-    { code: 'pa', name: 'Punjabi' },
+    { code: 'pa', name: 'Punjabi', flagCode: 'in' },
     { code: 'ro', name: 'Romanian' },
     { code: 'ru', name: 'Russian' },
-    { code: 'sr', name: 'Serbian' },
-    { code: 'si', name: 'Sinhala' },
+    { code: 'sr', name: 'Serbian', flagCode: 'rs' },
+    { code: 'si', name: 'Sinhala', flagCode: 'lk' },
     { code: 'sk', name: 'Slovak' },
-    { code: 'sl', name: 'Slovenian' },
+    { code: 'sl', name: 'Slovenian', flagCode: 'si' },
     { code: 'es', name: 'Spanish' },
-    { code: 'sw', name: 'Swahili' },
-    { code: 'sv', name: 'Swedish' },
-    { code: 'ta', name: 'Tamil' },
-    { code: 'te', name: 'Telugu' },
+    { code: 'sw', name: 'Swahili', flagCode: 'ke' },
+    { code: 'sv', name: 'Swedish', flagCode: 'se' },
+    { code: 'ta', name: 'Tamil', flagCode: 'in' },
+    { code: 'te', name: 'Telugu', flagCode: 'in' },
     { code: 'th', name: 'Thai' },
     { code: 'tr', name: 'Turkish' },
-    { code: 'uk', name: 'Ukrainian' },
-    { code: 'ur', name: 'Urdu' },
+    { code: 'uk', name: 'Ukrainian', flagCode: 'ua' },
+    { code: 'ur', name: 'Urdu', flagCode: 'pk' },
     { code: 'uz', name: 'Uzbek' },
-    { code: 'vi', name: 'Vietnamese' },
-    { code: 'cy', name: 'Welsh' },
+    { code: 'vi', name: 'Vietnamese', flagCode: 'vn' },
+    { code: 'cy', name: 'Welsh', flagCode: 'gb' },
 ];
 
-// This map handles special cases where the ISO 639-1 language code
-// does not match the ISO 3166-1 alpha-2 country code for the flag.
-const LANG_CODE_TO_FLAG_CODE_MAP: { [key: string]: string } = {
-    // Single language -> country mappings
-    af: 'za', // Afrikaans -> South Africa
-    ar: 'sa', // Arabic -> Saudi Arabia (a common representation)
-    be: 'by', // Belarusian -> Belarus
-    bn: 'bd', // Bengali -> Bangladesh
-    bs: 'ba', // Bosnian -> Bosnia and Herzegovina
-    cs: 'cz', // Czech -> Czech Republic
-    cy: 'gb', // Welsh -> Great Britain (specifically Wales, but gb is used)
-    da: 'dk', // Danish -> Denmark
-    el: 'gr', // Greek -> Greece
-    en: 'gb', // English -> Great Britain
-    et: 'ee', // Estonian -> Estonia
-    fa: 'ir', // Persian -> Iran
-    ga: 'ie', // Irish -> Ireland
-    he: 'il', // Hebrew -> Israel
-    hy: 'am', // Armenian -> Armenia
-    ja: 'jp', // Japanese -> Japan
-    ka: 'ge', // Georgian -> Georgia
-    kk: 'kz', // Kazakh -> Kazakhstan
-    km: 'kh', // Khmer -> Cambodia
-    ko: 'kr', // Korean -> South Korea
-    ky: 'kg', // Kyrgyz -> Kyrgyzstan
-    lo: 'la', // Lao -> Laos
-    mi: 'nz', // Maori -> New Zealand
-    ms: 'my', // Malay -> Malaysia
-    ne: 'np', // Nepali -> Nepal
-    si: 'lk', // Sinhala -> Sri Lanka
-    sl: 'si', // Slovenian -> Slovenia
-    sq: 'al', // Albanian -> Albania
-    sr: 'rs', // Serbian -> Serbia
-    sv: 'se', // Swedish -> Sweden
-    sw: 'ke', // Swahili -> Kenya
-    uk: 'ua', // Ukrainian -> Ukraine
-    ur: 'pk', // Urdu -> Pakistan
-    vi: 'vn', // Vietnamese -> Vietnam
-    zh: 'cn', // Chinese -> China
+export const TONES = ['Formal', 'Informal', 'Playful', 'Technical', 'Marketing'];
 
-    // Grouped languages (e.g., multiple languages primarily from one country)
-    hi: 'in', // Hindi
-    gu: 'in', // Gujarati
-    kn: 'in', // Kannada
-    ml: 'in', // Malayalam
-    mr: 'in', // Marathi
-    pa: 'in', // Punjabi
-    ta: 'in', // Tamil
-    te: 'in', // Telugu
-
-    eu: 'es', // Basque
-    ca: 'es', // Catalan
-    gl: 'es', // Galician
-};
+const langToFlagMap = new Map(AVAILABLE_LANGUAGES.map(lang => [lang.code, lang.flagCode || lang.code]));
 
 export const getFlagCode = (langCode: string): string => {
-    return LANG_CODE_TO_FLAG_CODE_MAP[langCode] || langCode;
+    return langToFlagMap.get(langCode) || langCode;
 };
 
 export const ApiKeyPermissions = Object.freeze({

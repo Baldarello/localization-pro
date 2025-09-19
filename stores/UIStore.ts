@@ -19,7 +19,18 @@ export class UIStore {
     isCommitDialogOpen = false;
     isImportExportDialogOpen = false;
     isApiKeysManagerOpen = false;
+    isAiActionsDialogOpen = false;
     
+    // Loading state
+    loadingCount = 0;
+    
+    // AI Action state
+    aiActionState = {
+        running: false,
+        message: '',
+        progress: 0,
+    };
+
     private notificationInterval: number | null = null;
     private websocket: WebSocket | null = null;
     private reconnectionTimeout: number | null = null;
@@ -43,6 +54,18 @@ export class UIStore {
         this.setTheme(savedThemeMode || (prefersDark ? 'dark' : 'light'));
         this.setThemeName(savedThemeName || 'default');
     }
+    
+    get isLoading() {
+        return this.loadingCount > 0;
+    }
+
+    startLoading = () => {
+        this.loadingCount++;
+    };
+
+    stopLoading = () => {
+        this.loadingCount = Math.max(0, this.loadingCount - 1);
+    };
 
     get unreadNotificationCount() {
         return this.notifications.filter(n => !n.read).length;
@@ -120,6 +143,20 @@ export class UIStore {
 
     closeApiKeysManager = () => {
         this.isApiKeysManagerOpen = false;
+    };
+
+    openAiActionsDialog = () => {
+        this.isAiActionsDialogOpen = true;
+    };
+
+    closeAiActionsDialog = () => {
+        this.isAiActionsDialogOpen = false;
+        // Reset state on close
+        this.aiActionState = { running: false, message: '', progress: 0 };
+    };
+
+    setAiActionState = (running: boolean, message: string, progress: number) => {
+        this.aiActionState = { running, message, progress };
     };
 
     showAlert = (message: string, severity: AlertSeverity = 'info') => {

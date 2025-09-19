@@ -15,6 +15,8 @@ import ApiSpecModal from './components/ApiSpecModal';
 import CommitDialog from './components/CommitDialog';
 import ImportExportDialog from './components/ImportExportDialog';
 import ApiKeysManagerDialog from './components/ApiKeysManagerDialog';
+import GlobalLoader from './components/GlobalLoader';
+import AiActionsDialog from './components/AiActionsDialog';
 
 const App: React.FC = observer(() => {
     const { uiStore, authStore, projectStore } = useStores();
@@ -92,6 +94,7 @@ const App: React.FC = observer(() => {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
+            <GlobalLoader />
             {mainContent()}
             <Snackbar
                 open={uiStore.isAlertOpen}
@@ -107,6 +110,7 @@ const App: React.FC = observer(() => {
             <CommitDialog />
             <ImportExportDialog />
             <ApiKeysManagerDialog />
+            <AiActionsDialog />
         </ThemeProvider>
     );
 });
