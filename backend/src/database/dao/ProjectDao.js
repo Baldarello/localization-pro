@@ -1,7 +1,7 @@
 import { Project, User, Branch, Commit, TeamMembership, Comment, Notification, Invitation, ApiKey } from '../models/index.js';
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import sequelize from '../Sequelize.js';
-import { sendEmail } from '../helpers/mailer.js';
+import { sendEmail } from '../../helpers/mailer.js';
 import { sendToUser, broadcastBranchUpdate, broadcastCommentUpdate } from '../../config/WebSocketServer.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
