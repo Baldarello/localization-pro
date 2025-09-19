@@ -18,10 +18,27 @@ const formatProject = (project) => {
     if (!project) return null;
     const plainProject = project.get({ plain: true });
 
+    // Ensure `languages` is an array
+    if (typeof plainProject.languages === 'string') {
+        try {
+            plainProject.languages = JSON.parse(plainProject.languages);
+        } catch (e) {
+            plainProject.languages = [];
+        }
+    }
+
     // Format team object as expected by the frontend
     plainProject.team = {};
     if (plainProject.users) {
         plainProject.users.forEach(user => {
+            // Ensure languages is an array within TeamMembership
+            if (user.TeamMembership && typeof user.TeamMembership.languages === 'string') {
+                try {
+                    user.TeamMembership.languages = JSON.parse(user.TeamMembership.languages);
+                } catch (e) {
+                    user.TeamMembership.languages = [];
+                }
+            }
             plainProject.team[user.id] = {
                 role: user.TeamMembership.role,
                 languages: user.TeamMembership.languages,
@@ -34,8 +51,29 @@ const formatProject = (project) => {
     plainProject.pendingInvitations = plainProject.invitations || [];
     delete plainProject.invitations;
 
-    // Ensure commits are sorted newest first
+    // Ensure commits are sorted newest first and JSON fields are parsed
     plainProject.branches?.forEach(branch => {
+        // Parse workingTerms for the branch
+        if (typeof branch.workingTerms === 'string') {
+            try {
+                branch.workingTerms = JSON.parse(branch.workingTerms);
+            } catch (e) {
+                branch.workingTerms = [];
+            }
+        }
+
+        branch.commits?.forEach(commit => {
+            // Parse terms for each commit
+            if (typeof commit.terms === 'string') {
+                try {
+                    commit.terms = JSON.parse(commit.terms);
+                } catch(e) {
+                    commit.terms = [];
+                }
+            }
+        });
+
+        // Sort commits after parsing
         branch.commits?.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     });
 
@@ -203,6 +241,16 @@ const getCurrentBranch = async (projectId) => {
     if (!project) throw new Error('Project not found');
     const branch = await Branch.findOne({ where: { projectId, name: project.currentBranchName } });
     if (!branch) throw new Error('Current branch not found');
+
+    // Ensure workingTerms is an array
+    if (typeof branch.workingTerms === 'string') {
+        try {
+            branch.workingTerms = JSON.parse(branch.workingTerms);
+        } catch (e) {
+            branch.workingTerms = [];
+        }
+    }
+
     return branch;
 };
 
@@ -376,12 +424,22 @@ export const createCommit = async (projectId, branchName, message, authorId) => 
     const branch = await Branch.findOne({ where: { projectId, name: branchName } });
     if (!branch) throw new Error('Branch not found');
     
+    // Ensure workingTerms is parsed before use
+    let workingTerms = branch.workingTerms;
+    if (typeof workingTerms === 'string') {
+        try {
+            workingTerms = JSON.parse(workingTerms);
+        } catch (e) {
+            workingTerms = [];
+        }
+    }
+
     const newCommit = await Commit.create({
         id: `commit-${Date.now()}`,
         message,
         authorId,
         timestamp: new Date(),
-        terms: branch.workingTerms,
+        terms: workingTerms,
         branchId: branch.id,
     });
     
@@ -413,15 +471,25 @@ export const createCommit = async (projectId, branchName, message, authorId) => 
         `;
 
         project.users.forEach(user => {
+            let userSettings = user.settings;
+            if(typeof userSettings === 'string') {
+                try {
+                    userSettings = JSON.parse(userSettings);
+                } catch(e) { userSettings = {}; }
+            }
             // Send to everyone except the author, if they have notifications enabled.
-            if (user.id !== authorId && user.settings?.commitNotifications) {
+            if (user.id !== authorId && userSettings?.commitNotifications) {
                 sendEmail(user.email, subject, html.replace('Hi there', `Hi ${user.name}`));
             }
         });
     }
 
     broadcastBranchUpdate(projectId, branchName, authorId);
-    return fullCommit.get({ plain: true });
+    const plainCommit = fullCommit.get({ plain: true });
+    if(typeof plainCommit.terms === 'string') {
+        plainCommit.terms = JSON.parse(plainCommit.terms);
+    }
+    return plainCommit;
 };
 
 export const createBranch = async (projectId, newBranchName, sourceBranchName) => {
@@ -430,15 +498,20 @@ export const createBranch = async (projectId, newBranchName, sourceBranchName) =
 
     sourceBranch.commits.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
     const latestCommit = sourceBranch.commits[0];
+    let termsToCopy = [];
+    if (latestCommit) {
+        termsToCopy = typeof latestCommit.terms === 'string' ? JSON.parse(latestCommit.terms) : latestCommit.terms;
+    }
+
 
     const newBranch = await Branch.create({
         name: newBranchName,
         projectId,
-        workingTerms: latestCommit ? latestCommit.terms : [],
+        workingTerms: termsToCopy,
     });
 
     if (latestCommit) {
-        await Commit.create({ ...latestCommit.get({plain: true}), id: `commit-${Date.now()}`, branchId: newBranch.id });
+        await Commit.create({ ...latestCommit.get({plain: true}), id: `commit-${Date.now()}`, branchId: newBranch.id, terms: termsToCopy });
     }
 
     return newBranch.get({ plain: true });
@@ -448,13 +521,15 @@ export const createBranchFromCommit = async (projectId, commitId, newBranchName)
     const sourceCommit = await Commit.findByPk(commitId);
     if (!sourceCommit) throw new Error('Source commit not found');
 
+    let termsToCopy = typeof sourceCommit.terms === 'string' ? JSON.parse(sourceCommit.terms) : sourceCommit.terms;
+
     const newBranch = await Branch.create({
         name: newBranchName,
         projectId,
-        workingTerms: sourceCommit.terms,
+        workingTerms: termsToCopy,
     });
 
-    await Commit.create({ ...sourceCommit.get({plain: true}), id: `commit-${Date.now()}`, branchId: newBranch.id });
+    await Commit.create({ ...sourceCommit.get({plain: true}), id: `commit-${Date.now()}`, branchId: newBranch.id, terms: termsToCopy });
     
     return newBranch.get({ plain: true });
 };
@@ -484,12 +559,16 @@ export const deleteLatestCommit = async (projectId, branchName, authorId) => {
 
         const latestCommit = branch.commits[0];
         const parentCommit = branch.commits[1];
+        let parentTerms = parentCommit.terms;
+        if(typeof parentTerms === 'string') {
+            parentTerms = JSON.parse(parentTerms);
+        }
 
         // Delete the latest commit
         await Commit.destroy({ where: { id: latestCommit.id }, transaction: t });
 
         // Restore the working terms to the parent commit's state
-        branch.workingTerms = parentCommit.terms;
+        branch.workingTerms = parentTerms;
         await branch.save({ transaction: t });
         
         await t.commit();
@@ -506,8 +585,15 @@ export const mergeBranches = async (projectId, sourceBranchName, targetBranchNam
     if (!sourceBranch || !targetBranch) throw new Error('One or both branches not found');
     
     sourceBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    const sourceTermsMap = new Map(sourceBranch.commits[0].terms.map(t => [t.id, t]));
-    const targetTermsMap = new Map(targetBranch.workingTerms.map(t => [t.id, t]));
+    
+    let sourceTerms = sourceBranch.commits[0].terms;
+    if(typeof sourceTerms === 'string') sourceTerms = JSON.parse(sourceTerms);
+
+    let targetTerms = targetBranch.workingTerms;
+    if(typeof targetTerms === 'string') targetTerms = JSON.parse(targetTerms);
+
+    const sourceTermsMap = new Map(sourceTerms.map(t => [t.id, t]));
+    const targetTermsMap = new Map(targetTerms.map(t => [t.id, t]));
 
     // Simple merge: source overrides target
     for (const [id, term] of sourceTermsMap.entries()) {
@@ -551,6 +637,12 @@ export const createComment = async (projectId, termId, content, parentId, author
     if (mentionedEmails.size > 0) {
         const mentionedUsers = await User.findAll({ where: { email: [...mentionedEmails] } });
         for (const user of mentionedUsers) {
+            let userSettings = user.settings;
+             if(typeof userSettings === 'string') {
+                try {
+                    userSettings = JSON.parse(userSettings);
+                } catch(e) { userSettings = {}; }
+            }
             // Don't notify the user who wrote the comment
             if (user.id !== authorId) {
                 await Notification.create({
@@ -565,7 +657,7 @@ export const createComment = async (projectId, termId, content, parentId, author
                 sendToUser(user.id, { type: 'new_notification' });
 
                 // Also send an email if user has it enabled
-                if (user.settings?.mentionNotifications) {
+                if (userSettings?.mentionNotifications) {
                     const author = await User.findByPk(authorId);
                     const subject = `You were mentioned by ${author.name} in ${branchName}`;
                     const html = `
@@ -680,6 +772,9 @@ export const findLastModifiedTranslation = async (projectId, langCode) => {
     }
     
     const commits = mainBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    commits.forEach(c => {
+        if(typeof c.terms === 'string') c.terms = JSON.parse(c.terms);
+    })
 
     for (let i = 0; i < commits.length; i++) {
         const currentCommit = commits[i];
@@ -732,9 +827,13 @@ export const getTermsForLocale = async (projectId, langCode) => {
     
     const commits = mainBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     const latestCommit = commits[0];
+    let latestTerms = latestCommit.terms;
+    if(typeof latestTerms === 'string') {
+        latestTerms = JSON.parse(latestTerms);
+    }
 
     const termsObject = {};
-    for (const term of latestCommit.terms) {
+    for (const term of latestTerms) {
         // Ensure we only include terms that have a translation for the requested language
         if (term.translations[langCode]) {
             termsObject[term.text] = term.translations[langCode];

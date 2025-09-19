@@ -2,14 +2,31 @@ import { User, Notification, Comment, Invitation, TeamMembership } from '../mode
 import bcrypt from 'bcrypt';
 import { Op } from 'sequelize';
 
+const parseUser = (user) => {
+    if (!user) return null;
+    const plainUser = user.get({ plain: true });
+    // Exclude password
+    delete plainUser.password;
+    
+    // Parse settings if it's a string
+    if (typeof plainUser.settings === 'string') {
+        try {
+            plainUser.settings = JSON.parse(plainUser.settings);
+        } catch (e) {
+            // Default settings if parsing fails
+            plainUser.settings = { commitNotifications: true, mentionNotifications: true };
+        }
+    }
+    return plainUser;
+};
+
+
 export const login = async (email, pass) => {
     const user = await User.findOne({ where: { email } });
 
     // Check if user exists and if password is valid
     if (user && await user.validPassword(pass)) {
-        // Exclude password hash from returned user object
-        const { password, ...userWithoutPassword } = user.get({ plain: true });
-        return userWithoutPassword;
+        return parseUser(user);
     }
 
     // If user not found or password incorrect
@@ -23,8 +40,7 @@ export const findOrCreateGoogleUser = async (profile) => {
     // 1. Find user by Google ID first
     let user = await User.findOne({ where: { googleId } });
     if (user) {
-        const { password, ...userWithoutPassword } = user.get({ plain: true });
-        return userWithoutPassword;
+        return parseUser(user);
     }
 
     // 2. If not found, try to find by email to link the account
@@ -32,8 +48,7 @@ export const findOrCreateGoogleUser = async (profile) => {
     if (user) {
         user.googleId = googleId;
         await user.save();
-        const { password, ...userWithoutPassword } = user.get({ plain: true });
-        return userWithoutPassword;
+        return parseUser(user);
     }
 
     // 3. If no user is found by email, create a new one
@@ -52,24 +67,19 @@ export const findOrCreateGoogleUser = async (profile) => {
         settings: { commitNotifications: true, mentionNotifications: true }
     });
     
-    const { password, ...userWithoutPassword } = newUser.get({ plain: true });
-    return userWithoutPassword;
+    return parseUser(newUser);
 };
 
 export const getUserById = async (userId) => {
     const user = await User.findByPk(userId);
-    if (user) {
-        const { password, ...userWithoutPassword } = user.get({ plain: true });
-        return userWithoutPassword;
-    }
-    return null;
+    return parseUser(user);
 };
 
 export const getAllUsers = async () => {
     const users = await User.findAll({
         attributes: { exclude: ['password'] }
     });
-    return users.map(u => u.get({ plain: true }));
+    return users.map(u => parseUser(u));
 };
 
 export const findUserByEmail = async (email) => {
@@ -115,8 +125,7 @@ export const registerUser = async (name, email, password) => {
         }
     }
     
-    const { password: _, ...userWithoutPassword } = newUser.get({ plain: true });
-    return userWithoutPassword;
+    return parseUser(newUser);
 };
 
 export const updateUserName = async (userId, newName) => {
@@ -128,8 +137,7 @@ export const updateUserName = async (userId, newName) => {
             ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
             : newName.substring(0, 2).toUpperCase();
         await user.save();
-        const { password, ...userWithoutPassword } = user.get({ plain: true });
-        return userWithoutPassword;
+        return parseUser(user);
     }
     return null;
 };
@@ -140,8 +148,7 @@ export const updateUserSettings = async (userId, settings) => {
         // Merge settings to preserve other potential settings in the future
         user.settings = { ...user.settings, ...settings };
         await user.save();
-        const { password, ...userWithoutPassword } = user.get({ plain: true });
-        return userWithoutPassword;
+        return parseUser(user);
     }
     return null;
 };
