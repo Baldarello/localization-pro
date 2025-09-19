@@ -12,6 +12,12 @@ export interface AddMemberResult {
 
 export interface AuthConfig {
     googleAuthEnabled: boolean;
+    usageLimits?: {
+        enforced: boolean;
+        projects: number;
+        terms: number;
+        members: number;
+    }
 }
 
 
@@ -253,26 +259,29 @@ class ApiClient {
         }
     }
 
-    async bulkUpdateTerms(projectId: string, terms: Term[]): Promise<boolean> {
+    async bulkUpdateTerms(projectId: string, terms: Term[]): Promise<void> {
+        await this.apiFetch(`/projects/${projectId}/terms/bulk`, {
+            method: 'PUT',
+            body: JSON.stringify(terms),
+        });
+    }
+    
+    async addMember(projectId: string, email: string, role: UserRole, languages: string[]): Promise<AddMemberResult> {
+        // Errors will now be thrown by apiFetch and handled in the store
+        return await this.apiFetch(`/projects/${projectId}/team`, {
+            method: 'POST',
+            body: JSON.stringify({ email, role, languages }),
+        });
+    }
+
+    async revokeInvitation(projectId: string, invitationId: number): Promise<boolean> {
         try {
-            await this.apiFetch(`/projects/${projectId}/terms/bulk`, {
-                method: 'PUT',
-                body: JSON.stringify(terms),
+            await this.apiFetch(`/projects/${projectId}/invitations/${invitationId}`, {
+                method: 'DELETE',
             });
             return true;
         } catch (error) {
             return false;
-        }
-    }
-    
-    async addMember(projectId: string, email: string, role: UserRole, languages: string[]): Promise<AddMemberResult> {
-        try {
-            return await this.apiFetch(`/projects/${projectId}/team`, {
-                method: 'POST',
-                body: JSON.stringify({ email, role, languages }),
-            });
-        } catch (error: any) {
-             return { user: null, success: false, message: error.message };
         }
     }
 

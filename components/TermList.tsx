@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery } from '@mui/material';
+import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
@@ -10,7 +10,7 @@ import { useStores } from '../stores/StoreProvider';
 import { UserRole } from '../types';
 
 const TermList: React.FC = observer(() => {
-    const { projectStore } = useStores();
+    const { projectStore, authStore } = useStores();
     const {
         selectedProject,
         selectedTermId,
@@ -56,6 +56,9 @@ const TermList: React.FC = observer(() => {
     }) || [];
 
     const canManageTerms = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
+    const isTermLimitReached = authStore.isUsageLimitsEnforced &&
+    currentBranchTerms.length >= authStore.termLimit;
+
     if (!selectedProject) return null;
 
     return (
@@ -99,19 +102,27 @@ const TermList: React.FC = observer(() => {
                     sx={{ mt: 1, width: '100%', justifyContent: 'flex-end', mr: 0 }}
                 />
                 {canManageTerms && (
-                    <Box component="form" onSubmit={handleAddTerm} sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                        <TextField
-                            fullWidth
-                            label="Add new term key"
-                            variant="outlined"
-                            size="small"
-                            value={newTerm}
-                            onChange={(e) => setNewTerm(e.target.value)}
-                        />
-                        <IconButton type="submit" color="primary" sx={{ flexShrink: 0 }}>
-                            <AddIcon />
-                        </IconButton>
-                    </Box>
+                    <>
+                        {isTermLimitReached && (
+                            <Alert severity="warning" sx={{ mt: 1 }}>
+                                You have reached the {authStore.termLimit} term limit for this project.
+                            </Alert>
+                        )}
+                        <Box component="form" onSubmit={handleAddTerm} sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                            <TextField
+                                fullWidth
+                                label="Add new term key"
+                                variant="outlined"
+                                size="small"
+                                value={newTerm}
+                                onChange={(e) => setNewTerm(e.target.value)}
+                                disabled={isTermLimitReached}
+                            />
+                            <IconButton type="submit" color="primary" sx={{ flexShrink: 0 }} disabled={isTermLimitReached}>
+                                <AddIcon />
+                            </IconButton>
+                        </Box>
+                    </>
                 )}
             </Box>
             <List sx={{ flexGrow: 1, overflowY: 'auto', p: 1 }}>

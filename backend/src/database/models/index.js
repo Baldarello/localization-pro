@@ -45,8 +45,8 @@ Notification.belongsTo(Comment, { foreignKey: 'commentId', onDelete: 'CASCADE' }
 Comment.hasOne(Notification, { foreignKey: 'commentId' });
 
 // Invitation Associations
-Invitation.belongsTo(Project, { foreignKey: 'projectId', onDelete: 'CASCADE' });
-Project.hasMany(Invitation, { foreignKey: 'projectId' });
+Project.hasMany(Invitation, { as: 'invitations', foreignKey: 'projectId', onDelete: 'CASCADE' });
+Invitation.belongsTo(Project, { foreignKey: 'projectId' });
 
 Invitation.belongsTo(User, { as: 'inviter', foreignKey: 'invitedById', onDelete: 'SET NULL' });
 User.hasMany(Invitation, { as: 'sentInvitations', foreignKey: 'invitedById' });

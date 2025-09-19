@@ -8,16 +8,37 @@ export class AuthStore {
     isAuthCheckComplete = false;
     isGoogleAuthEnabled = false;
 
+    // Usage Limits State
+    isUsageLimitsEnforced = false;
+    projectLimit = Infinity;
+    termLimit = Infinity;
+    memberLimit = Infinity;
+
     constructor(rootStore: RootStore) {
         makeAutoObservable(this);
         this.rootStore = rootStore;
     }
 
     fetchAuthConfig = async () => {
-        const config = await this.rootStore.apiClient.getAuthConfig();
-        runInAction(() => {
-            this.isGoogleAuthEnabled = config.googleAuthEnabled;
-        });
+        try {
+            const config = await this.rootStore.apiClient.getAuthConfig();
+            runInAction(() => {
+                this.isGoogleAuthEnabled = config.googleAuthEnabled;
+                if (config.usageLimits?.enforced) {
+                    this.isUsageLimitsEnforced = true;
+                    this.projectLimit = config.usageLimits.projects;
+                    this.termLimit = config.usageLimits.terms;
+                    this.memberLimit = config.usageLimits.members;
+                } else {
+                    this.isUsageLimitsEnforced = false;
+                    this.projectLimit = Infinity;
+                    this.termLimit = Infinity;
+                    this.memberLimit = Infinity;
+                }
+            });
+        } catch (error) {
+            console.error("Could not fetch auth config:", error);
+        }
     }
 
     login = async (email: string, pass: string) => {

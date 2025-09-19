@@ -767,6 +767,45 @@ router.post('/:projectId/team', authenticate, async (req, res, next) => {
 
 /**
  * @swagger
+ * /projects/{projectId}/invitations/{invitationId}:
+ *   delete:
+ *     summary: Revoke a pending invitation
+ *     tags: [Team]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: invitationId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       '204':
+ *         description: Invitation revoked successfully.
+ *       '401': { description: "Unauthorized" }
+ *       '403': { description: "Forbidden" }
+ *       '404': { description: "Invitation not found" }
+ */
+router.delete('/:projectId/invitations/:invitationId', authenticate, async (req, res, next) => {
+    try {
+        if (!(await isProjectAdmin(req.user.id, req.params.projectId))) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        const success = await ProjectDao.revokeInvitation(req.params.projectId, req.params.invitationId);
+        if (success) {
+            res.sendStatus(204);
+        } else {
+            res.status(404).json({ message: 'Invitation not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+});
+
+
+/**
+ * @swagger
  * /projects/{projectId}/team/{userId}:
  *   delete:
  *     summary: Remove a member from a project

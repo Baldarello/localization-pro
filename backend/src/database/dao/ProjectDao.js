@@ -6,6 +6,14 @@ import { sendToUser, broadcastBranchUpdate, broadcastCommentUpdate } from '../..
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
+class UsageLimitError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'UsageLimitError';
+    this.status = 403; // Forbidden
+  }
+}
+
 const formatProject = (project) => {
     if (!project) return null;
     const plainProject = project.get({ plain: true });
@@ -21,6 +29,10 @@ const formatProject = (project) => {
         });
     }
     delete plainProject.users;
+
+    // Process invitations
+    plainProject.pendingInvitations = plainProject.invitations || [];
+    delete plainProject.invitations;
 
     // Ensure commits are sorted newest first
     plainProject.branches?.forEach(branch => {
@@ -49,6 +61,10 @@ const findProjectById = async (projectId) => {
                 model: ApiKey,
                 as: 'apiKeys',
                 attributes: { exclude: ['secretHash'] }
+            },
+            {
+                model: Invitation,
+                as: 'invitations',
             }
         ]
     });
@@ -76,6 +92,10 @@ export const getAllProjects = async (userId) => {
                     model: ApiKey,
                     as: 'apiKeys',
                     attributes: { exclude: ['secretHash'] }
+                },
+                {
+                    model: Invitation,
+                    as: 'invitations',
                 }
             ]
         }]
@@ -87,6 +107,13 @@ export const getAllProjects = async (userId) => {
 };
 
 export const createProject = async (name, userId) => {
+    if (process.env.ENFORCE_USAGE_LIMITS === 'true') {
+        const adminProjectCount = await TeamMembership.count({ where: { userId, role: 'admin' } });
+        if (adminProjectCount >= 3) {
+            throw new UsageLimitError('You have reached the maximum of 3 projects.');
+        }
+    }
+
     const newProject = await Project.create({
         id: `proj-${Date.now()}`,
         name,
@@ -181,6 +208,13 @@ const getCurrentBranch = async (projectId) => {
 
 export const addTerm = async (projectId, termText, authorId) => {
     const branch = await getCurrentBranch(projectId);
+
+    if (process.env.ENFORCE_USAGE_LIMITS === 'true') {
+        if (branch.workingTerms.length >= 1000) {
+            throw new UsageLimitError('This project has reached the maximum of 1000 terms.');
+        }
+    }
+
     const newTerm = {
         id: `term-${Date.now()}`,
         text: termText,
@@ -243,6 +277,11 @@ export const updateTranslation = async (projectId, termId, langCode, value, auth
 
 export const bulkUpdateTerms = async (projectId, newTerms, authorId) => {
     const branch = await getCurrentBranch(projectId);
+    if (process.env.ENFORCE_USAGE_LIMITS === 'true') {
+        if (newTerms.length > 1000) {
+            throw new UsageLimitError(`This import would result in ${newTerms.length} terms, exceeding the 1000 term limit.`);
+        }
+    }
     branch.workingTerms = newTerms;
     await branch.save();
     broadcastBranchUpdate(projectId, branch.name, authorId);
@@ -252,8 +291,21 @@ export const bulkUpdateTerms = async (projectId, newTerms, authorId) => {
 // --- Team Management ---
 
 export const addMember = async (projectId, email, role, languages, inviterId) => {
-    const project = await Project.findByPk(projectId);
+    const project = await Project.findByPk(projectId, {
+        include: [
+            { model: User, as: 'users' },
+            { model: Invitation, as: 'invitations' }
+        ]
+    });
     if (!project) return { success: false, message: 'Project not found.', code: 'project_not_found' };
+
+    if (process.env.ENFORCE_USAGE_LIMITS === 'true') {
+        const currentMemberCount = project.users?.length || 0;
+        const pendingInvitationCount = project.invitations?.length || 0;
+        if (currentMemberCount + pendingInvitationCount >= 5) {
+            throw new UsageLimitError('This project has reached the maximum of 5 team members.');
+        }
+    }
 
     const inviter = await User.findByPk(inviterId);
     if (!inviter) return { success: false, message: 'Inviting user could not be identified.' };
@@ -296,6 +348,16 @@ export const addMember = async (projectId, email, role, languages, inviterId) =>
         
         return { user: null, success: true, message: `Invitation sent to ${email}. They will be added to the project upon registration.` };
     }
+};
+
+export const revokeInvitation = async (projectId, invitationId) => {
+    const result = await Invitation.destroy({
+        where: {
+            id: invitationId,
+            projectId: projectId,
+        }
+    });
+    return result > 0; // returns number of rows deleted
 };
 
 export const removeMember = async (projectId, userId) => {

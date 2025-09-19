@@ -25,35 +25,33 @@ Before running the application, you need to set up your environment variables.
 2. **Configure your environment variables in the `.env` file:**
 
 #### Database Configuration
-The application supports multiple database types. Configure based on your chosen database:
+The application supports multiple database types, configured via environment variables in the `.env` file.
 
-**For SQLite (Default):**
+**For SQLite (Default for Development):**
 ```env
 DB_DIALECT=sqlite
-DB_STORAGE=./database.sqlite
-DB_LOGGING=false
+DB_STORAGE=database.sqlite
 ```
 
-**For PostgreSQL:**
+**For PostgreSQL (Example for Production):**
 ```env
 DB_DIALECT=postgres
-DB_HOST=localhost
+DB_HOST=your-db-host.com
 DB_PORT=5432
 DB_NAME=your_database_name
 DB_USER=your_database_user
 DB_PASS=your_database_password
-DB_LOGGING=false
+DB_SSL=true
 ```
 
 **For MySQL/MariaDB:**
 ```env
 DB_DIALECT=mysql
-DB_HOST=localhost
+DB_HOST=your-db-host.com
 DB_PORT=3306
 DB_NAME=your_database_name
 DB_USER=your_database_user
 DB_PASS=your_database_password
-DB_LOGGING=false
 ```
 
 ### Note on Automated Changes

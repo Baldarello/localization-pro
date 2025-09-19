@@ -61,6 +61,14 @@ export interface ApiKey {
     secret?: string; // Only present on creation
 }
 
+export interface Invitation {
+    id: number;
+    email: string;
+    role: UserRole;
+    languages: string[];
+    createdAt: string;
+}
+
 export interface Project {
     id: string;
     name: string;
@@ -70,6 +78,7 @@ export interface Project {
     currentBranchName: string;
     team: { [userId: string]: { role: UserRole; languages: string[] } }; // Maps user ID to role and assigned languages
     apiKeys?: ApiKey[];
+    pendingInvitations?: Invitation[];
 }
 
 export type UncommittedChange =

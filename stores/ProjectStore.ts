@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction, computed } from 'mobx';
-import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment, ApiKey, ApiKeyPermissions } from '../types';
+import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment, ApiKey, ApiKeyPermissions, Invitation } from '../types';
 import { AVAILABLE_LANGUAGES } from '../constants';
 import { RootStore } from './RootStore';
 import { GoogleGenAI } from '@google/genai';
@@ -281,10 +281,14 @@ export class ProjectStore {
     async addProject(name: string) {
         const user = this.rootStore.authStore.currentUser;
         if (!user) return;
-        const newProject = await this.rootStore.apiClient.addProject(name, user.id);
-        runInAction(() => {
-            this.projects.push(newProject);
-        });
+        try {
+            const newProject = await this.rootStore.apiClient.addProject(name, user.id);
+            runInAction(() => {
+                this.projects.push(newProject);
+            });
+        } catch (error: any) {
+            this.rootStore.uiStore.showAlert(error.message || 'Failed to create project.', 'error');
+        }
     };
     
     async addTerm(termText: string) {
@@ -306,12 +310,16 @@ export class ProjectStore {
             return;
         }
 
-        const newTerm = await this.rootStore.apiClient.addTerm(this.selectedProject.id, trimmedText);
-        if (newTerm) {
-            runInAction(() => {
-                this.currentBranch?.workingTerms.push(newTerm);
-                this.selectedTermId = newTerm.id;
-            });
+        try {
+            const newTerm = await this.rootStore.apiClient.addTerm(this.selectedProject.id, trimmedText);
+            if (newTerm) {
+                runInAction(() => {
+                    this.currentBranch?.workingTerms.push(newTerm);
+                    this.selectedTermId = newTerm.id;
+                });
+            }
+        } catch (error: any) {
+            this.rootStore.uiStore.showAlert(error.message || 'Failed to add term.', 'error');
         }
     };
 
@@ -484,29 +492,56 @@ export class ProjectStore {
     
     async addMember(email: string, role: UserRole, languages: string[]) {
         if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
-        
+
         const trimmedEmail = email.trim();
         if (!trimmedEmail) { this.rootStore.uiStore.showAlert('Email cannot be empty.', 'error'); return; }
         if (!/\S+@\S+\.\S+/.test(trimmedEmail)) { this.rootStore.uiStore.showAlert('Please enter a valid email address.', 'error'); return; }
-        
-        const result: AddMemberResult = await this.rootStore.apiClient.addMember(this.selectedProject.id, trimmedEmail, role, languages);
 
-        if (result.success) {
-            runInAction(() => {
-                // Only update team if a user was actually added (not just invited)
-                if (this.selectedProject && result.user) {
-                    this.selectedProject.team[result.user.id] = { role, languages };
-                    // Ensure the user exists in the allUsers list for display in TeamManager
-                    if (!this.allUsers.some(u => u.id === result.user!.id)) {
-                        this.allUsers.push(result.user);
+        try {
+            const result: AddMemberResult = await this.rootStore.apiClient.addMember(this.selectedProject.id, trimmedEmail, role, languages);
+
+            if (result.success) {
+                runInAction(() => {
+                    if (this.selectedProject) {
+                        // Handle case where user was added directly
+                        if (result.user) {
+                            this.selectedProject.team[result.user.id] = { role, languages };
+                            if (!this.allUsers.some(u => u.id === result.user!.id)) {
+                                this.allUsers.push(result.user);
+                            }
+                        } else {
+                            // Handle case where an invitation was sent by refetching the project
+                            // to get the latest pendingInvitations list.
+                            this.refreshCurrentProject();
+                        }
                     }
-                }
-            });
-            this.rootStore.uiStore.showAlert(result.message, 'success');
-        } else {
-            this.rootStore.uiStore.showAlert(result.message, result.code === 'user_exists' || result.code === 'invitation_exists' ? 'warning' : 'error');
+                });
+                this.rootStore.uiStore.showAlert(result.message, 'success');
+            } else {
+                this.rootStore.uiStore.showAlert(result.message, result.code === 'user_exists' || result.code === 'invitation_exists' ? 'warning' : 'error');
+            }
+        } catch (error: any) {
+            this.rootStore.uiStore.showAlert(error.message || 'Failed to invite member.', 'error');
         }
     };
+
+    async revokeInvitation(invitationId: number) {
+        if (!this.selectedProject) return;
+
+        const success = await this.rootStore.apiClient.revokeInvitation(this.selectedProject.id, invitationId);
+        if (success) {
+            runInAction(() => {
+                if (this.selectedProject && this.selectedProject.pendingInvitations) {
+                    this.selectedProject.pendingInvitations = this.selectedProject.pendingInvitations.filter(
+                        inv => inv.id !== invitationId
+                    );
+                    this.rootStore.uiStore.showAlert('Invitation revoked.', 'info');
+                }
+            });
+        } else {
+            this.rootStore.uiStore.showAlert('Failed to revoke invitation.', 'error');
+        }
+    }
 
     async removeMember(userId: string) {
         if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
@@ -764,19 +799,15 @@ export class ProjectStore {
             }
 
             // Persist the changes to the backend
-            const success = await this.rootStore.apiClient.bulkUpdateTerms(this.selectedProject.id, newWorkingTerms);
+            await this.rootStore.apiClient.bulkUpdateTerms(this.selectedProject.id, newWorkingTerms);
 
-            if (success) {
-                // On success, update the local state
-                runInAction(() => {
-                    if (this.currentBranch) {
-                        this.currentBranch.workingTerms = newWorkingTerms;
-                    }
-                });
-                this.rootStore.uiStore.showAlert(`Import complete: ${stats.updated} updated, ${stats.created} created, ${stats.ignored} ignored.`, 'success');
-            } else {
-                throw new Error('Could not save imported data to the server.');
-            }
+            // On success, update the local state
+            runInAction(() => {
+                if (this.currentBranch) {
+                    this.currentBranch.workingTerms = newWorkingTerms;
+                }
+            });
+            this.rootStore.uiStore.showAlert(`Import complete: ${stats.updated} updated, ${stats.created} created, ${stats.ignored} ignored.`, 'success');
 
         } catch (error: any) {
             console.error('Import failed:', error);

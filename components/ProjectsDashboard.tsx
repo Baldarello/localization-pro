@@ -1,15 +1,24 @@
 
-import React from 'react';
+
+import React, { useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
-// FIX: Removed Grid from imports as it is no longer used.
-import { Box, Typography, Button, Container } from '@mui/material';
+import { Box, Typography, Button, Container, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useStores } from '../stores/StoreProvider';
 import ProjectCard from './ProjectCard';
 import CreateProjectDialog from './CreateProjectDialog';
+import { UserRole } from '../types';
 
 const ProjectsDashboard: React.FC = observer(() => {
-    const { uiStore, projectStore } = useStores();
+    const { uiStore, projectStore, authStore } = useStores();
+    const { currentUser } = authStore;
+
+    const adminProjectCount = useMemo(() => {
+        if (!currentUser) return 0;
+        return projectStore.projects.filter(p => p.team[currentUser.id]?.role === UserRole.Admin).length;
+    }, [projectStore.projects, currentUser]);
+
+    const isProjectLimitReached = authStore.isUsageLimitsEnforced && adminProjectCount >= authStore.projectLimit;
 
     return (
         <Container maxWidth="lg" sx={{ pt: 4, pb: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
@@ -17,14 +26,19 @@ const ProjectsDashboard: React.FC = observer(() => {
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
                     Projects
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={uiStore.openCreateProjectDialog}
-                    color="secondary"
-                >
-                    New Project
-                </Button>
+                <Tooltip title={isProjectLimitReached ? `You have reached the maximum of ${authStore.projectLimit} projects.` : ''}>
+                    <span> {/* Tooltip needs a span wrapper for disabled buttons */}
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={uiStore.openCreateProjectDialog}
+                            color="secondary"
+                            disabled={isProjectLimitReached}
+                        >
+                            New Project
+                        </Button>
+                    </span>
+                </Tooltip>
             </Box>
             {projectStore.projects.length > 0 ? (
                 // FIX: Replaced MUI Grid with Box and flexbox for layout. The Grid component's props (`item`, `xs`, etc.) were causing TypeScript errors, possibly due to a type definition issue in the project's environment. This alternative achieves the same responsive layout. The spacing is replicated using negative margins on the container and padding on the items.

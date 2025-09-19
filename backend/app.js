@@ -81,11 +81,17 @@ app.use((req, res, next) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  // Log the error
+  // Custom usage limit error
+  if (err.name === 'UsageLimitError') {
+      logger.warn(`UsageLimitError for ${req.user?.id ? `user ${req.user.id}` : `IP ${req.ip}`}: ${err.message}`);
+      return res.status(err.status || 403).json({ message: err.message });
+  }
+
+  // Log other errors
   logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
   logger.error(err.stack);
 
-  // Send response
+  // Send generic response for server errors
   res.status(500).json({ message: 'Internal Server Error' });
 });
 

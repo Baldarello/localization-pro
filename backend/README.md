@@ -76,9 +76,20 @@ The following table lists all the environment variables used by the backend:
 
 | Variable                | Description                                                                                             | Example                               |
 | ----------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `NODE_ENV`              | The application environment. Set to `production` to use production database settings.                   | `production`                          |
 | `PORT`                  | The port on which the backend server will run.                                                          | `3001`                                |
 | `FRONTEND_URL`          | The base URL of the frontend application. Used for OAuth redirects.                                     | `http://localhost:5173`               |
 | `SESSION_SECRET`        | **Required.** A long, random string used to sign the session ID cookie.                                 | `a-very-long-and-secret-string`       |
+| `ENFORCE_USAGE_LIMITS`  | Set to `true` to enable usage limits (e.g., 3 projects, 1000 terms). Primarily for cloud/demo deployments. | `true`                                |
+| `DB_DIALECT`            | The dialect of the database (`postgres`, `mysql`, `sqlite`). Required for production.                   | `postgres`                            |
+| `DB_HOST`               | The database host.                                                                                      | `localhost`                           |
+| `DB_PORT`               | The database port.                                                                                      | `5432`                                |
+| `DB_NAME`               | The name of the database.                                                                               | `tnt_prod`                            |
+| `DB_USER`               | The username for the database.                                                                          | `tnt_user`                            |
+| `DB_PASS`               | The password for the database.                                                                          | `your_secret_password`                |
+| `DB_STORAGE`            | The file path for the SQLite database (if `DB_DIALECT=sqlite`).                                         | `database.sqlite`                     |
+| `DB_LOGGING`            | Set to `true` to enable Sequelize query logging.                                                        | `false`                               |
+| `DB_SSL`                | Set to `true` to enable SSL for the database connection (for Postgres, etc.).                           | `true`                                |
 | `GOOGLE_CLIENT_ID`      | **Optional.** Your Google API project's client ID. If omitted, Google Sign-In will be disabled.          | `your-client-id.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET`  | **Optional.** Your Google API project's client secret. If omitted, Google Sign-In will be disabled.      | `GOCSPX-your-client-secret`           |
 | `EMAIL_ENABLED`         | Set to `true` to enable all email-sending features.                                                     | `true`                                |
@@ -107,12 +118,12 @@ npm run dev:backend
 ```
 This script will first run any pending database migrations and then start the server.
 
-### For Production/Standard Start
-To start the backend server normally, use this command from the **root** directory:
+### For Production
+To start the backend server for production, first ensure your `.env` file is configured with your production database credentials. Then run:
 ```sh
-npm run start:backend
+npm run start:prod
 ```
-This will also run migrations before starting the server.
+This will set `NODE_ENV=production`, run any pending database migrations against your production database, and then start the server.
 
 The server will start on `http://localhost:3001` by default.
 
