@@ -197,7 +197,7 @@ const ApiReferenceView = () => {
                         InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
                     />
                 </Box>
-                <Box sx={{ overflowY: 'auto' }}>
+                <Box sx={{ overflow: 'auto' }}>
                     <List dense>
                         {filteredTags.map((tag: any) => {
                             const endpoints = groupedPaths[tag.name]?.filter(({ path, details }) =>
@@ -216,7 +216,7 @@ const ApiReferenceView = () => {
                                             sx={{ pl: 4 }}
                                         >
                                             <Chip label={method.toUpperCase()} color={getMethodColor(method)} size="small" sx={{ width: 60, mr: 1.5, fontWeight: 'bold', fontSize: '0.7rem' }} />
-                                            <ListItemText primary={details.summary} primaryTypographyProps={{ sx: { fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }} />
+                                            <ListItemText primary={details.summary} primaryTypographyProps={{ sx: { fontSize: '0.875rem', whiteSpace: 'nowrap' } }} />
                                         </ListItemButton>
                                     ))}
                                 </li>
