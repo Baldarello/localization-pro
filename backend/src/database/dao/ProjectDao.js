@@ -1,7 +1,7 @@
 import { Project, User, Branch, Commit, TeamMembership, Comment, Notification, Invitation, ApiKey } from '../models/index.js';
 import { AVAILABLE_LANGUAGES } from '../../constants.js';
 import sequelize from '../Sequelize.js';
-import { sendEmail } from '../../helpers/mailer.js';
+import { sendEmail } from '../helpers/mailer.js';
 import { sendToUser, broadcastBranchUpdate, broadcastCommentUpdate } from '../../config/WebSocketServer.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
@@ -152,10 +152,11 @@ export const createProject = async (name, userId) => {
         }
     }
 
+    const englishLang = AVAILABLE_LANGUAGES.find(l => l.code === 'en') || { code: 'en', name: 'English' };
     const newProject = await Project.create({
         id: `proj-${Date.now()}`,
         name,
-        languages: [AVAILABLE_LANGUAGES[0]],
+        languages: [englishLang],
         defaultLanguageCode: 'en',
         currentBranchName: 'main',
     });
@@ -195,7 +196,14 @@ export const updateProjectLanguages = async (projectId, newLanguages) => {
         // Update team members' language assignments
         for (const user of project.users) {
             if (user.TeamMembership) {
-                const currentLangs = user.TeamMembership.languages || [];
+                let currentLangs = user.TeamMembership.languages || [];
+                if (typeof currentLangs === 'string') {
+                    try {
+                        currentLangs = JSON.parse(currentLangs);
+                    } catch (e) {
+                        currentLangs = [];
+                    }
+                }
                 const updatedLangs = currentLangs.filter(code => newLangCodes.includes(code));
                 
                 // Use a targeted update instead of save() on an incomplete instance
