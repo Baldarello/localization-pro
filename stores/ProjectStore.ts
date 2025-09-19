@@ -110,8 +110,8 @@ export class ProjectStore {
         }
 
         return changes.sort((a, b) => {
-            const textA = a.type === 'added' ? a.term.text : a.originalTerm.text;
-            const textB = b.type === 'added' ? b.term.text : b.originalTerm.text;
+            const textA = (a.type === 'added' ? a.term?.text : a.originalTerm?.text) || '';
+            const textB = (b.type === 'added' ? b.term?.text : b.originalTerm?.text) || '';
             return textA.localeCompare(textB);
         });
     }
