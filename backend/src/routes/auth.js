@@ -94,7 +94,15 @@ router.post('/login', async (req, res, next) => {
         // Use req.login to establish a session, managed by Passport
         req.login(user, (err) => {
             if (err) { return next(err); }
-            return res.json(user);
+
+            // Explicitly save the session before responding to prevent a race condition
+            // where the client tries to open a WebSocket before the session is persisted.
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    return next(saveErr);
+                }
+                return res.json(user);
+            });
         });
 
     } catch (error) {
@@ -243,12 +251,18 @@ if (isGoogleAuthEnabled) {
 
 // The callback URL Google redirects to
 if (isGoogleAuthEnabled) {
-    router.get('/google/callback', 
+    router.get('/google/callback',
         passport.authenticate('google', { failureRedirect: '/login' }),
-        (req, res) => {
-            // Successful authentication, redirect to the frontend.
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-            res.redirect(frontendUrl);
+        (req, res, next) => {
+            // Successful authentication, session is established.
+            // Explicitly save the session before redirecting to prevent race conditions.
+            req.session.save((err) => {
+                if (err) {
+                    return next(err);
+                }
+                const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+                res.redirect(frontendUrl);
+            });
         }
     );
 }

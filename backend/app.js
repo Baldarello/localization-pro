@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import passport from 'passport';
+import SequelizeStore from 'connect-session-sequelize';
+import sequelize from './src/database/Sequelize.js';
 import apiRouter from './src/routes/index.js';
 import logger from './src/helpers/logger.js';
 import swaggerUi from 'swagger-ui-express';
@@ -37,8 +39,15 @@ if (!sessionSecret) {
     }
 }
 
+// Initialize session store backed by Sequelize
+const SessionStore = SequelizeStore(session.Store);
+const sessionStore = new SessionStore({
+  db: sequelize,
+});
+
 export const sessionParser = session({
     secret: sessionSecret,
+    store: sessionStore,
     resave: false,
     saveUninitialized: false, // Don't create session until something stored
     cookie: {
@@ -47,6 +56,8 @@ export const sessionParser = session({
         maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     }
 });
+// Create the sessions table if it doesn't exist
+sessionStore.sync();
 
 app.use(sessionParser);
 
