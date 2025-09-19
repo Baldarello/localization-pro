@@ -68,38 +68,54 @@ The backend requires an environment file to store configuration and sensitive cr
     Inside the `backend/` directory, create a new file named `.env`.
 
 2.  **Edit the `.env` file:**
-    Open `backend/.env` and fill in the values for your environment.
+    Open `backend/.env` and add the variables you need from the list below.
 
 ### Environment Variables
 
-The following table lists all the environment variables used by the backend:
-
+#### General & Server
 | Variable                | Description                                                                                             | Example                               |
 | ----------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `NODE_ENV`              | The application environment. Set to `production` to use production database settings.                   | `production`                          |
+| `NODE_ENV`              | The application environment. Set to `production` for production database settings.                   | `production`                          |
 | `PORT`                  | The port on which the backend server will run.                                                          | `3001`                                |
 | `FRONTEND_URL`          | The base URL of the frontend application. Used for OAuth redirects.                                     | `http://localhost:5173`               |
 | `SESSION_SECRET`        | **Required.** A long, random string used to sign the session ID cookie.                                 | `a-very-long-and-secret-string`       |
 | `ENFORCE_USAGE_LIMITS`  | Set to `true` to enable usage limits (e.g., 3 projects, 1000 terms). Primarily for cloud/demo deployments. | `true`                                |
-| `DB_DIALECT`            | The dialect of the database (`postgres`, `mysql`, `sqlite`). Required for production.                   | `postgres`                            |
-| `DB_HOST`               | The database host.                                                                                      | `localhost`                           |
-| `DB_PORT`               | The database port.                                                                                      | `5432`                                |
-| `DB_NAME`               | The name of the database.                                                                               | `tnt_prod`                            |
-| `DB_USER`               | The username for the database.                                                                          | `tnt_user`                            |
-| `DB_PASS`               | The password for the database.                                                                          | `your_secret_password`                |
-| `DB_STORAGE`            | The file path for the SQLite database (if `DB_DIALECT=sqlite`).                                         | `database.sqlite`                     |
-| `DB_LOGGING`            | Set to `true` to enable Sequelize query logging.                                                        | `false`                               |
-| `DB_SSL`                | Set to `true` to enable SSL for the database connection (for Postgres, etc.).                           | `true`                                |
+
+#### Database Configuration
+
+While the development environment uses a simple SQLite file by default, you can connect to a PostgreSQL or MySQL database for production.
+
+1.  **Install the Database Driver:**
+    First, install the necessary driver for your database. Run this command from the `backend/` directory:
+
+    ```sh
+    # For PostgreSQL
+    npm install pg pg-hstore
+
+    # For MySQL or MariaDB
+    npm install mysql2
+    ```
+
+2.  **Set Environment Variables:**
+    Update your `backend/.env` file with the correct credentials. The `DB_DIALECT` variable tells Sequelize which database to connect to.
+
+| Variable                | Description                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `DB_DIALECT`            | The dialect of the database (`postgres`, `mysql`, `sqlite`). **Required for production.**                   |
+| `DB_HOST`               | The database host.                                                                                      |
+| `DB_PORT`               | The database port (e.g., `5432` for PostgreSQL, `3306` for MySQL).                                                                                      |
+| `DB_NAME`               | The name of the database.                                                                               |
+| `DB_USER`               | The username for the database.                                                                          |
+| `DB_PASS`               | The password for the database.                                                                          |
+| `DB_STORAGE`            | The file path for the SQLite database (only if `DB_DIALECT=sqlite`).                                         |
+| `DB_LOGGING`            | Set to `true` to enable Sequelize query logging.                                                        |
+| `DB_SSL`                | Set to `true` to enable SSL for the database connection (for Postgres/MySQL).                           |
+
+#### Google OAuth
+| Variable                | Description                                                                                             | Example                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | `GOOGLE_CLIENT_ID`      | **Optional.** Your Google API project's client ID. If omitted, Google Sign-In will be disabled.          | `your-client-id.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET`  | **Optional.** Your Google API project's client secret. If omitted, Google Sign-In will be disabled.      | `GOCSPX-your-client-secret`           |
-| `EMAIL_ENABLED`         | Set to `true` to enable all email-sending features.                                                     | `true`                                |
-| `EMAIL_HOST`            | The hostname of your SMTP server.                                                                       | `smtp.mailgun.org`                    |
-| `EMAIL_PORT`            | The port for your SMTP server (e.g., 587 for TLS, 465 for SSL).                                         | `587`                                 |
-| `EMAIL_SECURE`          | Set to `true` if your SMTP server uses SSL (typically on port 465).                                       | `true`                                |
-| `EMAIL_USER`            | The username for authenticating with your SMTP server.                                                  | `postmaster@sandbox.mailgun.org`      |
-| `EMAIL_PASS`            | The password for authenticating with your SMTP server.                                                  | `your-smtp-password`                  |
-| `EMAIL_FROM`            | The "From" address that will appear on emails sent by the application.                                  | `"MyApp" <noreply@myapp.com>`         |
-
 > **Where to get Google Credentials:**
 > 1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
 > 2. Create a new project.
@@ -108,6 +124,17 @@ The following table lists all the environment variables used by the backend:
 > 5. Choose "Web application".
 > 6. Under "Authorized redirect URIs", add `http://localhost:3001/api/v1/auth/google/callback`.
 > 7. Click "Create". Your Client ID and Client Secret will be displayed.
+
+#### Email (SMTP)
+| Variable                | Description                                                                                             | Example                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `EMAIL_ENABLED`         | Set to `true` to enable all email-sending features.                                                     | `true`                                |
+| `EMAIL_HOST`            | The hostname of your SMTP server.                                                                       | `smtp.mailgun.org`                    |
+| `EMAIL_PORT`            | The port for your SMTP server (e.g., 587 for TLS, 465 for SSL).                                         | `587`                                 |
+| `EMAIL_SECURE`          | Set to `true` if your SMTP server uses SSL (typically on port 465).                                       | `true`                                |
+| `EMAIL_USER`            | The username for authenticating with your SMTP server.                                                  | `postmaster@sandbox.mailgun.org`      |
+| `EMAIL_PASS`            | The password for authenticating with your SMTP server.                                                  | `your-smtp-password`                  |
+| `EMAIL_FROM`            | The "From" address that will appear on emails sent by the application.                                  | `"MyApp" <noreply@myapp.com>`         |
 
 ## Running the Server
 
