@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery, Alert, useTheme } from '@mui/material';
+import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
@@ -25,9 +25,8 @@ const TermList: React.FC = observer(() => {
     const [newTerm, setNewTerm] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [showUntranslatedOnly, setShowUntranslatedOnly] = useState(false);
-    // FIX: Correctly use useMediaQuery by getting the theme from the useTheme() hook to avoid type errors.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const handleAddTerm = (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,7 +44,7 @@ const TermList: React.FC = observer(() => {
 
     const userAssignedLangs = getAssignedLanguagesForCurrentUser();
     const filteredTerms = currentBranchTerms.filter(term => {
-        const matchesSearch = term.text.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (term.text || '').toLowerCase().includes(searchQuery.toLowerCase());
         if (!matchesSearch) return false;
         if (showUntranslatedOnly) {
             if (userAssignedLangs.length === 0 && currentUserRole === UserRole.Translator) return false;

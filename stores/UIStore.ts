@@ -207,21 +207,19 @@ export class UIStore {
 
         this.shouldReconnect = true; // Enable reconnection attempts by default
 
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        let wsHost;
-
+        let wsUrl;
         try {
+            // The WebSocket protocol (ws/wss) should match the API protocol (http/https)
+            // to avoid mixed content errors when the app is served over HTTPS.
             const apiUrl = new URL(API_BASE_URL);
-            wsHost = apiUrl.host; // e.g., 'localhost:3001' or 'localizationpro-api.tnl.one'
+            const wsProtocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = apiUrl.host;
+            wsUrl = `${wsProtocol}//${wsHost}`;
         } catch (e) {
-            console.error("Could not parse API_BASE_URL to determine WebSocket host:", e);
-            // Fallback to a sensible default if API_BASE_URL is malformed or missing
-            wsHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                ? 'localhost:3001'
-                : 'localizationpro-api.tnl.one';
+            console.error("Could not initialize WebSocket due to invalid API_BASE_URL:", e);
+            this.shouldReconnect = false; // Do not attempt to reconnect if the URL is bad.
+            return;
         }
-
-        const wsUrl = `${wsProtocol}//${wsHost}`;
         
         console.log(`Attempting to connect WebSocket to ${wsUrl}`);
         this.websocket = new WebSocket(wsUrl);

@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { useStores } from '../stores/StoreProvider';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, Tabs, Tab,
-    Select, MenuItem, Checkbox, FormControl, InputLabel, ListItemText, OutlinedInput, FormControlLabel, SelectChangeEvent, Alert, Chip, useMediaQuery, useTheme
+    Select, MenuItem, Checkbox, FormControl, InputLabel, ListItemText, OutlinedInput, FormControlLabel, SelectChangeEvent, Alert, Chip, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
@@ -36,9 +36,8 @@ const ImportExportDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { isImportExportDialogOpen, closeImportExportDialog } = uiStore;
     const project = projectStore.selectedProject;
-    // FIX: Correctly use useMediaQuery by getting the theme from the useTheme() hook to avoid type errors.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const [tabIndex, setTabIndex] = useState(0);
 

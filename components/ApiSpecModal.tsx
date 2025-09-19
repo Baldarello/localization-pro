@@ -5,7 +5,7 @@ import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, DialogActions, Button, Tabs, Tab, Chip, Paper,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, List, ListItemButton, ListItemText, ListSubheader,
-    CircularProgress, TextField, InputAdornment, useMediaQuery, useTheme
+    CircularProgress, TextField, InputAdornment, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CodeIcon from '@mui/icons-material/Code';
@@ -121,9 +121,8 @@ const ApiReferenceView = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedEndpoint, setSelectedEndpoint] = useState<{ path: string, method: string } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    // FIX: Correctly use useMediaQuery by getting the theme from the useTheme() hook to avoid type errors.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     useEffect(() => {
         const fetchSpec = async () => {
@@ -164,7 +163,7 @@ const ApiReferenceView = () => {
         const visibleEndpoints = new Set();
 
         Object.values(groupedPaths).flat().forEach(({ path, method, details }) => {
-            if (path.toLowerCase().includes(lowerCaseSearch) || details.summary.toLowerCase().includes(lowerCaseSearch)) {
+            if (path.toLowerCase().includes(lowerCaseSearch) || (details.summary || '').toLowerCase().includes(lowerCaseSearch)) {
                 visibleEndpoints.add(`${method}-${path}`);
             }
         });
@@ -201,7 +200,7 @@ const ApiReferenceView = () => {
                     <List dense>
                         {filteredTags.map((tag: any) => {
                             const endpoints = groupedPaths[tag.name]?.filter(({ path, details }) =>
-                                !searchTerm || path.toLowerCase().includes(searchTerm.toLowerCase()) || details.summary.toLowerCase().includes(searchTerm.toLowerCase())
+                                !searchTerm || path.toLowerCase().includes(searchTerm.toLowerCase()) || (details.summary || '').toLowerCase().includes(searchTerm.toLowerCase())
                             );
                             if (!endpoints || endpoints.length === 0) return null;
 
@@ -271,9 +270,8 @@ const RawSpecView: React.FC = () => {
 const ApiSpecModal: React.FC = observer(() => {
     const { uiStore } = useStores();
     const [tab, setTab] = useState(0);
-    // FIX: Correctly use useMediaQuery by getting the theme from the useTheme() hook to avoid type errors.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
 
     return (

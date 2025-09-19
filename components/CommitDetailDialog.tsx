@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Box, Typography, Paper, Divider, Chip, List, ListItem, ListItemText, Dialog, DialogTitle,
-    DialogContent, DialogActions, Button, IconButton, TextField, Alert, useMediaQuery, useTheme
+    DialogContent, DialogActions, Button, IconButton, TextField, Alert, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import RestoreIcon from '@mui/icons-material/Restore';
@@ -67,9 +67,8 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
     const [isRestoreDialogOpen, setRestoreDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [newBranchName, setNewBranchName] = useState(`restore-${commit.id.slice(0, 7)}`);
-    // FIX: Correctly use useMediaQuery by getting the theme from the useTheme() hook to avoid type errors.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const author = useMemo(() => allUsers.find(u => u.id === commit.authorId), [commit, allUsers]);
     const commitDate = useMemo(() => new Date(commit.timestamp), [commit]);

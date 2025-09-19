@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
-    MenuItem, List, ListItem, ListItemText, Divider, Chip, Tooltip, Alert, useMediaQuery, FormControl, InputLabel, SelectChangeEvent, Paper, useTheme
+    MenuItem, List, ListItem, ListItemText, Divider, Chip, Tooltip, Alert, useMediaQuery, FormControl, InputLabel, SelectChangeEvent, Paper
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
@@ -135,9 +135,8 @@ const ApiKeysManagerDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { isApiKeysManagerOpen, closeApiKeysManager } = uiStore;
     const project = projectStore.selectedProject;
-    // FIX: Correctly use useMediaQuery by getting the theme from the useTheme() hook to avoid type errors.
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const [isCreateOpen, setCreateOpen] = useState(false);
     const [newlyCreatedKey, setNewlyCreatedKey] = useState<ApiKey | null>(null);

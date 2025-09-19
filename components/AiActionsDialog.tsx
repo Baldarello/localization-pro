@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, Tabs, Tab,
-    Select, MenuItem, FormControl, InputLabel, Alert, LinearProgress, SelectChangeEvent, useMediaQuery, useTheme
+    Select, MenuItem, FormControl, InputLabel, Alert, LinearProgress, SelectChangeEvent, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -34,8 +34,7 @@ const AiActionsDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { isAiActionsDialogOpen, closeAiActionsDialog, aiActionState } = uiStore;
     const project = projectStore.selectedProject;
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const [tabIndex, setTabIndex] = useState(0);
 
