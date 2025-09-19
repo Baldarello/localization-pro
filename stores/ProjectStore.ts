@@ -47,6 +47,10 @@ export class ProjectStore {
             this.selectedProjectId = null;
             this.selectedTermId = null;
         });
+        // Initialize WebSocket if user is logged in and has projects
+        if (this.rootStore.authStore.currentUser && projects.length > 0) {
+            this.rootStore.uiStore.initializeWebSocket();
+        }
     }
     
     clearData() {
@@ -282,10 +286,14 @@ export class ProjectStore {
         const user = this.rootStore.authStore.currentUser;
         if (!user) return;
         try {
+            const wasFirstProject = this.projects.length === 0;
             const newProject = await this.rootStore.apiClient.addProject(name, user.id);
             runInAction(() => {
                 this.projects.push(newProject);
             });
+            if (wasFirstProject && this.projects.length > 0) {
+                this.rootStore.uiStore.initializeWebSocket();
+            }
         } catch (error: any) {
             this.rootStore.uiStore.showAlert(error.message || 'Failed to create project.', 'error');
         }

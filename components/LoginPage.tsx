@@ -9,8 +9,8 @@ import { observer } from 'mobx-react-lite';
 
 const LoginPage: React.FC = observer(() => {
     const { authStore, uiStore } = useStores();
-    const [email, setEmail] = useState('alice@example.com');
-    const [password, setPassword] = useState('password');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
