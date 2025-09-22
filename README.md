@@ -11,7 +11,7 @@ This application features role-based access control, branching for parallel deve
 -   **Role-Based Access Control**: Assign Admin, Editor, or Translator roles to team members.
 -   **Term & Translation Management**: A clean interface for adding terms, context, and translations.
 -   **Git-like Branching**: Create feature branches to work on translations in isolation without affecting the main version.
--   **Compare & Merge**: Visually compare branches and merge changes back into the main branch.
+-   **Compare & Merge**: Visually compare branches and merge changes back into the main branch with confidence.
 -   **Commit History**: Track every change with a detailed commit log and a diff viewer.
 -   **AI-Powered Translations**: Get instant translation suggestions using Google's Gemini API.
 -   **Email Notifications**: Receive email updates for events like new commits, with user-configurable settings.
@@ -119,7 +119,7 @@ To run the full application, you need to start both the frontend and backend ser
     ```sh
     npm run dev:backend
     ```
-    This will start the Node.js server on `http://localhost:3001` with `nodemon`. You can access the interactive API documentation at `http://localhost:3001/api-docs`.
+    This will start the Node.js server on `http://localhost:3001` with `nodemon`. This script also automatically runs any pending database migrations on startup. You can access the interactive API documentation at `http://localhost:3001/api-docs`.
 
 2.  **Terminal 2: Start the Frontend Server**
     From the project root directory, run:
