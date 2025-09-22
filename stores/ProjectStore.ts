@@ -28,6 +28,7 @@ export class ProjectStore {
     selectedTermId: string | null = null;
     translatingState: { termId: string; langCode: string } | null = null;
     comments: Comment[] = [];
+    isFetchingComments = false;
 
     // Real-time state
     typingUsersOnSelectedTerm = new Map<string, string>(); // Map<userId, userName>
@@ -968,14 +969,22 @@ export class ProjectStore {
 
     // --- Comment Actions ---
     async fetchComments(projectId: string, termId: string) {
+        runInAction(() => {
+            this.isFetchingComments = true;
+            this.comments = []; // Clear comments to show skeletons
+        });
         try {
-            const comments = await this.rootStore.apiClient.getComments(projectId, termId);
+            const comments = await this.rootStore.apiClient.getComments(projectId, termId, true); // Pass true to prevent global loader
             runInAction(() => {
                 this.comments = comments;
             });
         } catch (error) {
             console.error("Failed to fetch comments:", error);
             this.rootStore.uiStore.showAlert('Could not load comments.', 'error');
+        } finally {
+            runInAction(() => {
+                this.isFetchingComments = false;
+            });
         }
     }
 

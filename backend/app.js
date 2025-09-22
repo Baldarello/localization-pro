@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
@@ -10,14 +11,21 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerOptions from './swaggerConfig.js';
 import './src/config/passport.js'; // This configures the Passport strategies
+import { URL } from 'url'; // Import URL for parsing
 
 const app = express();
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 
+// If running behind a proxy (like in production), trust the first hop
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1); // trust first proxy
+}
+
 // Middleware
 // Allow cross-origin requests, especially for credentials (cookies)
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(cors({
-  origin: true, // Reflect the request origin, resolves CORS issues in development.
+  origin: frontendUrl,
   credentials: true
 }));
 app.use(express.json());
@@ -39,6 +47,34 @@ if (!sessionSecret) {
     }
 }
 
+// Helper to determine the root domain for sharing cookies across subdomains
+const getRootDomain = (urlString) => {
+    try {
+        const hostname = new URL(urlString).hostname;
+        // Don't set a domain for localhost to avoid browser issues
+        if (hostname === 'localhost') {
+            return undefined;
+        }
+        const parts = hostname.split('.');
+        // Handles domains like 'example.com' or 'sub.example.co.uk'
+        if (parts.length >= 2) {
+            // Return the last two parts, prefixed with a dot. e.g., '.example.com'
+            return '.' + parts.slice(-2).join('.');
+        }
+        return hostname; // Fallback for simple hostnames
+    } catch (e) {
+        logger.error(`Could not parse FRONTEND_URL to determine cookie domain: ${urlString}`, e);
+        return undefined;
+    }
+};
+
+// Determine the cookie domain only in production
+const cookieDomain = process.env.NODE_ENV === 'production' ? getRootDomain(frontendUrl) : undefined;
+if (process.env.NODE_ENV === 'production' && cookieDomain) {
+    logger.info(`Session cookies will be scoped to domain: ${cookieDomain}`);
+}
+
+
 // Initialize session store backed by Sequelize
 const SessionStore = SequelizeStore(session.Store);
 const sessionStore = new SessionStore({
@@ -56,6 +92,10 @@ export const sessionParser = session({
         // Set a maxAge for the cookie to make it persistent.
         // This keeps the user logged in across page reloads and browser sessions.
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+        // Explicitly set SameSite for cross-origin session persistence
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        // Set the domain to allow cookies to be shared across subdomains in production
+        domain: cookieDomain,
     }
 });
 // Create the sessions table if it doesn't exist

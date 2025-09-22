@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, Typography, TextField, Button, Avatar, Paper, Popover, List, ListItemButton, ListItemAvatar, ListItemText, Collapse } from '@mui/material';
+import { Box, Typography, TextField, Button, Avatar, Paper, Popover, List, ListItemButton, ListItemAvatar, ListItemText, Collapse, Skeleton } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useStores } from '../stores/StoreProvider';
@@ -287,7 +287,7 @@ const CommentView: React.FC<{ comment: Comment }> = observer(({ comment }) => {
 
 const CommentSection: React.FC = observer(() => {
     const { projectStore, authStore } = useStores();
-    const { selectedTermComments, addComment, typingUsersOnSelectedTerm, selectedTerm } = projectStore;
+    const { selectedTermComments, addComment, typingUsersOnSelectedTerm, selectedTerm, isFetchingComments } = projectStore;
 
     const handleCommentSubmit = async (content: string) => {
         await addComment(content, null);
@@ -324,7 +324,17 @@ const CommentSection: React.FC = observer(() => {
                 </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {selectedTermComments.length > 0 ? (
+                {isFetchingComments ? (
+                    Array.from(new Array(2)).map((_, index) => (
+                        <Box key={index} sx={{ display: 'flex', gap: 2, width: '100%' }}>
+                            <Skeleton variant="circular" width={40} height={40} sx={{ mt: 1 }} />
+                            <Box sx={{ flexGrow: 1 }}>
+                                <Skeleton variant="text" sx={{ fontSize: '1rem', width: '30%' }} />
+                                <Skeleton variant="rectangular" width="100%" height={60} sx={{ borderRadius: 1 }} />
+                            </Box>
+                        </Box>
+                    ))
+                ) : selectedTermComments.length > 0 ? (
                     selectedTermComments.map(comment => (
                         <CommentView key={comment.id} comment={comment} />
                     ))

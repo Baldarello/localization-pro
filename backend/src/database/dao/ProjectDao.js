@@ -505,6 +505,8 @@ export const createCommit = async (projectId, branchName, message, authorId) => 
         });
     }
 
+    broadcastBranchUpdate(projectId, branchName, authorId);
+
     return fullCommit.get({ plain: true });
 };
 
@@ -793,7 +795,7 @@ export const getTermsForLocale = async (projectId, langCode) => {
     const project = await Project.findByPk(projectId, {
         include: [{ model: Branch, as: 'branches', where: { name: 'main' }, include: [{ model: Commit, as: 'commits' }] }]
     });
-    if (!project || !project.branches || project.branches.length === 0) return null;
+    if (!project || !project.branches || !project.branches.length === 0) return null;
 
     const mainBranch = project.branches[0];
     mainBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));

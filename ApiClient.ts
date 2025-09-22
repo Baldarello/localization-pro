@@ -425,8 +425,8 @@ class ApiClient {
     }
 
     // --- Comments & Notifications ---
-    async getComments(projectId: string, termId: string): Promise<Comment[]> {
-        return await this.apiFetch(`/projects/${projectId}/terms/${termId}/comments`);
+    async getComments(projectId: string, termId: string, noLoader = false): Promise<Comment[]> {
+        return await this.apiFetch(`/projects/${projectId}/terms/${termId}/comments`, {}, noLoader);
     }
 
     async postComment(projectId: string, termId: string, content: string, parentId: string | null): Promise<Comment> {

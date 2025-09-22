@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Box, Tabs, Tab, Paper, useMediaQuery } from '@mui/material';
 import { useStores } from '../stores/StoreProvider';
@@ -49,6 +49,14 @@ const ProjectDetailView: React.FC = observer(() => {
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     const { selectedProject: project, currentUserRole, selectedTermId } = projectStore;
+
+    useEffect(() => {
+        // When the user navigates to the History tab (index 2), refresh the project data
+        // to ensure the commit list is up-to-date.
+        if (tabValue === 2) {
+            projectStore.refreshCurrentProject();
+        }
+    }, [tabValue, projectStore]);
 
     if (!project) return null;
 
