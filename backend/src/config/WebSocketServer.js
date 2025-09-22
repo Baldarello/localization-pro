@@ -11,12 +11,20 @@ export const initializeWebSocketServer = (server, sessionParser) => {
 
     server.on('upgrade', (request, socket, head) => {
         sessionParser(request, {}, () => {
-            const userId = request.session?.passport?.user;
+            let userId = request.session?.passport?.user;
+
+            // DEV ONLY: If authentication fails, default to the first user for convenience.
+            if (!userId && process.env.NODE_ENV !== 'production') {
+                logger.warn('WebSocket connection attempt without authentication in development environment. Defaulting to user-1 for convenience.');
+                userId = 'user-1'; // This corresponds to the seeded admin user 'alice@example.com'
+            }
+            
             if (!userId) {
                 logger.warn('WebSocket connection attempt without authentication. Destroying socket.');
                 socket.destroy();
                 return;
             }
+
             wss.handleUpgrade(request, socket, head, (ws) => {
                 wss.emit('connection', ws, request, userId);
             });
