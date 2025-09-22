@@ -1,12 +1,15 @@
 import { User, Notification, Comment, Invitation, TeamMembership } from '../models/index.js';
 import bcrypt from 'bcrypt';
 import { Op } from 'sequelize';
+import crypto from 'crypto';
 
 const parseUser = (user) => {
     if (!user) return null;
     const plainUser = user.get({ plain: true });
-    // Exclude password
+    // Exclude password and reset token fields
     delete plainUser.password;
+    delete plainUser.resetPasswordToken;
+    delete plainUser.resetPasswordExpires;
     
     // Parse settings if it's a string
     if (typeof plainUser.settings === 'string') {
@@ -77,7 +80,7 @@ export const getUserById = async (userId) => {
 
 export const getAllUsers = async () => {
     const users = await User.findAll({
-        attributes: { exclude: ['password'] }
+        attributes: { exclude: ['password', 'resetPasswordToken', 'resetPasswordExpires'] }
     });
     return users.map(u => parseUser(u));
 };
@@ -175,6 +178,41 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
     await user.save();
 
     return { success: true, message: 'Password updated successfully.' };
+};
+
+export const setResetPasswordToken = async (email) => {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+        // Don't throw an error, to prevent user enumeration
+        return null;
+    }
+
+    const token = crypto.randomBytes(20).toString('hex');
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+    return token;
+};
+
+export const resetPasswordByToken = async (token, newPassword) => {
+    const user = await User.findOne({
+        where: {
+            resetPasswordToken: token,
+            resetPasswordExpires: { [Op.gt]: Date.now() },
+        },
+    });
+
+    if (!user) {
+        throw new Error('Password reset token is invalid or has expired.');
+    }
+
+    // The beforeUpdate hook will hash the new password
+    user.password = newPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    return parseUser(user);
 };
 
 export const getNotificationsForUser = async (userId) => {

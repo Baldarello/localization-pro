@@ -145,6 +145,18 @@ class ApiClient {
         }
     }
 
+    async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+        try {
+            const result = await this.apiFetch(`/auth/reset-password`, {
+                method: 'POST',
+                body: JSON.stringify({ token, password: newPassword }),
+            });
+            return { success: true, message: result.message };
+        } catch (error: any) {
+            return { success: false, message: error.message };
+        }
+    }
+
     async updateCurrentUserName(userId: string, newName: string): Promise<User | null> {
         return await this.apiFetch(`/users/${userId}/profile`, {
             method: 'PUT',

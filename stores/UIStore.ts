@@ -4,7 +4,7 @@ import { AlertSeverity, Notification } from '../types';
 import { ThemeName } from '../theme';
 import { API_BASE_URL } from '../ApiClient';
 
-type View = 'home' | 'login' | 'register' | 'forgotPassword' | 'app' | 'profile';
+type View = 'home' | 'login' | 'register' | 'forgotPassword' | 'app' | 'profile' | 'resetPassword';
 type Theme = 'light' | 'dark';
 
 export class UIStore {

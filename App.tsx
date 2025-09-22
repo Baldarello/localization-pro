@@ -5,6 +5,7 @@ import HomePage from './components/HomePage';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import ForgotPasswordPage from './components/ForgotPasswordPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
 import ProjectsDashboard from './components/ProjectsDashboard';
 import ProjectDetailView from './components/ProjectDetailView';
 import ProfilePage from './components/ProfilePage';
@@ -27,11 +28,15 @@ const App: React.FC = observer(() => {
 
         const urlParams = new URLSearchParams(window.location.search);
         const viewParam = urlParams.get('view');
+        const token = urlParams.get('token');
 
         authStore.checkAuthStatus().then(() => {
             if (authStore.currentUser) {
                 uiStore.fetchNotifications();
                 uiStore.startNotificationPolling(); // Start polling for notifications
+            } else if (viewParam === 'resetPassword' && token) {
+                uiStore.setView('resetPassword');
+                // Don't clean URL, token is needed by the ResetPasswordPage component
             } else if (viewParam === 'register') {
                 uiStore.setView('register');
                 // Clean the URL to remove the query parameter after it's been used
@@ -58,6 +63,8 @@ const App: React.FC = observer(() => {
                     return <RegisterPage />;
                 case 'forgotPassword':
                     return <ForgotPasswordPage />;
+                case 'resetPassword':
+                    return <ResetPasswordPage />;
                 case 'home':
                 default:
                     return <HomePage />;

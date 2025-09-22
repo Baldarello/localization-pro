@@ -384,6 +384,9 @@ const HomePage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">
                         &copy; {new Date().getFullYear()} TnT. All rights reserved.
                     </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        FE Version: 0.1.0 | BE Version: 1.0.0
+                    </Typography>
                 </Container>
             </Box>
         </Box>

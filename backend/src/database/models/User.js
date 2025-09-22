@@ -41,6 +41,15 @@ User.init({
     type: DataTypes.JSON,
     defaultValue: { commitNotifications: true, mentionNotifications: true },
   },
+  resetPasswordToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  },
+  resetPasswordExpires: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   sequelize,
   modelName: 'User',

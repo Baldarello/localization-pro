@@ -226,18 +226,57 @@ router.post('/register', async (req, res, next) => {
 router.post('/forgot-password', async (req, res, next) => {
     const { email } = req.body;
     try {
-        const user = await UserDao.findUserByEmail(email);
-        if (user) {
-            // In a real app, you would generate a token, save it, and send a reset link.
-            // For this app, we'll just simulate the email part.
-            const subject = 'Your Password Reset Request';
-            const html = `<p>Hi ${user.name},</p><p>We received a request to reset your password. If you didn't make this request, you can ignore this email.</p><p>Note: This is a demo. Password reset functionality is not fully implemented.</p>`;
+        const token = await UserDao.setResetPasswordToken(email);
+        if (token) {
+            const user = await UserDao.findUserByEmail(email);
+            const resetUrl = `${process.env.FRONTEND_URL}/?view=resetPassword&token=${token}`;
+            const subject = 'Your Password Reset Request for TnT';
+            const html = `<p>Hi ${user.name},</p>
+                        <p>You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
+                        <p>Please click on the following link, or paste this into your browser to complete the process. This link is valid for one hour:</p>
+                        <p><a href="${resetUrl}">${resetUrl}</a></p>
+                        <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`;
             sendEmail(user.email, subject, html);
         }
         // Always return a success message to prevent user enumeration
         res.json({ message: 'If an account with that email exists, password reset instructions have been sent.' });
     } catch (error) {
         next(error);
+    }
+});
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password using a token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       '200':
+ *         description: Password has been reset successfully.
+ *       '400':
+ *         description: Token is invalid or has expired.
+ */
+router.post('/reset-password', async (req, res, next) => {
+    try {
+        const { token, password } = req.body;
+        await UserDao.resetPasswordByToken(token, password);
+        res.json({ message: 'Password has been reset successfully. Please log in.' });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 });
 

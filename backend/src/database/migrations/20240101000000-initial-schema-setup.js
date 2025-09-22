@@ -11,6 +11,8 @@ export async function up(queryInterface, Sequelize) {
     avatarInitials: { type: DataTypes.STRING },
     password: { type: DataTypes.STRING, allowNull: true },
     settings: { type: DataTypes.JSON, defaultValue: { commitNotifications: true, mentionNotifications: true } },
+    resetPasswordToken: { type: DataTypes.STRING, allowNull: true, unique: true },
+    resetPasswordExpires: { type: DataTypes.DATE, allowNull: true },
   });
 
   await queryInterface.createTable('Projects', {

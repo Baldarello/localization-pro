@@ -97,6 +97,17 @@ export class AuthStore {
         this.rootStore.uiStore.showAlert(message, 'success');
     };
 
+    resetPassword = async (token: string, newPassword: string) => {
+        const result = await this.rootStore.apiClient.resetPassword(token, newPassword);
+        if (result.success) {
+            this.rootStore.uiStore.showAlert(result.message, 'success');
+            this.rootStore.uiStore.setView('login');
+        } else {
+            this.rootStore.uiStore.showAlert(result.message, 'error');
+        }
+        return result.success;
+    };
+
     logout = async () => {
         this.rootStore.uiStore.closeWebSocket(); // Disconnect WebSocket
         this.rootStore.uiStore.stopNotificationPolling(); // Stop polling
