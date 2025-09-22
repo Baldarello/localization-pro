@@ -17,6 +17,12 @@ export class AuthStore {
     constructor(rootStore: RootStore) {
         makeAutoObservable(this);
         this.rootStore = rootStore;
+
+        // On app initialization, check for a stored token to persist the session.
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            this.rootStore.apiClient.setAuth(token);
+        }
     }
 
     fetchAuthConfig = async () => {
@@ -44,6 +50,8 @@ export class AuthStore {
     login = async (email: string, pass: string) => {
         const user = await this.rootStore.apiClient.login(email, pass);
         if (user) {
+            // Persist the token (user ID) in localStorage for session recovery on page reload.
+            localStorage.setItem('authToken', user.id);
             runInAction(() => {
                 this.currentUser = user;
             });
@@ -63,17 +71,33 @@ export class AuthStore {
     checkAuthStatus = async () => {
         if (this.isAuthCheckComplete) return;
 
+        // The apiClient has the auth token set from the constructor if it was in localStorage.
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            // If there's no token, we are definitely not logged in.
+            runInAction(() => { this.isAuthCheckComplete = true; });
+            return;
+        }
+
         try {
             const user = await this.rootStore.apiClient.getCurrentUser();
             if (user) {
+                // Token is valid, user is authenticated.
                 runInAction(() => {
                     this.currentUser = user;
                 });
                 await this.rootStore.projectStore.initializeData();
                 this.rootStore.uiStore.setView('app');
+            } else {
+                // The token was invalid (e.g., deleted user), clear it.
+                localStorage.removeItem('authToken');
+                this.rootStore.apiClient.setAuth(null);
             }
         } catch (error) {
-            console.log('User not authenticated');
+            console.log('User not authenticated, clearing invalid token.');
+            // An error (like 401) also means the token is invalid.
+            localStorage.removeItem('authToken');
+            this.rootStore.apiClient.setAuth(null);
         } finally {
             runInAction(() => {
                 this.isAuthCheckComplete = true;
@@ -111,6 +135,11 @@ export class AuthStore {
     logout = async () => {
         this.rootStore.uiStore.closeWebSocket(); // Disconnect WebSocket
         this.rootStore.uiStore.stopNotificationPolling(); // Stop polling
+        
+        // Clear the persisted token from both localStorage and the API client.
+        localStorage.removeItem('authToken');
+        this.rootStore.apiClient.setAuth(null);
+
         await this.rootStore.apiClient.logout();
         runInAction(() => {
             this.currentUser = null;
