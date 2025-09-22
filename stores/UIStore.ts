@@ -23,6 +23,7 @@ export class UIStore {
     
     // Loading state
     loadingCount = 0;
+    isFetchingNotifications = false;
     
     // AI Action state
     aiActionState = {
@@ -299,13 +300,20 @@ export class UIStore {
 
     // --- Notification Actions ---
     fetchNotifications = async () => {
+        runInAction(() => {
+            this.isFetchingNotifications = true;
+        });
         try {
-            const notifications = await this.rootStore.apiClient.getNotifications();
+            const notifications = await this.rootStore.apiClient.getNotifications(true); // Pass true to prevent global loader
             runInAction(() => {
                 this.notifications = notifications;
             });
         } catch (error) {
             console.error("Failed to fetch notifications:", error);
+        } finally {
+            runInAction(() => {
+                this.isFetchingNotifications = false;
+            });
         }
     };
 

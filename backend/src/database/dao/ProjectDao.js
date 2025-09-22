@@ -530,7 +530,20 @@ export const createBranch = async (projectId, newBranchName, sourceBranchName) =
     const sourceBranch = await Branch.findOne({ where: { projectId, name: sourceBranchName }, include: [{ model: Commit, as: 'commits' }] });
     if (!sourceBranch) throw new Error('Source branch not found');
 
-    const newBranch = await Branch.create({ name: newBranchName, projectId: projectId, workingTerms: sourceBranch.workingTerms });
+    // Ensure workingTerms is an array, not a string, before copying.
+    let workingTermsToCopy = sourceBranch.workingTerms;
+    if (typeof workingTermsToCopy === 'string') {
+        try {
+            workingTermsToCopy = JSON.parse(workingTermsToCopy);
+        } catch (e) {
+            workingTermsToCopy = [];
+        }
+    }
+    if (!Array.isArray(workingTermsToCopy)) {
+        workingTermsToCopy = [];
+    }
+
+    const newBranch = await Branch.create({ name: newBranchName, projectId: projectId, workingTerms: workingTermsToCopy });
     
     // Copy commits from source to new branch
     sourceBranch.commits.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Oldest first for copying
@@ -572,9 +585,25 @@ export const mergeBranches = async (projectId, sourceBranchName, targetBranchNam
     const targetBranch = await Branch.findOne({ where: { projectId, name: targetBranchName } });
     if (!sourceBranch || !targetBranch) throw new Error('One or both branches not found');
 
+    // Helper function to safely parse workingTerms from a potential JSON string
+    const parseWorkingTerms = (terms) => {
+        if (typeof terms === 'string') {
+            try {
+                const parsed = JSON.parse(terms);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+        return Array.isArray(terms) ? terms : [];
+    };
+
+    const sourceTermsList = parseWorkingTerms(sourceBranch.workingTerms);
+    const targetTermsList = parseWorkingTerms(targetBranch.workingTerms);
+
     // Simple "last write wins" merge strategy for simplicity.
-    const sourceTerms = new Map((sourceBranch.workingTerms || []).map(t => [t.text, t]));
-    const targetTerms = new Map((targetBranch.workingTerms || []).map(t => [t.text, t]));
+    const sourceTerms = new Map(sourceTermsList.map(t => [t.text, t]));
+    const targetTerms = new Map(targetTermsList.map(t => [t.text, t]));
 
     for (const [key, term] of sourceTerms.entries()) {
         targetTerms.set(key, term);

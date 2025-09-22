@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery, CircularProgress } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import CodeIcon from '@mui/icons-material/Code';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -20,7 +20,7 @@ import LanguageSelector from './LanguageSelector';
 const Header: React.FC = observer(() => {
     const { authStore, uiStore, projectStore } = useStores();
     const { currentUser, logout } = authStore;
-    const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole, selectProject, switchBranch, selectTerm } = projectStore;
+    const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole, selectProject, switchBranch, selectTerm, canCommit } = projectStore;
     const canManageProject = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
@@ -126,7 +126,7 @@ const Header: React.FC = observer(() => {
 
                 {selectedProject && uiStore.view !== 'profile' && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {uncommittedChangesCount > 0 && (
+                        {uncommittedChangesCount > 0 && canCommit && (
                             <Button
                                 color="secondary"
                                 variant="contained"
@@ -162,9 +162,13 @@ const Header: React.FC = observer(() => {
                                     {currentUser && (
                                         <MenuItem onClick={handleMobileNotificationsClick}>
                                             <ListItemIcon>
-                                                <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
-                                                    <NotificationsIcon fontSize="small" />
-                                                </Badge>
+                                                {uiStore.isFetchingNotifications ? (
+                                                    <CircularProgress size={20} />
+                                                ) : (
+                                                    <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
+                                                        <NotificationsIcon fontSize="small" />
+                                                    </Badge>
+                                                )}
                                             </ListItemIcon>
                                             <ListItemText>Notifications</ListItemText>
                                         </MenuItem>
@@ -209,10 +213,14 @@ const Header: React.FC = observer(() => {
                                 </Tooltip>
                                 {currentUser && (
                                     <Tooltip title="Notifications">
-                                        <IconButton color="inherit" onClick={(e) => handleNotificationMenuOpen(e.currentTarget)}>
-                                            <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
-                                                <NotificationsIcon />
-                                            </Badge>
+                                        <IconButton color="inherit" onClick={(e) => handleNotificationMenuOpen(e.currentTarget)} sx={{ width: 40, height: 40 }}>
+                                            {uiStore.isFetchingNotifications ? (
+                                                <CircularProgress size={24} color="inherit" />
+                                            ) : (
+                                                <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
+                                                    <NotificationsIcon />
+                                                </Badge>
+                                            )}
                                         </IconButton>
                                     </Tooltip>
                                 )}

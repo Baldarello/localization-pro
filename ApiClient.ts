@@ -41,8 +41,10 @@ class ApiClient {
         this.currentUserId = userId;
     }
 
-    private async apiFetch(endpoint: string, options: RequestInit = {}) {
-        this.uiStore?.startLoading();
+    private async apiFetch(endpoint: string, options: RequestInit = {}, noLoader = false) {
+        if (!noLoader) {
+            this.uiStore?.startLoading();
+        }
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             ...options.headers,
@@ -80,7 +82,9 @@ class ApiClient {
             }
             throw error;
         } finally {
-            this.uiStore?.stopLoading();
+            if (!noLoader) {
+                this.uiStore?.stopLoading();
+            }
         }
     }
 
@@ -422,8 +426,8 @@ class ApiClient {
         });
     }
 
-    async getNotifications(): Promise<Notification[]> {
-        return await this.apiFetch('/users/me/notifications');
+    async getNotifications(noLoader = false): Promise<Notification[]> {
+        return await this.apiFetch('/users/me/notifications', {}, noLoader);
     }
 
     async markNotificationsAsRead(notificationIds: string[]): Promise<boolean> {

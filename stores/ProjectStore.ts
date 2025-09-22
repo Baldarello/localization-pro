@@ -47,6 +47,13 @@ export class ProjectStore {
             this.selectedProjectId = null;
             this.selectedTermId = null;
         });
+
+        // Restore last selected project from localStorage
+        const lastSelectedProjectId = localStorage.getItem('lastSelectedProjectId');
+        if (lastSelectedProjectId && projects.some(p => p.id === lastSelectedProjectId)) {
+            this.selectProject(lastSelectedProjectId);
+        }
+
         // Initialize WebSocket if user is logged in and has projects
         if (this.rootStore.authStore.currentUser && projects.length > 0) {
             this.rootStore.uiStore.initializeWebSocket();
@@ -62,6 +69,7 @@ export class ProjectStore {
         this.typingUsersOnSelectedTerm.clear();
         this.typingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
         this.typingTimeouts.clear();
+        localStorage.removeItem('lastSelectedProjectId');
     }
 
     get selectedProject() {
@@ -124,6 +132,12 @@ export class ProjectStore {
         const user = this.rootStore.authStore.currentUser;
         if (!this.selectedProject || !user) return null;
         return this.selectedProject.team[user.id]?.role;
+    }
+
+    get canCommit() {
+        if (!this.currentUserRole) return false;
+        // Admins, Editors, and Translators can all commit changes they are able to make.
+        return [UserRole.Admin, UserRole.Editor, UserRole.Translator].includes(this.currentUserRole);
     }
 
     @computed get selectedTermComments(): Comment[] {
@@ -259,6 +273,7 @@ export class ProjectStore {
         this.typingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
         this.typingTimeouts.clear();
         this.notifyViewingBranch();
+        localStorage.setItem('lastSelectedProjectId', projectId);
     };
 
     deselectProject() {
@@ -269,6 +284,7 @@ export class ProjectStore {
         this.typingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
         this.typingTimeouts.clear();
         this.rootStore.uiStore.sendWebSocketMessage({ type: 'client_stopped_viewing' });
+        localStorage.removeItem('lastSelectedProjectId');
     }
     
     selectTerm(termId: string) {

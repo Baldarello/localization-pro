@@ -53,8 +53,9 @@ export const sessionParser = session({
     cookie: {
         secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
         httpOnly: true,
-        // By removing maxAge, the cookie becomes a session cookie,
-        // which is deleted when the browser session ends (e.g., closing the tab/browser).
+        // Set a maxAge for the cookie to make it persistent.
+        // This keeps the user logged in across page reloads and browser sessions.
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
     }
 });
 // Create the sessions table if it doesn't exist
