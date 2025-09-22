@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import 'dotenv/config'; // Load .env file
-import app, { sessionParser } from '../app.js';
+import app from '../app.js';
 import http from 'http';
 import logger from '../src/helpers/logger.js';
 import { initializeWebSocketServer } from '../src/config/WebSocketServer.js';
@@ -78,7 +78,7 @@ function onListening() {
 function startServer() {
   try {
     // Initialize the WebSocket server and attach it to the HTTP server
-    initializeWebSocketServer(server, sessionParser);
+    initializeWebSocketServer(server);
 
     /**
      * Listen on provided port, on all network interfaces.

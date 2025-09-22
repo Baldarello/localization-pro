@@ -581,37 +581,61 @@ export const deleteBranch = async (projectId, branchName) => {
 };
 
 export const mergeBranches = async (projectId, sourceBranchName, targetBranchName, authorId) => {
-    const sourceBranch = await Branch.findOne({ where: { projectId, name: sourceBranchName } });
-    const targetBranch = await Branch.findOne({ where: { projectId, name: targetBranchName } });
-    if (!sourceBranch || !targetBranch) throw new Error('One or both branches not found');
-
-    // Helper function to safely parse workingTerms from a potential JSON string
-    const parseWorkingTerms = (terms) => {
-        if (typeof terms === 'string') {
-            try {
-                const parsed = JSON.parse(terms);
-                return Array.isArray(parsed) ? parsed : [];
-            } catch (e) {
-                return [];
-            }
+    const t = await sequelize.transaction();
+    try {
+        const sourceBranch = await Branch.findOne({ where: { projectId, name: sourceBranchName }, transaction: t });
+        const targetBranch = await Branch.findOne({ where: { projectId, name: targetBranchName }, transaction: t });
+        if (!sourceBranch || !targetBranch) {
+            throw new Error('One or both branches not found');
         }
-        return Array.isArray(terms) ? terms : [];
-    };
 
-    const sourceTermsList = parseWorkingTerms(sourceBranch.workingTerms);
-    const targetTermsList = parseWorkingTerms(targetBranch.workingTerms);
+        const parseWorkingTerms = (terms) => {
+            if (typeof terms === 'string') {
+                try {
+                    const parsed = JSON.parse(terms);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+            return Array.isArray(terms) ? terms : [];
+        };
 
-    // Simple "last write wins" merge strategy for simplicity.
-    const sourceTerms = new Map(sourceTermsList.map(t => [t.text, t]));
-    const targetTerms = new Map(targetTermsList.map(t => [t.text, t]));
+        const sourceTermsList = parseWorkingTerms(sourceBranch.workingTerms);
+        const targetTermsList = parseWorkingTerms(targetBranch.workingTerms);
 
-    for (const [key, term] of sourceTerms.entries()) {
-        targetTerms.set(key, term);
+        // Merge strategy based on term ID. Source branch takes precedence.
+        const mergedTermsMap = new Map(targetTermsList.map(term => [term.id, term]));
+        for (const sourceTerm of sourceTermsList) {
+            mergedTermsMap.set(sourceTerm.id, sourceTerm);
+        }
+        
+        const mergedTerms = Array.from(mergedTermsMap.values());
+        
+        targetBranch.workingTerms = mergedTerms;
+        await targetBranch.save({ transaction: t });
+
+        // Automatically create a commit for the merge
+        const commitMessage = `Merge branch '${sourceBranchName}' into ${targetBranchName}`;
+        await Commit.create({
+            id: `commit-${Date.now()}`,
+            message: commitMessage,
+            authorId: authorId,
+            timestamp: new Date(),
+            terms: mergedTerms, // The state after the merge
+            branchId: targetBranch.id,
+        }, { transaction: t });
+        
+        await t.commit();
+
+        // Broadcast update after successful transaction
+        broadcastBranchUpdate(projectId, targetBranch.name, authorId);
+
+    } catch (error) {
+        await t.rollback();
+        console.error("Merge failed, transaction rolled back:", error);
+        throw error;
     }
-    
-    targetBranch.workingTerms = Array.from(targetTerms.values());
-    await targetBranch.save();
-    broadcastBranchUpdate(projectId, targetBranch.name, authorId);
 };
 
 

@@ -1,11 +1,17 @@
 import { Router } from 'express';
 import passport from 'passport';
+import crypto from 'crypto';
 import * as UserDao from '../database/dao/UserDao.js';
 import { sendEmail } from '../helpers/mailer.js';
 import logger from '../helpers/logger.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 const isGoogleAuthEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+
+// In-memory store for single-use WebSocket authentication tickets
+// Map<ticket, { userId: string, expires: number }>
+export const wsTicketStore = new Map();
 
 /**
  * @swagger
@@ -52,6 +58,44 @@ router.get('/config', (req, res) => {
     res.json(config);
 });
 
+/**
+ * @swagger
+ * /auth/ws-ticket:
+ *   post:
+ *     summary: Request a single-use ticket for WebSocket authentication
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       '200':
+ *         description: A short-lived authentication ticket.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ticket:
+ *                   type: string
+ *       '401':
+ *         description: Unauthorized
+ */
+router.post('/ws-ticket', authenticate, (req, res) => {
+    const ticket = crypto.randomBytes(24).toString('hex');
+    const userId = req.user.id;
+    const expires = Date.now() + 30000; // Ticket is valid for 30 seconds
+
+    wsTicketStore.set(ticket, { userId, expires });
+    
+    // Clean up any other expired tickets to prevent memory leaks
+    for (const [t, data] of wsTicketStore.entries()) {
+        if (Date.now() > data.expires) {
+            wsTicketStore.delete(t);
+        }
+    }
+    
+    res.json({ ticket });
+});
+
 
 /**
  * @swagger
@@ -91,12 +135,8 @@ router.post('/login', async (req, res, next) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
         
-        // Use req.login to establish a session, managed by Passport
         req.login(user, (err) => {
             if (err) { return next(err); }
-
-            // Explicitly save the session before responding to prevent a race condition
-            // where the client tries to open a WebSocket before the session is persisted.
             req.session.save((saveErr) => {
                 if (saveErr) {
                     return next(saveErr);
@@ -148,7 +188,6 @@ router.post('/logout', (req, res, next) => {
  *         description: Not authenticated.
  */
 router.get('/me', (req, res) => {
-    // If req.user exists (from Passport's session management), user is authenticated
     if (req.isAuthenticated()) {
         res.json(req.user);
     } else {
@@ -238,7 +277,6 @@ router.post('/forgot-password', async (req, res, next) => {
                         <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`;
             sendEmail(user.email, subject, html);
         }
-        // Always return a success message to prevent user enumeration
         res.json({ message: 'If an account with that email exists, password reset instructions have been sent.' });
     } catch (error) {
         next(error);
@@ -282,19 +320,14 @@ router.post('/reset-password', async (req, res, next) => {
 
 
 // --- Google OAuth Routes ---
-
-// The initial request to Google
 if (isGoogleAuthEnabled) {
     router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 }
 
-// The callback URL Google redirects to
 if (isGoogleAuthEnabled) {
     router.get('/google/callback',
         passport.authenticate('google', { failureRedirect: '/login' }),
         (req, res, next) => {
-            // Successful authentication, session is established.
-            // Explicitly save the session before redirecting to prevent race conditions.
             req.session.save((err) => {
                 if (err) {
                     return next(err);

@@ -112,6 +112,16 @@ class ApiClient {
         }
     }
 
+    async getWebSocketTicket(): Promise<{ ticket: string } | null> {
+        try {
+            // Use noLoader to prevent the global spinner during brief, frequent reconnect attempts
+            return await this.apiFetch('/auth/ws-ticket', { method: 'POST' }, true);
+        } catch (error) {
+            console.error("Failed to get WebSocket ticket:", error);
+            return null;
+        }
+    }
+
     async logout(): Promise<void> {
         try {
             await this.apiFetch('/auth/logout', { method: 'POST' });

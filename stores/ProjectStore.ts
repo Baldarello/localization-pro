@@ -955,11 +955,11 @@ export class ProjectStore {
         if (!this.selectedProject) return;
         const success = await this.rootStore.apiClient.mergeBranches(this.selectedProject.id, sourceBranchName, targetBranchName);
         if (success) {
-            // Need to refetch project data to see merged changes in the working copy of the target.
+            // Need to refetch project data to see the new automatic merge commit.
             const projects = await this.rootStore.apiClient.getProjects();
             runInAction(() => {
                 this.projects = projects;
-                this.rootStore.uiStore.showAlert(`Successfully merged "${sourceBranchName}" into "${targetBranchName}". You can now review and commit the changes.`, 'success');
+                this.rootStore.uiStore.showAlert(`Successfully merged and committed changes from "${sourceBranchName}" into "${targetBranchName}".`, 'success');
             });
         } else {
             this.rootStore.uiStore.showAlert(`Failed to merge branches.`, 'error');

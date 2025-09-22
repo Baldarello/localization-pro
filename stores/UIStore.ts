@@ -200,25 +200,32 @@ export class UIStore {
         }
     };
 
-    initializeWebSocket = () => {
+    initializeWebSocket = async () => {
         if (this.websocket && this.websocket.readyState !== WebSocket.CLOSED) {
             console.log("WebSocket connection already open.");
             return;
         }
 
-        this.shouldReconnect = true; // Enable reconnection attempts by default
+        this.shouldReconnect = true;
+
+        // Step 1: Request a short-lived ticket from the backend for WebSocket authentication
+        const ticketResponse = await this.rootStore.apiClient.getWebSocketTicket();
+        if (!ticketResponse?.ticket) {
+            console.error("Could not obtain WebSocket ticket. Connection aborted.");
+            this.shouldReconnect = false; // Do not attempt to reconnect if we can't get a ticket
+            return;
+        }
 
         let wsUrl;
         try {
-            // The WebSocket protocol (ws/wss) should match the API protocol (http/https)
-            // to avoid mixed content errors when the app is served over HTTPS.
             const apiUrl = new URL(API_BASE_URL);
             const wsProtocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsHost = apiUrl.host;
-            wsUrl = `${wsProtocol}//${wsHost}`;
+            // Step 2: Append the ticket to the WebSocket URL
+            wsUrl = `${wsProtocol}//${wsHost}?ticket=${ticketResponse.ticket}`;
         } catch (e) {
             console.error("Could not initialize WebSocket due to invalid API_BASE_URL:", e);
-            this.shouldReconnect = false; // Do not attempt to reconnect if the URL is bad.
+            this.shouldReconnect = false;
             return;
         }
         
@@ -227,7 +234,6 @@ export class UIStore {
 
         this.websocket.onopen = () => {
             console.log("WebSocket connection established.");
-            // If user is already viewing a project, inform the backend
             if (this.rootStore.projectStore.selectedProject && this.rootStore.projectStore.currentBranch) {
                 this.rootStore.projectStore.notifyViewingBranch();
             }
@@ -243,25 +249,21 @@ export class UIStore {
                         this.fetchNotifications();
                         break;
                     case 'server_branch_updated':
-                        // Check if the update is for the current branch and was made by another user
                         if (message.modifiedBy !== this.rootStore.authStore.currentUser?.id) {
                             this.rootStore.projectStore.handleBranchUpdate(message);
                         }
                         break;
                     case 'server_new_comment':
-                        // If the new comment is for the currently selected term, refresh the comments
                         if (this.rootStore.projectStore.selectedTermId && message.termId === this.rootStore.projectStore.selectedTermId) {
                             this.rootStore.projectStore.fetchComments(message.projectId, message.termId);
                         }
                         break;
                     case 'server_user_typing_start':
-                        // Don't show your own typing indicator and check if it's for the current term
                         if (message.userId !== this.rootStore.authStore.currentUser?.id && message.termId === this.rootStore.projectStore.selectedTermId) {
                             this.rootStore.projectStore.startTyping(message.userId, message.userName);
                         }
                         break;
                     case 'server_user_typing_stop':
-                        // No termId check needed for stop, just remove the user if they exist in the map
                         this.rootStore.projectStore.stopTyping(message.userId);
                         break;
                 }
@@ -275,8 +277,14 @@ export class UIStore {
             console.error("WebSocket error:", error);
         };
 
-        this.websocket.onclose = () => {
-            console.log("WebSocket connection closed.");
+        this.websocket.onclose = (event) => {
+            console.log("WebSocket connection closed. Code:", event.code);
+            // Don't auto-reconnect on auth failure (1008 Policy Violation)
+            if (event.code === 1008) {
+                this.shouldReconnect = false;
+                console.error("WebSocket connection rejected due to invalid ticket. Not reconnecting.");
+                return;
+            }
             if (this.shouldReconnect) {
                 console.log("Attempting to reconnect WebSocket in 5 seconds...");
                 this.reconnectionTimeout = window.setTimeout(this.initializeWebSocket, 5000);
@@ -289,7 +297,7 @@ export class UIStore {
             window.clearTimeout(this.reconnectionTimeout);
             this.reconnectionTimeout = null;
         }
-        this.shouldReconnect = false; // Prevent reconnection attempts on manual close
+        this.shouldReconnect = false;
         if (this.websocket) {
             this.websocket.close();
             this.websocket = null;

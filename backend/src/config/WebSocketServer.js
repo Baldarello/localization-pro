@@ -1,33 +1,43 @@
 import { WebSocketServer } from 'ws';
+import { URL } from 'url';
 import logger from '../helpers/logger.js';
+import { wsTicketStore } from '../routes/auth.js';
 
 // Map<userId, { ws: WebSocket, viewing: { projectId: string, branchName: string } | null }>
 const clients = new Map(); 
 
 let wss; 
 
-export const initializeWebSocketServer = (server, sessionParser) => {
+export const initializeWebSocketServer = (server) => {
     wss = new WebSocketServer({ noServer: true });
 
     server.on('upgrade', (request, socket, head) => {
-        sessionParser(request, {}, () => {
-            let userId = request.session?.passport?.user;
+        // Parse the ticket from the query parameters
+        const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
+        const ticket = searchParams.get('ticket');
 
-            // DEV ONLY: If authentication fails, default to the first user for convenience.
-            if (!userId && process.env.NODE_ENV !== 'production') {
-                logger.warn('WebSocket connection attempt without authentication in development environment. Defaulting to user-1 for convenience.');
-                userId = 'user-1'; // This corresponds to the seeded admin user 'alice@example.com'
-            }
-            
-            if (!userId) {
-                logger.warn('WebSocket connection attempt without authentication. Destroying socket.');
-                socket.destroy();
-                return;
-            }
+        if (!ticket) {
+            logger.warn('WebSocket connection attempt without a ticket. Destroying socket.');
+            socket.destroy();
+            return;
+        }
 
-            wss.handleUpgrade(request, socket, head, (ws) => {
-                wss.emit('connection', ws, request, userId);
-            });
+        const ticketData = wsTicketStore.get(ticket);
+        // CRITICAL: Immediately delete the ticket to ensure it's single-use
+        wsTicketStore.delete(ticket);
+
+        if (!ticketData || Date.now() > ticketData.expires) {
+            logger.warn('WebSocket connection attempt with an invalid or expired ticket. Destroying socket.');
+            // Close the connection with a 1008 (Policy Violation) code to inform the client
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+            return;
+        }
+
+        const userId = ticketData.userId;
+
+        wss.handleUpgrade(request, socket, head, (ws) => {
+            wss.emit('connection', ws, request, userId);
         });
     });
 
@@ -69,12 +79,11 @@ export const initializeWebSocketServer = (server, sessionParser) => {
 
         ws.on('close', () => {
             const clientState = clients.get(userId);
-            // If the user was viewing a branch, notify others they stopped typing
             if (clientState?.viewing) {
                  broadcastTypingEvent(userId, { 
                     ...clientState.viewing, 
-                    termId: null, // termId is not known on disconnect, but not needed for 'stop'
-                    userName: ''   // userName is not known, but not needed for 'stop'
+                    termId: null,
+                    userName: ''
                 }, false);
             }
             clients.delete(userId);
@@ -98,7 +107,6 @@ const broadcastTypingEvent = (typingUserId, payload, isTyping) => {
     });
 
     for (const [userId, client] of clients.entries()) {
-        // Broadcast to other users viewing the same branch
         if (userId !== typingUserId && client.viewing?.projectId === payload.projectId && client.viewing?.branchName === payload.branchName) {
             if (client.ws.readyState === client.ws.OPEN) {
                 client.ws.send(message);
@@ -116,7 +124,6 @@ export const broadcastBranchUpdate = (projectId, branchName, modifiedByUserId) =
     });
 
     for (const [userId, client] of clients.entries()) {
-        // Send to everyone viewing the branch. The client-side will prevent a self-refresh.
         if (client.viewing?.projectId === projectId && client.viewing?.branchName === branchName) {
              if (client.ws.readyState === client.ws.OPEN) {
                 client.ws.send(message);
@@ -136,7 +143,6 @@ export const broadcastCommentUpdate = (projectId, branchName, termId, authorId) 
     });
 
     for (const [userId, client] of clients.entries()) {
-        // Broadcast to other users on the same branch (client will filter by termId)
         if (userId !== authorId && client.viewing?.projectId === projectId && client.viewing?.branchName === branchName) {
             if (client.ws.readyState === client.ws.OPEN) {
                 client.ws.send(message);
