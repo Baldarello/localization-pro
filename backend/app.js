@@ -1,5 +1,6 @@
 
 
+
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
@@ -26,7 +27,11 @@ if (process.env.NODE_ENV === 'production') {
 // Allow cross-origin requests, especially for credentials (cookies)
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(cors({
-  origin: "*",
+  origin: (origin, callback) => {
+    // This allows requests from any origin. For a production environment,
+    // it would be more secure to maintain a whitelist of allowed origins.
+    callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json());
