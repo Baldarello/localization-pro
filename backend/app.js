@@ -148,10 +148,10 @@ app.use((req, res, next) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  // Custom usage limit error
-  if (err.name === 'UsageLimitError') {
-      logger.warn(`UsageLimitError for ${req.user?.id ? `user ${req.user.id}` : `IP ${req.ip}`}: ${err.message}`);
-      return res.status(err.status || 403).json({ message: err.message });
+  // Custom user-facing errors
+  if (err.name === 'UsageLimitError' || err.name === 'ValidationError') {
+      logger.warn(`${err.name} for ${req.user?.id ? `user ${req.user.id}` : `IP ${req.ip}`}: ${err.message}`);
+      return res.status(err.status || 400).json({ message: err.message });
   }
 
   // Log other errors

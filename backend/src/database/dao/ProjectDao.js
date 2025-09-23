@@ -14,6 +14,14 @@ class UsageLimitError extends Error {
   }
 }
 
+class ValidationError extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.name = 'ValidationError';
+    this.status = status;
+  }
+}
+
 // Helper to safely parse JSON fields that might be strings
 const parseTerms = (terms) => {
     if (typeof terms === 'string') {
@@ -270,6 +278,21 @@ const getCurrentBranch = async (projectId) => {
 export const addTerm = async (projectId, termText, authorId) => {
     const branch = await getCurrentBranch(projectId);
 
+    const trimmedText = termText?.trim();
+
+    if (!trimmedText) {
+        throw new ValidationError('Term key cannot be empty.');
+    }
+    
+    // Check for duplicates (case-insensitive)
+    const isDuplicate = branch.workingTerms.some(
+        (term) => term.text.toLowerCase() === trimmedText.toLowerCase()
+    );
+
+    if (isDuplicate) {
+        throw new ValidationError(`Term key "${trimmedText}" already exists in this branch.`, 409);
+    }
+
     if (process.env.ENFORCE_USAGE_LIMITS === 'true') {
         if (branch.workingTerms.length >= 1000) {
             throw new UsageLimitError('This project has reached the maximum of 1000 terms.');
@@ -278,7 +301,7 @@ export const addTerm = async (projectId, termText, authorId) => {
 
     const newTerm = {
         id: `term-${Date.now()}`,
-        text: termText,
+        text: trimmedText,
         translations: {},
     };
     branch.workingTerms = [...branch.workingTerms, newTerm];
