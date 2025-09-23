@@ -26,7 +26,7 @@ if (process.env.NODE_ENV === 'production') {
 // Allow cross-origin requests, especially for credentials (cookies)
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(cors({
-  origin: frontendUrl,
+  origin: "*",
   credentials: true
 }));
 app.use(express.json());
