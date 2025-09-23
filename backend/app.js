@@ -37,7 +37,8 @@ app.use(cors({
     'Authorization',
     'X-User-ID',
     'X-Api-Key-Prefix',
-    'access-control-allow-methods'
+    'access-control-allow-methods',
+    'access-control-allow-origin'
   ],
 }));
 app.use(express.json());
