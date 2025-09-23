@@ -14,6 +14,19 @@ class UsageLimitError extends Error {
   }
 }
 
+// Helper to safely parse JSON fields that might be strings
+const parseTerms = (terms) => {
+    if (typeof terms === 'string') {
+        try {
+            const parsed = JSON.parse(terms);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    return Array.isArray(terms) ? terms : [];
+};
+
 const formatProject = (project) => {
     if (!project) return null;
     const plainProject = project.get({ plain: true });
@@ -64,30 +77,11 @@ const formatProject = (project) => {
     // Ensure commits are sorted newest first and JSON fields are parsed
     plainProject.branches?.forEach(branch => {
         // Parse workingTerms for the branch
-        if (typeof branch.workingTerms === 'string') {
-            try {
-                branch.workingTerms = JSON.parse(branch.workingTerms);
-            } catch (e) {
-                branch.workingTerms = [];
-            }
-        }
-        if (!Array.isArray(branch.workingTerms)) {
-            branch.workingTerms = [];
-        }
-
-
+        branch.workingTerms = parseTerms(branch.workingTerms);
+       
         branch.commits?.forEach(commit => {
             // Parse terms for each commit
-            if (typeof commit.terms === 'string') {
-                try {
-                    commit.terms = JSON.parse(commit.terms);
-                } catch(e) {
-                    commit.terms = [];
-                }
-            }
-            if (!Array.isArray(commit.terms)) {
-                commit.terms = [];
-            }
+            commit.terms = parseTerms(commit.terms);
         });
 
         // Sort commits after parsing
@@ -268,14 +262,8 @@ const getCurrentBranch = async (projectId) => {
     if (!branch) throw new Error('Current branch not found');
 
     // Ensure workingTerms is an array
-    if (typeof branch.workingTerms === 'string') {
-        try {
-            branch.workingTerms = JSON.parse(branch.workingTerms);
-        } catch (e) {
-            branch.workingTerms = [];
-        }
-    }
-
+    branch.workingTerms = parseTerms(branch.workingTerms);
+    
     return branch;
 };
 
@@ -450,17 +438,7 @@ export const createCommit = async (projectId, branchName, message, authorId) => 
     if (!branch) throw new Error('Branch not found');
     
     // Ensure workingTerms is parsed before use
-    let workingTerms = branch.workingTerms;
-    if (typeof workingTerms === 'string') {
-        try {
-            workingTerms = JSON.parse(workingTerms);
-        } catch (e) {
-            workingTerms = [];
-        }
-    }
-     if (!Array.isArray(workingTerms)) {
-        workingTerms = [];
-    }
+    const workingTerms = parseTerms(branch.workingTerms);
 
     const newCommit = await Commit.create({
         id: `commit-${Date.now()}`,
@@ -533,17 +511,7 @@ export const createBranch = async (projectId, newBranchName, sourceBranchName) =
     if (!sourceBranch) throw new Error('Source branch not found');
 
     // Ensure workingTerms is an array, not a string, before copying.
-    let workingTermsToCopy = sourceBranch.workingTerms;
-    if (typeof workingTermsToCopy === 'string') {
-        try {
-            workingTermsToCopy = JSON.parse(workingTermsToCopy);
-        } catch (e) {
-            workingTermsToCopy = [];
-        }
-    }
-    if (!Array.isArray(workingTermsToCopy)) {
-        workingTermsToCopy = [];
-    }
+    const workingTermsToCopy = parseTerms(sourceBranch.workingTerms);
 
     const newBranch = await Branch.create({ name: newBranchName, projectId: projectId, workingTerms: workingTermsToCopy });
     
@@ -591,20 +559,8 @@ export const mergeBranches = async (projectId, sourceBranchName, targetBranchNam
             throw new Error('One or both branches not found');
         }
 
-        const parseWorkingTerms = (terms) => {
-            if (typeof terms === 'string') {
-                try {
-                    const parsed = JSON.parse(terms);
-                    return Array.isArray(parsed) ? parsed : [];
-                } catch (e) {
-                    return [];
-                }
-            }
-            return Array.isArray(terms) ? terms : [];
-        };
-
-        const sourceTermsList = parseWorkingTerms(sourceBranch.workingTerms);
-        const targetTermsList = parseWorkingTerms(targetBranch.workingTerms);
+        const sourceTermsList = parseTerms(sourceBranch.workingTerms);
+        const targetTermsList = parseTerms(targetBranch.workingTerms);
 
         // Merge strategy based on term ID. Source branch takes precedence.
         const mergedTermsMap = new Map(targetTermsList.map(term => [term.id, term]));
@@ -756,17 +712,6 @@ export const validateAndGetUserFromApiKey = async (prefix, secret) => {
 
 
 // API v0 methods (for compatibility)
-const parseTerms = (terms) => {
-    if (typeof terms === 'string') {
-        try {
-            const parsed = JSON.parse(terms);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-            return [];
-        }
-    }
-    return Array.isArray(terms) ? terms : [];
-};
 
 export const findLastModifiedTranslation = async (projectId, langCode, branchName = 'main') => {
     const project = await Project.findByPk(projectId, {
@@ -826,20 +771,21 @@ export const findLastModifiedTranslation = async (projectId, langCode, branchNam
     return null; // No changes found for this locale in the branch's history.
 };
 
-export const getTermsForLocale = async (projectId, langCode) => {
+export const getTermsForLocale = async (projectId, langCode, branchName = 'main') => {
     const project = await Project.findByPk(projectId, {
-        include: [{ model: Branch, as: 'branches', where: { name: 'main' }, include: [{ model: Commit, as: 'commits' }] }]
+        include: [{ model: Branch, as: 'branches', where: { name: branchName }, include: [{ model: Commit, as: 'commits' }] }]
     });
-    if (!project || !project.branches || !project.branches.length === 0) return null;
+    if (!project || !project.branches || project.branches.length === 0) return null;
 
-    const mainBranch = project.branches[0];
-    mainBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const branch = project.branches[0];
+    branch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    const latestCommit = mainBranch.commits[0];
+    const latestCommit = branch.commits[0];
     if (!latestCommit) return {};
 
     const translations = {};
-    for (const term of latestCommit.terms) {
+    const terms = parseTerms(latestCommit.terms);
+    for (const term of terms) {
         if (term.translations && term.translations[langCode]) {
             translations[term.text] = term.translations[langCode];
         }

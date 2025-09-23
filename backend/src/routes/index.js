@@ -88,6 +88,11 @@ router.get('/check-last-edit/:id', authenticate, async (req, res, next) => {
  *         required: true
  *         description: The language code of the locale to retrieve.
  *         schema: { "type": "string", "example": "it" }
+ *       - in: query
+ *         name: branch
+ *         required: false
+ *         description: The name of the branch to retrieve from. Defaults to 'main'.
+ *         schema: { "type": "string", "example": "feature/new-checkout" }
  *     responses:
  *       "200":
  *         description: An object containing all key-value translation pairs for the locale.
@@ -116,15 +121,16 @@ router.get('/read-all/:id', authenticate, async (req, res, next) => {
     try {
         const projectId = req.params.id;
         const langCode = req.query.locale;
+        const branchName = req.query.branch || 'main'; // Default to 'main'
 
         if (!langCode) {
             return res.status(400).json({ message: "The 'locale' query parameter is required." });
         }
 
-        const terms = await ProjectDao.getTermsForLocale(projectId, langCode);
+        const terms = await ProjectDao.getTermsForLocale(projectId, langCode, branchName);
 
         if (terms === null) {
-            return res.status(404).json({ message: `Project with ID '${projectId}' not found.` });
+            return res.status(404).json({ message: `Project with ID '${projectId}' or branch '${branchName}' not found.` });
         }
 
         res.json({
