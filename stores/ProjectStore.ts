@@ -360,7 +360,8 @@ export class ProjectStore {
             term.translations[langCode] = value;
             
             try {
-                await this.rootStore.apiClient.updateTranslation(projectId, termId, langCode, value);
+                // Perform the API call in the background without a global loader
+                await this.rootStore.apiClient.updateTranslation(projectId, termId, langCode, value, true);
             } catch (error) {
                 // Revert on failure
                 runInAction(() => {
@@ -378,7 +379,8 @@ export class ProjectStore {
         if (term) {
             const originalText = term.text;
             term.text = newText; // Optimistic update
-            const success = await this.rootStore.apiClient.updateTermText(this.selectedProject.id, termId, newText);
+            // Perform the API call in the background
+            const success = await this.rootStore.apiClient.updateTermText(this.selectedProject.id, termId, newText, true);
             if (!success) {
                 runInAction(() => { term.text = originalText }); // Revert on failure
                 this.rootStore.uiStore.showAlert('Failed to update term key.', 'error');
@@ -393,7 +395,8 @@ export class ProjectStore {
         if (term) {
             const originalContext = term.context;
             term.context = newContext; // Optimistic update
-            const success = await this.rootStore.apiClient.updateTermContext(this.selectedProject.id, termId, newContext);
+            // Perform the API call in the background
+            const success = await this.rootStore.apiClient.updateTermContext(this.selectedProject.id, termId, newContext, true);
             if (!success) {
                 runInAction(() => { term.context = originalContext; }); // Revert on failure
                 this.rootStore.uiStore.showAlert('Failed to update context.', 'error');

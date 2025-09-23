@@ -36,7 +36,8 @@ app.use(cors({
     'Content-Type',
     'Authorization',
     'X-User-ID',
-    'X-Api-Key-Prefix'
+    'X-Api-Key-Prefix',
+    'access-control-allow-methods'
   ],
 }));
 app.use(express.json());

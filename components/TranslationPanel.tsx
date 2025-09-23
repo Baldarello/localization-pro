@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, Paper, Divider, useMediaQuery } from '@mui/material';
+// FIX: Import `Divider` from `@mui/material` to resolve the "Cannot find name 'Divider'" error.
+import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, useMediaQuery, Divider } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import StarIcon from '@mui/icons-material/Star';
-import EditIcon from '@mui/icons-material/Edit';
-import DoneIcon from '@mui/icons-material/Done';
-import CloseIcon from '@mui/icons-material/Close';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useStores } from '../stores/StoreProvider';
@@ -30,19 +28,20 @@ const TranslationPanel: React.FC = observer(() => {
         deselectTerm,
     } = projectStore;
 
-    const [isEditingKey, setIsEditingKey] = useState(false);
+    // Local state for all editable fields
     const [editedKeyText, setEditedKeyText] = useState('');
-    const [isEditingContext, setIsEditingContext] = useState(false);
     const [editedContext, setEditedContext] = useState('');
+    const [localTranslations, setLocalTranslations] = useState<{ [key: string]: string }>({});
+
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     useEffect(() => {
         if (term) {
+            // When term changes, reset all local editing states to match the store
             setEditedKeyText(term.text);
-            setIsEditingKey(false);
             setEditedContext(term.context || '');
-            setIsEditingContext(false);
+            setLocalTranslations(term.translations || {});
             projectStore.fetchComments(project!.id, term.id);
         }
     }, [term, project, projectStore]);
@@ -68,28 +67,37 @@ const TranslationPanel: React.FC = observer(() => {
         ? project.languages
         : project.languages.filter(lang => userPermissions.includes(lang.code));
 
-    const handleKeySave = () => {
-        if (editedKeyText.trim() && editedKeyText !== term.text) {
-            updateTermText(term.id, editedKeyText.trim());
+    // onBlur handler for Term Key
+    const handleKeyBlur = () => {
+        const trimmedText = editedKeyText.trim();
+        if (trimmedText && trimmedText !== term.text) {
+            updateTermText(term.id, trimmedText);
+        } else {
+            // If invalid or unchanged, revert to the store's value to prevent saving empty keys
+            setEditedKeyText(term.text);
         }
-        setIsEditingKey(false);
     };
     
-    const handleKeyCancel = () => {
-        setEditedKeyText(term.text);
-        setIsEditingKey(false);
-    };
-
-    const handleContextSave = () => {
+    // onBlur handler for Context
+    const handleContextBlur = () => {
+        // Only update if the content has actually changed
         if (editedContext.trim() !== (term.context || '')) {
             updateTermContext(term.id, editedContext.trim());
         }
-        setIsEditingContext(false);
     };
 
-    const handleContextCancel = () => {
-        setEditedContext(term.context || '');
-        setIsEditingContext(false);
+    // onChange handler for local translation state
+    const handleTranslationChange = (langCode: string, value: string) => {
+        setLocalTranslations(prev => ({ ...prev, [langCode]: value }));
+    };
+
+    // onBlur handler for Translations
+    const handleTranslationBlur = (langCode: string) => {
+        const localValue = localTranslations[langCode] || '';
+        const originalValue = term.translations[langCode] || '';
+        if (localValue !== originalValue) {
+            updateTranslation(project.id, term.id, langCode, localValue);
+        }
     };
 
     return (
@@ -104,81 +112,40 @@ const TranslationPanel: React.FC = observer(() => {
                 </Button>
             )}
             <Box sx={{ mb: 3, pb: 2, borderBottom: 1, borderColor: 'divider' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: '48px' }}>
-                    {isEditingKey && canEditKey ? (
-                        <>
-                            <TextField
-                                value={editedKeyText}
-                                onChange={(e) => setEditedKeyText(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') handleKeySave(); if (e.key === 'Escape') handleKeyCancel(); }}
-                                variant="standard"
-                                autoFocus
-                                sx={{
-                                    '.MuiInput-input': {
-                                        fontSize: '1.75rem',
-                                        fontWeight: 'bold',
-                                    }
-                                }}
-                            />
-                            <IconButton onClick={handleKeySave} color="primary"><DoneIcon /></IconButton>
-                            <IconButton onClick={handleKeyCancel}><CloseIcon /></IconButton>
-                        </>
-                    ) : (
-                        <>
-                            <Typography variant="h4" component="h3" sx={{ fontWeight: 'bold', wordBreak: 'break-word' }}>
-                                {term.text}
-                            </Typography>
-                            {canEditKey && (
-                                <IconButton onClick={() => setIsEditingKey(true)} size="small">
-                                    <EditIcon fontSize="small" />
-                                </IconButton>
-                            )}
-                        </>
-                    )}
-                </Box>
+                <TextField
+                    fullWidth
+                    value={editedKeyText}
+                    onChange={(e) => setEditedKeyText(e.target.value)}
+                    onBlur={handleKeyBlur}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLElement).blur(); }}
+                    variant="standard"
+                    disabled={!canEditKey}
+                    sx={{
+                        '.MuiInput-input': {
+                            fontSize: '1.75rem',
+                            fontWeight: 'bold',
+                            wordBreak: 'break-word',
+                        },
+                        // Show dotted underline to indicate editability, or none if disabled
+                        '.MuiInput-root:before': {
+                            borderBottomStyle: canEditKey ? 'dotted' : 'none',
+                        },
+                    }}
+                />
             </Box>
 
              <Box sx={{ mb: 3, pb: 3, borderBottom: 1, borderColor: 'divider' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                    <Typography variant="h6" component="h4">Context</Typography>
-                    {canEditKey && !isEditingContext && (
-                        <Button onClick={() => setIsEditingContext(true)} startIcon={<EditIcon />} size="small">
-                            Edit
-                        </Button>
-                    )}
-                </Box>
-                {isEditingContext ? (
-                    <>
-                        <TextField
-                            fullWidth
-                            multiline
-                            rows={3}
-                            value={editedContext}
-                            onChange={(e) => setEditedContext(e.target.value)}
-                            placeholder="Provide context for translators (e.g., where this key is used, character limits)."
-                            autoFocus
-                        />
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
-                            <Button onClick={handleContextCancel}>Cancel</Button>
-                            <Button onClick={handleContextSave} variant="contained">Save</Button>
-                        </Box>
-                    </>
-                ) : (
-                    <Paper
-                        variant="outlined"
-                        sx={{
-                            p: 1.5,
-                            bgcolor: 'action.hover',
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                            color: term.context ? 'text.primary' : 'text.secondary',
-                            fontStyle: term.context ? 'normal' : 'italic',
-                            minHeight: '60px'
-                        }}
-                    >
-                        {term.context || 'No context provided. Click "Edit" to add one.'}
-                    </Paper>
-                )}
+                <Typography variant="h6" component="h4" sx={{ mb: 1.5 }}>Context</Typography>
+                <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    value={editedContext}
+                    onChange={(e) => setEditedContext(e.target.value)}
+                    onBlur={handleContextBlur}
+                    placeholder="Provide context for translators (e.g., where this key is used, character limits)."
+                    disabled={!canEditKey}
+                />
             </Box>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -199,9 +166,9 @@ const TranslationPanel: React.FC = observer(() => {
                                 fullWidth
                                 multiline
                                 rows={3}
-                                value={term.translations[lang.code] || ''}
-                                // The store's updateTranslation method is now branch-aware, so no change needed here.
-                                onChange={(e) => updateTranslation(project.id, term.id, lang.code, e.target.value)}
+                                value={localTranslations[lang.code] || ''}
+                                onChange={(e) => handleTranslationChange(lang.code, e.target.value)}
+                                onBlur={() => handleTranslationBlur(lang.code)}
                                 placeholder={`Translation in ${lang.name}...`}
                                 disabled={!canEdit}
                                 InputProps={{

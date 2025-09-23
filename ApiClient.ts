@@ -228,36 +228,36 @@ class ApiClient {
         });
     }
     
-    async updateTranslation(projectId: string, termId: string, langCode: string, value: string): Promise<boolean> {
+    async updateTranslation(projectId: string, termId: string, langCode: string, value: string, noLoader = false): Promise<boolean> {
         try {
             await this.apiFetch(`/projects/${projectId}/terms/${termId}/translations/${langCode}`, {
                 method: 'PUT',
                 body: JSON.stringify({ value }),
-            });
+            }, noLoader);
             return true;
         } catch (error) {
             return false;
         }
     }
 
-    async updateTermText(projectId: string, termId: string, newText: string): Promise<boolean> {
+    async updateTermText(projectId: string, termId: string, newText: string, noLoader = false): Promise<boolean> {
         try {
             await this.apiFetch(`/projects/${projectId}/terms/${termId}`, {
                 method: 'PUT',
                 body: JSON.stringify({ text: newText }),
-            });
+            }, noLoader);
             return true;
         } catch (error) {
             return false;
         }
     }
 
-    async updateTermContext(projectId: string, termId: string, context: string): Promise<boolean> {
+    async updateTermContext(projectId: string, termId: string, context: string, noLoader = false): Promise<boolean> {
          try {
             await this.apiFetch(`/projects/${projectId}/terms/${termId}/context`, {
                 method: 'PUT',
                 body: JSON.stringify({ context }),
-            });
+            }, noLoader);
             return true;
         } catch (error) {
             return false;
