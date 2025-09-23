@@ -1,6 +1,4 @@
 
-
-
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
@@ -32,7 +30,14 @@ app.use(cors({
     // it would be more secure to maintain a whitelist of allowed origins.
     callback(null, true);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow common methods for pre-flight
+  allowedHeaders: [ // Explicitly allow headers used by the app for pre-flight
+    'Content-Type',
+    'Authorization',
+    'X-User-ID',
+    'X-Api-Key-Prefix'
+  ],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

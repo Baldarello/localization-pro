@@ -756,39 +756,74 @@ export const validateAndGetUserFromApiKey = async (prefix, secret) => {
 
 
 // API v0 methods (for compatibility)
-export const findLastModifiedTranslation = async (projectId, langCode) => {
+const parseTerms = (terms) => {
+    if (typeof terms === 'string') {
+        try {
+            const parsed = JSON.parse(terms);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    return Array.isArray(terms) ? terms : [];
+};
+
+export const findLastModifiedTranslation = async (projectId, langCode, branchName = 'main') => {
     const project = await Project.findByPk(projectId, {
-        include: [{ model: Branch, as: 'branches', where: { name: 'main' }, include: [{ model: Commit, as: 'commits' }] }]
+        include: [{ model: Branch, as: 'branches', where: { name: branchName }, include: [{ model: Commit, as: 'commits' }] }]
     });
 
     if (!project || !project.branches || project.branches.length === 0) return null;
 
-    const mainBranch = project.branches[0];
-    mainBranch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const branch = project.branches[0];
+    if (!branch.commits || branch.commits.length === 0) return null;
 
-    let lastEdit = null;
-    const latestTranslations = new Map();
+    branch.commits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    for (const commit of mainBranch.commits) {
-        for (const term of commit.terms) {
-            if (term.translations && term.translations[langCode] && !latestTranslations.has(term.id)) {
-                const translationValue = term.translations[langCode];
-                latestTranslations.set(term.id, translationValue);
+    for (let i = 0; i < branch.commits.length; i++) {
+        const currentCommit = branch.commits[i];
+        const parentCommit = i + 1 < branch.commits.length ? branch.commits[i + 1] : null;
 
-                if (!lastEdit || new Date(commit.timestamp) > new Date(lastEdit.updatedAt)) {
-                    lastEdit = {
-                        id: `${term.id}-${langCode}`,
-                        value: translationValue,
-                        localeId: langCode,
-                        termId: term.id,
-                        createdAt: commit.timestamp,
-                        updatedAt: commit.timestamp
-                    };
+        const currentTerms = parseTerms(currentCommit.terms);
+        const parentTerms = parentCommit ? parseTerms(parentCommit.terms) : [];
+
+        const currentTranslations = new Map(currentTerms.map(t => [t.id, t.translations?.[langCode]]).filter(t => t[1] !== undefined));
+        const parentTranslations = new Map(parentTerms.map(t => [t.id, t.translations?.[langCode]]).filter(t => t[1] !== undefined));
+
+        let changedTermInfo = null;
+
+        // Check for added or modified translations
+        for (const [termId, value] of currentTranslations.entries()) {
+            if (parentTranslations.get(termId) !== value) {
+                changedTermInfo = { termId, value };
+                break;
+            }
+        }
+
+        // If no additions/modifications, check for removed translations
+        if (!changedTermInfo) {
+            for (const termId of parentTranslations.keys()) {
+                if (!currentTranslations.has(termId)) {
+                    changedTermInfo = { termId, value: undefined }; // Represents a removal
+                    break;
                 }
             }
         }
+
+        // If a change was found in this commit, it's the most recent one.
+        if (changedTermInfo) {
+            return {
+                id: `${changedTermInfo.termId}-${langCode}`,
+                value: changedTermInfo.value,
+                localeId: langCode,
+                termId: changedTermInfo.termId,
+                createdAt: currentCommit.timestamp,
+                updatedAt: currentCommit.timestamp
+            };
+        }
     }
-    return lastEdit;
+
+    return null; // No changes found for this locale in the branch's history.
 };
 
 export const getTermsForLocale = async (projectId, langCode) => {

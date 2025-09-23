@@ -30,6 +30,11 @@ router.use('/projects', projectsRouter);
  *         required: true
  *         description: The language code of the locale to check.
  *         schema: { "type": "string", "example": "it" }
+ *       - in: query
+ *         name: branch
+ *         required: false
+ *         description: The name of the branch to check. Defaults to 'main'.
+ *         schema: { "type": "string", "example": "feature/new-checkout" }
  *     responses:
  *       "200":
  *         description: Details of the last modified translation for the specified locale.
@@ -48,17 +53,18 @@ router.get('/check-last-edit/:id', authenticate, async (req, res, next) => {
     try {
         const projectId = req.params.id;
         const langCode = req.query.locale;
+        const branchName = req.query.branch || 'main'; // Default to 'main' if not provided
 
         if (!langCode) {
             return res.status(400).json({ message: "The 'locale' query parameter is required." });
         }
 
-        const lastEdit = await ProjectDao.findLastModifiedTranslation(projectId, langCode);
+        const lastEdit = await ProjectDao.findLastModifiedTranslation(projectId, langCode, branchName);
 
         if (lastEdit) {
             res.json(lastEdit);
         } else {
-            res.status(404).json({ message: `No edits found for locale '${langCode}' in project '${projectId}'.` });
+            res.status(404).json({ message: `No edits found for locale '${langCode}' in branch '${branchName}' of project '${projectId}'.` });
         }
     } catch (error) {
         next(error);
