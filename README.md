@@ -11,7 +11,7 @@ This application features role-based access control, branching for parallel deve
 -   **Role-Based Access Control**: Assign Admin, Editor, or Translator roles to team members.
 -   **Term & Translation Management**: A clean interface for adding terms, context, and translations.
 -   **Git-like Branching**: Create feature branches to work on translations in isolation without affecting the main version.
--   **Compare & Merge**: Visually compare branches and merge changes back into the main branch with confidence.
+-   **Compare & Merge**: Visually compare branches and merge changes back into your main branch with confidence.
 -   **Commit History**: Track every change with a detailed commit log and a diff viewer.
 -   **AI-Powered Translations**: Get instant translation suggestions using Google's Gemini API.
 -   **Email Notifications**: Receive email updates for events like new commits, with user-configurable settings.
@@ -28,9 +28,133 @@ This application features role-based access control, branching for parallel deve
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started in 5 Minutes with Docker
 
-Follow these instructions to get the project up and running on your local machine for development and testing purposes.
+The fastest way to get TnT running locally is with Docker. This setup includes the frontend, backend, and a PostgreSQL database.
+
+### Prerequisites
+
+*   [Docker](https://www.docker.com/products/docker-desktop/) and Docker Compose are installed and running on your machine.
+
+### 1. Create Environment Files
+
+You need to create two environment files to store your secret keys.
+
+**a) Frontend Environment (`.env` in the root directory)**
+
+Create a file named `.env` in the project's root directory and add your Gemini API key:
+
+```env
+# .env
+GEMINI_API_KEY=your_google_gemini_api_key_here
+```
+
+**b) Backend Environment (`backend/.env`)**
+
+Create a file named `.env` inside the `backend/` directory. This file will configure the backend server and its connection to the PostgreSQL database that Docker will create.
+
+```env
+# backend/.env
+PORT=3001
+FRONTEND_URL=http://localhost:5173
+SESSION_SECRET=a-very-long-and-random-string-for-securing-sessions
+
+# Database connection for Docker
+DB_DIALECT=postgres
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=tntuser
+DB_PASS=tntpassword
+DB_NAME=tntdb
+
+# Optional: Enable Google OAuth & Email
+# GOOGLE_CLIENT_ID=...
+# GOOGLE_CLIENT_SECRET=...
+# EMAIL_ENABLED=true
+# ... other email variables ...
+```
+
+### 2. Create the Docker Compose File
+
+Create a file named `docker-compose.yml` in the project's root directory with the following content:
+
+```yaml
+services:
+  postgres:
+    image: postgres:15
+    container_name: tnt_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: tntuser
+      POSTGRES_PASSWORD: tntpassword
+      POSTGRES_DB: tntdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Exposing the port is optional but good for debugging with a DB client
+      - "5432:5432"
+
+  backend:
+    image: node:22
+    container_name: tnt_backend
+    restart: always
+    working_dir: /usr/src/app
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/usr/src/app
+      # This anonymous volume prevents the host's node_modules from overwriting the container's
+      - /usr/src/app/node_modules
+    env_file:
+      - ./backend/.env
+    command: >
+      bash -c "npm install && npm install pg pg-hstore && npm run db:migrate && npm run db:seed:all && npm run dev"
+    depends_on:
+      - postgres
+
+  frontend:
+    image: node:22
+    container_name: tnt_frontend
+    restart: always
+    working_dir: /usr/src/app
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/usr/src/app
+      # This anonymous volume prevents the host's node_modules from overwriting the container's
+      - /usr/src/app/node_modules
+    env_file:
+      - ./.env
+    command: >
+      bash -c "npm install && npm run dev -- --host"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+```
+
+### 3. Start the Application
+
+With the `.env` and `docker-compose.yml` files in place, start all services using Docker Compose:
+
+```sh
+# From the project root directory
+docker-compose up --build
+```
+This command will build the images (if they don't exist) and then start all three containers. It may take a few minutes the first time as it downloads the Node.js and Postgres images and installs all dependencies.
+
+### 4. Access the Application
+
+Once the services are running, you can access:
+*   **The TnT Web App** at `http://localhost:5173`
+*   **The Backend API Docs** at `http://localhost:3001/api-docs`
+
+---
+
+## 🛠️ Manual Installation & Setup
+
+If you prefer not to use Docker, you can set up the project manually by following these steps.
 
 ### Prerequisites
 

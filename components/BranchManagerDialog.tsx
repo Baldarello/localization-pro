@@ -2,6 +2,7 @@
 
 
 
+
 import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
@@ -14,7 +15,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import AddIcon from '@mui/icons-material/Add';
 import { useStores } from '../stores/StoreProvider';
-import { Branch } from '../types';
+// FIX: Import `Term` type to be used for explicit Map typing.
+import { Branch, Term } from '../types';
 
 /**
  * Creates a word-level diff between two strings using the Longest Common Subsequence algorithm.
@@ -95,8 +97,9 @@ const BranchManagerDialog: React.FC = observer(() => {
         const compare = project.branches.find(b => b.name === compareBranch);
         if (!base || !compare || !base.commits || base.commits.length === 0 || !compare.commits || compare.commits.length === 0) return null;
 
-        const baseTerms = new Map(base.commits[0].terms.map(t => [t.text, t]));
-        const compareTerms = new Map(compare.commits[0].terms.map(t => [t.text, t]));
+        // FIX: Explicitly type the Maps to ensure correct type inference for terms.
+        const baseTerms = new Map<string, Term>(base.commits[0].terms.map(t => [t.text, t]));
+        const compareTerms = new Map<string, Term>(compare.commits[0].terms.map(t => [t.text, t]));
 
         const added: { termKey: string; translation: string; }[] = [];
         const modified: { termKey: string; changes: { langCode: string; langName: string; oldValue: string; newValue: string }[] }[] = [];
