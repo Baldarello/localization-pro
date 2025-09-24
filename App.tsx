@@ -18,6 +18,7 @@ import ImportExportDialog from './components/ImportExportDialog';
 import ApiKeysManagerDialog from './components/ApiKeysManagerDialog';
 import GlobalLoader from './components/GlobalLoader';
 import AiActionsDialog from './components/AiActionsDialog';
+import DocsPage from './components/DocsPage';
 
 const App: React.FC = observer(() => {
     const { uiStore, authStore, projectStore } = useStores();
@@ -65,6 +66,8 @@ const App: React.FC = observer(() => {
                     return <ForgotPasswordPage />;
                 case 'resetPassword':
                     return <ResetPasswordPage />;
+                case 'docs':
+                    return <DocsPage />;
                 case 'home':
                 default:
                     return <HomePage />;

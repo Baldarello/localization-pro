@@ -1,11 +1,14 @@
+
 import React, { useState, useMemo } from 'react';
 import { Box, Tabs, Tab, IconButton, Tooltip, Paper, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import { generateExampleFromSchema } from './apiSpecUtils';
 
+const API_BASE_URL = 'https://localizationpro-api.tnl.one';
+
 const generateCurlSnippet = (path: string, method: string, details: any, spec: any) => {
-    let curl = `curl -X ${method.toUpperCase()} "${window.location.origin}/api/v1${path}" \\`;
+    let curl = `curl -X ${method.toUpperCase()} "${API_BASE_URL}/api/v1${path}" \\`;
     
     const headers = { 'Content-Type': 'application/json' };
     for (const [key, value] of Object.entries(headers)) {
@@ -24,7 +27,7 @@ const generateCurlSnippet = (path: string, method: string, details: any, spec: a
 };
 
 const generateJsSnippet = (path: string, method: string, details: any, spec: any) => {
-    let js = `const url = "${window.location.origin}/api/v1${path}";\n`;
+    let js = `const url = "${API_BASE_URL}/api/v1${path}";\n`;
     const options: any = {
         method: method.toUpperCase(),
         headers: { 'Content-Type': 'application/json' },
@@ -48,7 +51,7 @@ const generateJsSnippet = (path: string, method: string, details: any, spec: any
 
 const generatePythonSnippet = (path: string, method: string, details: any, spec: any) => {
     let py = `import requests\nimport json\n\n`;
-    py += `url = "${window.location.origin}/api/v1${path}"\n`;
+    py += `url = "${API_BASE_URL}/api/v1${path}"\n`;
     
     if (details.requestBody) {
         const schema = details.requestBody.content['application/json'].schema;
@@ -71,7 +74,7 @@ const generatePythonSnippet = (path: string, method: string, details: any, spec:
 };
 
 const generateJavaSnippet = (path: string, method: string, details: any, spec: any) => {
-    const fullUrl = `${window.location.origin}/api/v1${path}`;
+    const fullUrl = `${API_BASE_URL}/api/v1${path}`;
     const upperMethod = method.toUpperCase();
     let java = `import java.net.URI;
 import java.net.http.HttpClient;
@@ -122,7 +125,7 @@ ${jsonBody}
 };
 
 const generateDartSnippet = (path: string, method: string, details: any, spec: any) => {
-    const fullUrl = `${window.location.origin}/api/v1${path}`;
+    const fullUrl = `${API_BASE_URL}/api/v1${path}`;
     const lowerMethod = method.toLowerCase();
     
     let dart = `import 'package:http/http.dart' as http;
@@ -158,7 +161,7 @@ void main() async {
 };
 
 const generatePhpSnippet = (path: string, method: string, details: any, spec: any) => {
-    const fullUrl = `${window.location.origin}/api/v1${path}`;
+    const fullUrl = `${API_BASE_URL}/api/v1${path}`;
     const upperMethod = method.toUpperCase();
 
     let php = `<?php
@@ -203,7 +206,7 @@ if ($err) {
 };
 
 const generateCSharpSnippet = (path: string, method: string, details: any, spec: any) => {
-    const fullUrl = `${window.location.origin}/api/v1${path}`;
+    const fullUrl = `${API_BASE_URL}/api/v1${path}`;
     const upperMethod = method.toUpperCase();
 
     let csharp = `using System;

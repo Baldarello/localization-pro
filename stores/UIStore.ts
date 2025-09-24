@@ -4,7 +4,7 @@ import { AlertSeverity, Notification } from '../types';
 import { ThemeName } from '../theme';
 import { API_BASE_URL } from '../ApiClient';
 
-type View = 'home' | 'login' | 'register' | 'forgotPassword' | 'app' | 'profile' | 'resetPassword';
+type View = 'home' | 'login' | 'register' | 'forgotPassword' | 'app' | 'profile' | 'resetPassword' | 'docs';
 type Theme = 'light' | 'dark';
 
 export class UIStore {
@@ -183,7 +183,7 @@ export class UIStore {
             } else {
                 this.stopNotificationPolling();
             }
-        }, 15000); // Poll every 15 seconds
+        }, 60000); // Poll every 60 seconds
     };
 
     stopNotificationPolling = () => {

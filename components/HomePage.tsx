@@ -221,10 +221,12 @@ const HomePage: React.FC = () => {
                             ))}
                         </Select>
                         <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                            <Button color="inherit" onClick={() => uiStore.setView('docs')} sx={{ mr: 1 }}>Docs</Button>
                             <Button color="inherit" onClick={() => uiStore.setView('login')} sx={{ mr: 1 }}>Login</Button>
                             <Button variant="contained" color="secondary" onClick={() => uiStore.setView('register')}>Sign Up</Button>
                         </Box>
                         <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                             <Button color="inherit" onClick={() => uiStore.setView('docs')}>Docs</Button>
                             <Button color="inherit" onClick={() => uiStore.setView('login')}>Login</Button>
                         </Box>
                     </Toolbar>

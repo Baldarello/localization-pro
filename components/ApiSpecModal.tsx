@@ -13,7 +13,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useStores } from '../stores/StoreProvider';
 import ApiCodeSnippets from './ApiCodeSnippets';
 import ApiExamplePanel from './ApiExamplePanel';
-import { API_BASE_URL } from '../ApiClient';
+import ApiTryOutView from './ApiTryOutView'; // Import the new component
+
+const PROD_API_BASE_URL = 'https://localizationpro-api.tnl.one';
 
 const getMethodColor = (method: string) => {
     switch (method.toUpperCase()) {
@@ -127,7 +129,7 @@ const ApiReferenceView = () => {
     useEffect(() => {
         const fetchSpec = async () => {
             try {
-                const specUrl = API_BASE_URL.replace('/api/v1', '/openapi.json');
+                const specUrl = `${PROD_API_BASE_URL}/openapi.json`;
                 const response = await fetch(specUrl);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
@@ -244,7 +246,7 @@ const RawSpecView: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const specUrl = API_BASE_URL.replace('/api/v1', '/openapi.json');
+        const specUrl = `${PROD_API_BASE_URL}/openapi.json`;
         fetch(specUrl)
             .then(res => res.json())
             .then(data => {
@@ -287,7 +289,8 @@ const ApiSpecModal: React.FC = observer(() => {
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, flexShrink: 0 }}>
                     <Tabs value={tab} onChange={(e, v) => setTab(v)} aria-label="api spec tabs">
                         <Tab label="API Reference" id="spec-tab-0" aria-controls="spec-tabpanel-0" />
-                        <Tab label="Raw Spec (JSON)" id="spec-tab-1" aria-controls="spec-tabpanel-1" />
+                        <Tab label="Try It Out" id="spec-tab-1" aria-controls="spec-tabpanel-1" />
+                        <Tab label="Raw Spec (JSON)" id="spec-tab-2" aria-controls="spec-tabpanel-2" />
                     </Tabs>
                 </Box>
                 <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
@@ -295,6 +298,9 @@ const ApiSpecModal: React.FC = observer(() => {
                         <ApiReferenceView />
                     </TabPanel>
                     <TabPanel value={tab} index={1}>
+                        <ApiTryOutView />
+                    </TabPanel>
+                    <TabPanel value={tab} index={2}>
                         <RawSpecView />
                     </TabPanel>
                 </Box>

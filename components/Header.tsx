@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery, CircularProgress } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery, CircularProgress, Paper } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import CodeIcon from '@mui/icons-material/Code';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -12,6 +12,8 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 import { useStores } from '../stores/StoreProvider';
 import BranchSelector from './BranchSelector';
 import { UserRole, Notification } from '../types';
@@ -28,6 +30,7 @@ const Header: React.FC = observer(() => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [adminMenuAnchorEl, setAdminMenuAnchorEl] = React.useState<null | HTMLElement>(null);
     const [notificationMenuAnchorEl, setNotificationMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [copiedProjectId, setCopiedProjectId] = useState(false);
     const open = Boolean(anchorEl);
     const isAdminMenuOpen = Boolean(adminMenuAnchorEl);
     const isNotificationMenuOpen = Boolean(notificationMenuAnchorEl);
@@ -93,6 +96,13 @@ const Header: React.FC = observer(() => {
         handleNotificationMenuClose();
     };
 
+    const handleCopyProjectId = () => {
+        if (!projectStore.selectedProject) return;
+        navigator.clipboard.writeText(projectStore.selectedProject.id);
+        setCopiedProjectId(true);
+        setTimeout(() => setCopiedProjectId(false), 2000);
+    };
+
     const { selectedProjectId } = projectStore;
 
     return (
@@ -105,9 +115,43 @@ const Header: React.FC = observer(() => {
                                 <ArrowBackIcon />
                             </IconButton>
                         </Tooltip>
-                        <Typography variant="h6" component="h1" noWrap sx={{ fontWeight: 'bold' }}>
-                            {selectedProject.name}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                            <Typography variant="h6" component="h1" noWrap sx={{ fontWeight: 'bold' }}>
+                                {selectedProject.name}
+                            </Typography>
+                             <Paper 
+                                elevation={0}
+                                sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 0.5, 
+                                    bgcolor: 'rgba(255,255,255,0.15)',
+                                    p: '2px 8px', 
+                                    borderRadius: 1 
+                                }}
+                            >
+                                <Typography 
+                                    variant="caption" 
+                                    component="span" 
+                                    sx={{ fontFamily: 'monospace', color: 'common.white', opacity: 0.8 }}
+                                >
+                                    {selectedProject.id}
+                                </Typography>
+                                <Tooltip title={copiedProjectId ? "Copied!" : "Copy Project ID"}>
+                                    <IconButton
+                                        size="small"
+                                        color="inherit"
+                                        onClick={handleCopyProjectId}
+                                        sx={{ p: '2px' }}
+                                    >
+                                        {copiedProjectId ? 
+                                            <CheckIcon sx={{ fontSize: '1rem', color: 'success.light' }} /> : 
+                                            <ContentCopyIcon sx={{ fontSize: '1rem', opacity: 0.7 }} />
+                                        }
+                                    </IconButton>
+                                </Tooltip>
+                            </Paper>
+                        </Box>
                         <Box sx={{ ml: 2, borderLeft: 1, borderColor: 'rgba(255, 255, 255, 0.12)', pl: 2 }}>
                              <BranchSelector />
                         </Box>
