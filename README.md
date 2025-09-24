@@ -28,6 +28,16 @@ This application features role-based access control, branching for parallel deve
 
 ---
 
+## ☁️ Hosted Cloud Version
+
+For a quick start without any setup, a managed cloud version is available at:
+
+**[https://localizationpro.tnl.one](https://localizationpro.tnl.one)**
+
+Currently, the cloud version is free to use with some limits, making it perfect for personal projects and small teams. A premium plan for larger teams may be considered in the future.
+
+---
+
 ## 🚀 Getting Started in 5 Minutes with Docker
 
 The fastest way to get TnT running locally is with Docker. This setup includes the frontend, backend, and a PostgreSQL database.
