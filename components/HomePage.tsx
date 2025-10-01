@@ -123,6 +123,8 @@ const pricingContent = {
             description: 'The ultimate solution for professional teams, businesses, and enterprises that need to scale.',
             features: [ 'Unlimited Projects', 'Unlimited Terms', 'Unlimited Team Members', 'Priority Support & SLA' ],
             buttonText: 'Contact for Info',
+            demoButtonText: 'Schedule a Demo',
+            demoLink: 'https://calendly.com/mmazzocchetti/tnt-demo-call',
             contactEmail: 'mmazzocchetti@tnl.one',
             contactSubject: 'Inquiry about TnT Enterprise Plan',
             contactBody: "Hello, I'm interested in learning more about the Enterprise plan, including pricing and premium support options. Thank you."
@@ -151,6 +153,8 @@ const pricingContent = {
             description: 'La soluzione definitiva per team professionali, aziende ed enterprise che necessitano di scalare.',
             features: [ 'Progetti Illimitati', 'Termini Illimitati', 'Membri del Team Illimitati', 'Supporto Prioritario e SLA' ],
             buttonText: 'Contatta per Info',
+            demoButtonText: 'Programma una Demo',
+            demoLink: 'https://calendly.com/mmazzocchetti/tnt-demo-call',
             contactEmail: 'mmazzocchetti@tnl.one',
             contactSubject: 'Richiesta informazioni per il piano TnT Enterprise',
             contactBody: "Salve, sarei interessato/a a ricevere maggiori informazioni riguardo al piano Enterprise, inclusi i prezzi e le opzioni di supporto premium. Grazie."
@@ -365,15 +369,26 @@ const HomePage: React.FC = () => {
                                             </ListItem>
                                         ))}
                                     </List>
-                                    <Button
-                                        fullWidth
-                                        variant="contained"
-                                        sx={{ mt: 2 }}
-                                        component="a"
-                                        href={mailtoLink}
-                                    >
-                                        {proPlanContent.buttonText}
-                                    </Button>
+                                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, mt: 2 }}>
+                                        <Button
+                                            fullWidth
+                                            variant="outlined"
+                                            component="a"
+                                            href={mailtoLink}
+                                        >
+                                            {proPlanContent.buttonText}
+                                        </Button>
+                                        <Button
+                                            fullWidth
+                                            variant="contained"
+                                            component="a"
+                                            href={proPlanContent.demoLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            {proPlanContent.demoButtonText}
+                                        </Button>
+                                    </Box>
                                 </Paper>
                             </Box>
                         </Box>
