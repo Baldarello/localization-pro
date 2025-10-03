@@ -526,7 +526,7 @@ export const deleteLatestCommit = async (projectId, branchName, authorId) => {
     await Commit.destroy({ where: { id: latestCommit.id } });
     branch.workingTerms = parentCommit.terms;
     await branch.save();
-    broadcastBranchUpdate(projectId, branch.name, authorId);
+    broadcastBranchUpdate(projectId, branchName, authorId);
 };
 
 export const createBranch = async (projectId, newBranchName, sourceBranchName) => {
@@ -697,6 +697,44 @@ export const createComment = async (projectId, termId, content, parentId, author
 };
 
 // --- API Keys ---
+
+const generateId = (code) => {
+    const hash = crypto.createHash('sha1').update(code).digest('hex');
+    return `${hash.substr(0, 8)}-${hash.substr(8, 4)}-${hash.substr(12, 4)}-${hash.substr(16, 4)}-${hash.substr(20, 12)}`;
+};
+
+export const getLocalesForProject = async (projectId) => {
+    const project = await Project.findByPk(projectId);
+    if (!project) return null;
+
+    let languages = [];
+    if (typeof project.languages === 'string') {
+        try {
+            languages = JSON.parse(project.languages);
+        } catch (e) {
+            languages = [];
+        }
+    } else {
+        languages = project.languages;
+    }
+
+    if (!Array.isArray(languages)) return [];
+
+    const now = project.createdAt;
+
+    return languages.map(lang => ({
+        id: generateId(lang.code + projectId), // Make ID unique per project-locale combo
+        name: `${lang.name}_V1`,
+        localeId: generateId(lang.code),
+        projectSeedId: projectId,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+        language: lang.name.toLowerCase(),
+        code: lang.code,
+        region: null,
+    }));
+};
+
 export const getApiKeysForProject = async (projectId) => {
     return await ApiKey.findAll({
         where: { projectId },

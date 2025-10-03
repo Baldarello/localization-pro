@@ -52,7 +52,7 @@ const ResponseBlock: React.FC<{ title: string, content: string, language?: strin
     );
 };
 
-type Endpoint = 'read-all' | 'check-last-edit' | 'read-all-locales' | 'add-term';
+type Endpoint = 'read-all' | 'check-last-edit' | 'read-all-locales' | 'get-project-locales' | 'add-term';
 
 const ApiTryOutView: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
@@ -78,6 +78,7 @@ const ApiTryOutView: React.FC = observer(() => {
         'read-all': { title: 'Fetch All Translations', path: `/read-all/${selectedProject.id}`, method: 'GET' },
         'check-last-edit': { title: 'Check for Updates', path: `/check-last-edit/${selectedProject.id}`, method: 'GET' },
         'read-all-locales': { title: 'Fetch All Available Locales', path: '/locale/read', method: 'GET' },
+        'get-project-locales': { title: 'Fetch Project Locales', path: `/projects/${selectedProject.id}/locales`, method: 'GET' },
         'add-term': { title: 'Add a Term', path: `/projects/${selectedProject.id}/terms`, method: 'POST' }
     };
     
@@ -243,6 +244,7 @@ const ApiTryOutView: React.FC = observer(() => {
                             <MenuItem value="read-all">[GET] Fetch All Translations</MenuItem>
                             <MenuItem value="check-last-edit">[GET] Check for Updates</MenuItem>
                             <MenuItem value="read-all-locales">[GET] Fetch All Available Locales</MenuItem>
+                            <MenuItem value="get-project-locales">[GET] Fetch Project Locales</MenuItem>
                             <MenuItem value="add-term">[POST] Add a Term</MenuItem>
                         </Select>
                     </FormControl>

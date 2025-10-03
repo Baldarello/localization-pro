@@ -1241,4 +1241,43 @@ router.post('/:projectId/branches', authenticate, async (req, res, next) => {
     }
 });
 
+/**
+ * @swagger
+ * /projects/{projectId}/locales:
+ *   get:
+ *     summary: Get the configured locales for a specific project
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         description: The ID of the project.
+ *         schema: { "type": "string" }
+ *     responses:
+ *       "200":
+ *         description: A list of configured locales for the project.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/LocaleDetails'
+ *       "401":
+ *         description: "Unauthorized"
+ *       "404":
+ *         description: "Project not found."
+ */
+router.get('/:projectId/locales', authenticate, async (req, res, next) => {
+    try {
+        const locales = await ProjectDao.getLocalesForProject(req.params.projectId);
+        if (locales) {
+            res.json(locales);
+        } else {
+            res.status(404).json({ message: 'Project not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+});
+
 export default router;
