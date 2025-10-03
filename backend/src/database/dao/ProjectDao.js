@@ -551,6 +551,18 @@ export const createBranch = async (projectId, newBranchName, sourceBranchName) =
     return newBranch.get({ plain: true });
 };
 
+export const updateBranchProtection = async (projectId, branchName, isProtected, authorId) => {
+    const branch = await Branch.findOne({ where: { projectId, name: branchName } });
+    if (!branch) {
+        throw new ValidationError('Branch not found', 404);
+    }
+    branch.isProtected = isProtected;
+    await branch.save();
+    // Although this doesn't change terms, it's a branch property change.
+    // Broadcasting ensures other clients with BranchManager open see the change.
+    broadcastBranchUpdate(projectId, branchName, authorId);
+};
+
 export const createBranchFromCommit = async (projectId, commitId, newBranchName) => {
     const commit = await Commit.findByPk(commitId);
     if (!commit) throw new Error('Commit not found');

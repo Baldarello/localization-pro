@@ -1149,6 +1149,50 @@ router.delete('/:projectId/branches/:branchName', authenticate, async (req, res,
 
 /**
  * @swagger
+ * /projects/{projectId}/branches/{branchName}/protection:
+ *   put:
+ *     summary: Update a branch's protection status
+ *     tags: [Branches]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: branchName
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [isProtected]
+ *             properties:
+ *               isProtected: { type: boolean }
+ *     responses:
+ *       '204':
+ *         description: Branch protection updated successfully.
+ *       '401': { description: "Unauthorized" }
+ *       '403': { description: "Forbidden" }
+ *       '404': { description: "Project or branch not found" }
+ */
+router.put('/:projectId/branches/:branchName/protection', authenticate, async (req, res, next) => {
+    try {
+        if (!(await isProjectAdmin(req.user.id, req.params.projectId))) {
+            return res.status(403).json({ message: 'Forbidden: Only project admins can change branch protection.' });
+        }
+        const { isProtected } = req.body;
+        await ProjectDao.updateBranchProtection(req.params.projectId, req.params.branchName, isProtected, req.user.id);
+        res.sendStatus(204);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * @swagger
  * /projects/{projectId}/branches:
  *   post:
  *     summary: Create a new branch from another branch
