@@ -3,6 +3,7 @@
 
 
 
+
 import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
@@ -14,9 +15,11 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import AddIcon from '@mui/icons-material/Add';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { useStores } from '../stores/StoreProvider';
 // FIX: Import `Term` type to be used for explicit Map typing.
-import { Branch, Term } from '../types';
+import { Branch, Term, UserRole } from '../types';
 
 /**
  * Creates a word-level diff between two strings using the Longest Common Subsequence algorithm.
@@ -67,7 +70,7 @@ const createWordDiff = (oldText = '', newText = '') => {
 const BranchManagerDialog: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
     const { isBranchManagerOpen, closeBranchManager } = uiStore;
-    const project = projectStore.selectedProject;
+    const { selectedProject: project, currentUserRole } = projectStore;
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
@@ -155,6 +158,11 @@ const BranchManagerDialog: React.FC = observer(() => {
 
     if (!project) return null;
 
+    const targetBranchForMerge = project.branches.find(b => b.name === baseBranch);
+    const isMergeDisabled = !comparison || 
+                            (comparison.added.length === 0 && comparison.modified.length === 0) ||
+                            (targetBranchForMerge?.isProtected && currentUserRole !== UserRole.Admin);
+
     return (
         <Dialog open={isBranchManagerOpen} onClose={closeBranchManager} fullWidth maxWidth="md" fullScreen={isMobile}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -192,19 +200,36 @@ const BranchManagerDialog: React.FC = observer(() => {
                             </Box>
                         </Box>
                         <List>
-                            {project.branches.map(branch => (
-                                <ListItem key={branch.name} secondaryAction={
-                                    branch.name !== 'main' && (
-                                        <Tooltip title="Delete branch">
-                                            <IconButton edge="end" aria-label="delete" onClick={() => projectStore.deleteBranch(branch.name)}>
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    )
-                                }>
+                            {project.branches.map(branch => {
+                                const isLockedForUser = branch.isProtected && currentUserRole !== UserRole.Admin;
+                                return (
+                                <ListItem
+                                    key={branch.name}
+                                    secondaryAction={
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            {currentUserRole === UserRole.Admin && (
+                                                <Tooltip title={branch.isProtected ? "Unprotect branch" : "Protect branch"}>
+                                                    <IconButton onClick={() => projectStore.updateBranchProtection(branch.name, !branch.isProtected)}>
+                                                        {branch.isProtected ? <LockIcon color="primary" /> : <LockOpenIcon />}
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            {branch.name !== 'main' && (
+                                                <Tooltip title={isLockedForUser ? "Branch is protected" : "Delete branch"}>
+                                                    <span>
+                                                        <IconButton edge="end" disabled={isLockedForUser} onClick={() => projectStore.deleteBranch(branch.name)}>
+                                                            <DeleteIcon />
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+                                            )}
+                                        </Box>
+                                    }
+                                >
                                     <ListItemText
                                         primary={
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                {branch.isProtected && <LockIcon fontSize="small" color="action" />}
                                                 {branch.name}
                                                 {branch.name === 'main' && <Chip label="default" size="small" color="primary" variant="outlined" />}
                                                 {branch.name === project.currentBranchName && <Chip label="current" size="small" color="secondary" />}
@@ -213,7 +238,8 @@ const BranchManagerDialog: React.FC = observer(() => {
                                         secondary={`${branch.commits?.[0]?.terms.length || 0} terms, ${branch.commits?.length || 0} commit(s)`}
                                     />
                                 </ListItem>
-                            ))}
+                            );
+                            })}
                         </List>
                     </Box>
                 )}
@@ -228,22 +254,25 @@ const BranchManagerDialog: React.FC = observer(() => {
                                  <MenuItem value="" disabled><em>Select branch</em></MenuItem>
                                 {project.branches.filter(b => b.name !== baseBranch).map(b => <MenuItem key={b.name} value={b.name}>{b.name}</MenuItem>)}
                             </Select>
-                            <Button
-                                variant="contained"
-                                startIcon={<CallMergeIcon />}
-                                onClick={handleMerge}
-                                disabled={!comparison || (comparison.added.length === 0 && comparison.modified.length === 0)}
-                            >
-                                Merge
-                            </Button>
+                             <Tooltip title={targetBranchForMerge?.isProtected && currentUserRole !== UserRole.Admin ? "Target branch is protected" : ""}>
+                                <span>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<CallMergeIcon />}
+                                        onClick={handleMerge}
+                                        disabled={isMergeDisabled}
+                                    >
+                                        Merge
+                                    </Button>
+                                </span>
+                            </Tooltip>
                         </Box>
                         <Divider sx={{ my: 1 }} />
                         {comparison ? (
                             <Box>
                                 <Typography variant="h6" gutterBottom>Comparison Summary</Typography>
                                 <Alert severity="info" sx={{ mb: 2 }}>
-                                    This will merge changes from the latest commit of <strong>{compareBranch}</strong> into the current working copy of <strong>{baseBranch}</strong>.
-                                    You can then review and commit the merged changes.
+                                    This will create a new commit in <strong>{baseBranch}</strong> with changes from the latest state of <strong>{compareBranch}</strong>.
                                 </Alert>
                                 
                                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', my: 2 }}>

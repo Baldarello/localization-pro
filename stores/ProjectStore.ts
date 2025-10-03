@@ -82,6 +82,12 @@ export class ProjectStore {
         return this.selectedProject.branches.find(b => b.name === this.selectedProject.currentBranchName) || null;
     }
 
+    // FIX: Add a computed property to check if the current branch is protected.
+    get isCurrentBranchLocked(): boolean {
+        if (!this.currentBranch) return false;
+        return this.currentBranch.isProtected;
+    }
+
     get latestCommit(): Commit | null {
         if (!this.currentBranch || this.currentBranch.commits.length === 0) return null;
         return this.currentBranch.commits[0]; // Assuming newest is first
@@ -863,6 +869,25 @@ export class ProjectStore {
             }
         } else {
             this.rootStore.uiStore.showAlert(`Failed to create branch "${newBranchName}". It may already exist.`, 'error');
+        }
+    }
+
+    // FIX: Add a method to update the protection status of a branch.
+    async updateBranchProtection(branchName: string, isProtected: boolean) {
+        if (!this.selectedProject || this.currentUserRole !== UserRole.Admin) return;
+        
+        const success = await this.rootStore.apiClient.updateBranchProtection(this.selectedProject.id, branchName, isProtected);
+        if (success) {
+            runInAction(() => {
+                if (!this.selectedProject) return;
+                const branch = this.selectedProject.branches.find(b => b.name === branchName);
+                if (branch) {
+                    branch.isProtected = isProtected;
+                    this.rootStore.uiStore.showAlert(`Branch "${branchName}" protection status updated.`, 'success');
+                }
+            });
+        } else {
+            this.rootStore.uiStore.showAlert('Failed to update branch protection.', 'error');
         }
     }
 

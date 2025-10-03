@@ -1,6 +1,7 @@
 
 
 
+
 export interface Language {
     code: string;
     name: string;
@@ -24,6 +25,7 @@ export interface Commit {
 
 export interface Branch {
     name: string;
+    isProtected: boolean;
     commits: Commit[];
     workingTerms: Term[];
 }

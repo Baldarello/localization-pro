@@ -52,7 +52,7 @@ const ResponseBlock: React.FC<{ title: string, content: string, language?: strin
     );
 };
 
-type Endpoint = 'read-all' | 'check-last-edit' | 'add-term';
+type Endpoint = 'read-all' | 'check-last-edit' | 'read-all-locales' | 'add-term';
 
 const ApiTryOutView: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
@@ -77,6 +77,7 @@ const ApiTryOutView: React.FC = observer(() => {
     const endpointDetails = {
         'read-all': { title: 'Fetch All Translations', path: `/read-all/${selectedProject.id}`, method: 'GET' },
         'check-last-edit': { title: 'Check for Updates', path: `/check-last-edit/${selectedProject.id}`, method: 'GET' },
+        'read-all-locales': { title: 'Fetch All Available Locales', path: '/locale/read', method: 'GET' },
         'add-term': { title: 'Add a Term', path: `/projects/${selectedProject.id}/terms`, method: 'POST' }
     };
     
@@ -91,17 +92,18 @@ const ApiTryOutView: React.FC = observer(() => {
         setError(null);
         setCurlCommand(null);
         setSelectedLocale('');
+        setSelectedBranch('');
         setTermText('');
     };
 
     const handleSendRequest = async () => {
         let isInvalid = false;
-        if (!selectedApiKeyPrefix || !apiSecret || !selectedBranch) {
+        if (!selectedApiKeyPrefix || !apiSecret) {
             isInvalid = true;
-        } else if (currentMethod === 'GET' && !selectedLocale) {
-            isInvalid = true;
-        } else if (currentMethod === 'POST' && selectedEndpoint === 'add-term' && !termText.trim()) {
-            isInvalid = true;
+        } else if (selectedEndpoint === 'read-all' || selectedEndpoint === 'check-last-edit') {
+            if (!selectedLocale || !selectedBranch) isInvalid = true;
+        } else if (selectedEndpoint === 'add-term') {
+            if (!termText.trim()) isInvalid = true;
         }
 
         if (isInvalid) {
@@ -126,8 +128,16 @@ const ApiTryOutView: React.FC = observer(() => {
   -H "Authorization: Bearer ${apiSecret}"`;
 
         if (currentMethod === 'GET') {
-            const params = new URLSearchParams({ locale: selectedLocale, branch: selectedBranch });
-            url = `${url}?${params.toString()}`;
+            const params = new URLSearchParams();
+            if (selectedEndpoint === 'read-all' || selectedEndpoint === 'check-last-edit') {
+                params.append('locale', selectedLocale);
+                params.append('branch', selectedBranch);
+            }
+
+            if (params.toString()) {
+                url = `${url}?${params.toString()}`;
+            }
+
             fetchOptions.method = 'GET';
             // Update URL in curl command
             curl = `curl -X GET "${url}" \\
@@ -168,13 +178,11 @@ const ApiTryOutView: React.FC = observer(() => {
         uiStore.openApiKeysManager();
     };
     
-    let isSendDisabled = isLoading || !selectedApiKeyPrefix || !apiSecret || !selectedBranch;
-    if (currentMethod === 'GET') {
-        if (!selectedLocale) isSendDisabled = true;
-    } else if (currentMethod === 'POST') {
-        if (selectedEndpoint === 'add-term' && !termText.trim()) {
-            isSendDisabled = true;
-        }
+    let isSendDisabled = isLoading || !selectedApiKeyPrefix || !apiSecret;
+    if (selectedEndpoint === 'read-all' || selectedEndpoint === 'check-last-edit') {
+        if (!selectedLocale || !selectedBranch) isSendDisabled = true;
+    } else if (selectedEndpoint === 'add-term') {
+        if (!termText.trim()) isSendDisabled = true;
     }
 
     return (
@@ -234,11 +242,29 @@ const ApiTryOutView: React.FC = observer(() => {
                         <Select value={selectedEndpoint} label="Endpoint" onChange={handleEndpointChange}>
                             <MenuItem value="read-all">[GET] Fetch All Translations</MenuItem>
                             <MenuItem value="check-last-edit">[GET] Check for Updates</MenuItem>
+                            <MenuItem value="read-all-locales">[GET] Fetch All Available Locales</MenuItem>
                             <MenuItem value="add-term">[POST] Add a Term</MenuItem>
                         </Select>
                     </FormControl>
 
-                    {currentMethod === 'POST' && selectedEndpoint === 'add-term' && (
+                    {(selectedEndpoint === 'read-all' || selectedEndpoint === 'check-last-edit') && (
+                        <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>Locale</InputLabel>
+                                <Select value={selectedLocale} label="Locale" onChange={(e: SelectChangeEvent) => setSelectedLocale(e.target.value)} required>
+                                    {selectedProject.languages.map(lang => <MenuItem key={lang.code} value={lang.code}>{lang.name}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>Branch</InputLabel>
+                                <Select value={selectedBranch} label="Branch" onChange={(e: SelectChangeEvent) => setSelectedBranch(e.target.value)} required>
+                                    {selectedProject.branches.map(branch => <MenuItem key={branch.name} value={branch.name}>{branch.name}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    )}
+
+                    {selectedEndpoint === 'add-term' && (
                         <>
                             <TextField
                                 fullWidth
@@ -254,23 +280,6 @@ const ApiTryOutView: React.FC = observer(() => {
                             </Alert>
                         </>
                     )}
-
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-                        {currentMethod === 'GET' && (
-                            <FormControl fullWidth margin="normal">
-                                <InputLabel>Locale</InputLabel>
-                                <Select value={selectedLocale} label="Locale" onChange={(e: SelectChangeEvent) => setSelectedLocale(e.target.value)}>
-                                    {selectedProject.languages.map(lang => <MenuItem key={lang.code} value={lang.code}>{lang.name}</MenuItem>)}
-                                </Select>
-                            </FormControl>
-                        )}
-                        <FormControl fullWidth margin="normal">
-                            <InputLabel>Branch</InputLabel>
-                            <Select value={selectedBranch} label="Branch" onChange={(e: SelectChangeEvent) => setSelectedBranch(e.target.value)}>
-                                {selectedProject.branches.map(branch => <MenuItem key={branch.name} value={branch.name}>{branch.name}</MenuItem>)}
-                            </Select>
-                        </FormControl>
-                    </Box>
                     
                     <Button
                         variant="contained"

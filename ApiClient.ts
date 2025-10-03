@@ -382,6 +382,18 @@ class ApiClient {
         });
     }
 
+    async updateBranchProtection(projectId: string, branchName: string, isProtected: boolean): Promise<boolean> {
+        try {
+            await this.apiFetch(`/projects/${projectId}/branches/${branchName}/protection`, {
+                method: 'PUT',
+                body: JSON.stringify({ isProtected }),
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
     async createBranchFromCommit(projectId: string, commitId: string, newBranchName: string): Promise<Branch | null> {
          return await this.apiFetch(`/projects/${projectId}/branches/from-commit`, {
             method: 'POST',

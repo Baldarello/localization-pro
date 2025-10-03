@@ -9,6 +9,11 @@ Branch.init({
     type: DataTypes.STRING,
     allowNull: false,
   },
+  isProtected: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
   workingTerms: {
     type: DataTypes.JSON, // Stores the array of Term objects
     allowNull: false,

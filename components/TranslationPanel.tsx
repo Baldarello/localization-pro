@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 // FIX: Import `Divider` from `@mui/material` to resolve the "Cannot find name 'Divider'" error.
-import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, useMediaQuery, Divider } from '@mui/material';
+import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, useMediaQuery, Divider, Alert } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import StarIcon from '@mui/icons-material/Star';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -26,6 +26,7 @@ const TranslationPanel: React.FC = observer(() => {
         generateTranslation,
         translatingState,
         deselectTerm,
+        isCurrentBranchLocked,
     } = projectStore;
 
     // Local state for all editable fields
@@ -62,7 +63,7 @@ const TranslationPanel: React.FC = observer(() => {
     }
 
     const userPermissions = getAssignedLanguagesForCurrentUser();
-    const canEditKey = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
+    const canEditKey = (currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor) && !isCurrentBranchLocked;
     const languagesToDisplay = (currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor)
         ? project.languages
         : project.languages.filter(lang => userPermissions.includes(lang.code));
@@ -111,6 +112,11 @@ const TranslationPanel: React.FC = observer(() => {
                     Back to Terms
                 </Button>
             )}
+             {isCurrentBranchLocked && (
+                <Alert severity="info" icon={<LockIcon fontSize="inherit" />} sx={{ mb: 2 }}>
+                    This branch is protected. Only admins can make changes.
+                </Alert>
+            )}
             <Box sx={{ mb: 3, pb: 2, borderBottom: 1, borderColor: 'divider' }}>
                 <TextField
                     fullWidth
@@ -151,7 +157,7 @@ const TranslationPanel: React.FC = observer(() => {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {languagesToDisplay.map(lang => {
                     const isDefault = lang.code === project.defaultLanguageCode;
-                    const canEdit = userPermissions.includes(lang.code);
+                    const canEdit = userPermissions.includes(lang.code) && !isCurrentBranchLocked;
                     const isLoading = translatingState?.termId === term.id && translatingState?.langCode === lang.code;
 
                     return (
@@ -160,7 +166,7 @@ const TranslationPanel: React.FC = observer(() => {
                                 <Box component="span" className={`flag-icon flag-icon-${getFlagCode(lang.code)}`} sx={{ mr: 1 }} />
                                 {lang.name}
                                 {isDefault && <StarIcon sx={{ ml: 1, color: 'warning.main', fontSize: 16 }} />}
-                                {!canEdit && <LockIcon sx={{ ml: 1, color: 'text.disabled', fontSize: 16 }} />}
+                                {(!canEdit || isCurrentBranchLocked) && <LockIcon sx={{ ml: 1, color: 'text.disabled', fontSize: 16 }} />}
                             </Typography>
                             <TextField
                                 fullWidth

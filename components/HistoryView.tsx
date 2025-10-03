@@ -7,7 +7,7 @@ import CommitDetailDialog from './CommitDetailDialog';
 
 const HistoryView: React.FC = observer(() => {
     const { projectStore } = useStores();
-    const { currentBranch, allUsers } = projectStore;
+    const { currentBranch, allUsers, isCurrentBranchLocked } = projectStore;
     const [selectedCommit, setSelectedCommit] = useState<Commit | null>(null);
 
     if (!currentBranch) {
@@ -86,6 +86,7 @@ const HistoryView: React.FC = observer(() => {
                     commit={selectedCommit}
                     parentCommit={currentBranch.commits[currentBranch.commits.findIndex(c => c.id === selectedCommit.id) + 1] || null}
                     isLatest={currentBranch.commits[0].id === selectedCommit.id}
+                    isBranchLocked={isCurrentBranchLocked}
                     open={!!selectedCommit}
                     onClose={handleCloseDialog}
                 />

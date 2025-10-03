@@ -2,15 +2,16 @@
 
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Button, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip } from '@mui/material';
+import { Button, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip, Box } from '@mui/material';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import CheckIcon from '@mui/icons-material/Check';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LockIcon from '@mui/icons-material/Lock';
 import { useStores } from '../stores/StoreProvider';
 
 const BranchSelector: React.FC = observer(() => {
     const { projectStore } = useStores();
-    const { selectedProject: project, switchBranch } = projectStore;
+    const { selectedProject: project, switchBranch, currentBranch } = projectStore;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
@@ -41,6 +42,7 @@ const BranchSelector: React.FC = observer(() => {
                         }
                     }}
                 >
+                    {currentBranch?.isProtected && <LockIcon fontSize="small" sx={{ mr: 0.5 }} />}
                     {project.currentBranchName}
                 </Button>
             </Tooltip>
@@ -63,7 +65,12 @@ const BranchSelector: React.FC = observer(() => {
                                 <CheckIcon fontSize="small" />
                             </ListItemIcon>
                         )}
-                        <ListItemText inset={branch.name !== project.currentBranchName}>{branch.name}</ListItemText>
+                        <ListItemText inset={branch.name !== project.currentBranchName}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                {branch.isProtected && <LockIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />}
+                                {branch.name}
+                            </Box>
+                        </ListItemText>
                     </MenuItem>
                 ))}
             </Menu>

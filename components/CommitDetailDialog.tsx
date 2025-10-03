@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Box, Typography, Paper, Divider, Chip, List, ListItem, ListItemText, Dialog, DialogTitle,
-    DialogContent, DialogActions, Button, IconButton, TextField, Alert, useMediaQuery
+    DialogContent, DialogActions, Button, IconButton, TextField, Alert, useMediaQuery, Tooltip
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import RestoreIcon from '@mui/icons-material/Restore';
@@ -56,11 +56,12 @@ interface CommitDetailDialogProps {
     commit: Commit;
     parentCommit: Commit | null;
     isLatest: boolean;
+    isBranchLocked: boolean;
     open: boolean;
     onClose: () => void;
 }
 
-const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit, parentCommit, isLatest, open, onClose }) => {
+const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit, parentCommit, isLatest, isBranchLocked, open, onClose }) => {
     const { projectStore } = useStores();
     // FIX: Changed `project` to `selectedProject` and aliased it to `project` to correctly access the selected project from the store.
     const { selectedProject: project, allUsers, createBranchFromCommit, deleteLatestCommit } = projectStore;
@@ -193,7 +194,11 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
                 </DialogContent>
                 <DialogActions>
                     {isLatest ? (
-                         <Button color="error" startIcon={<DeleteForeverIcon />} onClick={() => setDeleteDialogOpen(true)} disabled={!parentCommit}>Delete Commit</Button>
+                        <Tooltip title={isBranchLocked ? "Cannot delete commit on a protected branch" : ""}>
+                            <span>
+                                <Button color="error" startIcon={<DeleteForeverIcon />} onClick={() => setDeleteDialogOpen(true)} disabled={!parentCommit || isBranchLocked}>Delete Commit</Button>
+                            </span>
+                        </Tooltip>
                     ) : (
                         <Button color="primary" startIcon={<RestoreIcon />} onClick={() => setRestoreDialogOpen(true)}>Restore from this commit</Button>
                     )}

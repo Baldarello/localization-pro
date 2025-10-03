@@ -9,7 +9,7 @@ import { getFlagCode } from '../constants';
 
 const ReviewView: React.FC = observer(() => {
     const { projectStore } = useStores();
-    const { selectedProject: project, updateTranslation, getAssignedLanguagesForCurrentUser, currentBranchTerms } = projectStore;
+    const { selectedProject: project, updateTranslation, getAssignedLanguagesForCurrentUser, currentBranchTerms, isCurrentBranchLocked } = projectStore;
 
     if (!project) return null;
 
@@ -35,7 +35,7 @@ const ReviewView: React.FC = observer(() => {
             headerName: lang.name,
             minWidth: 200,
             flex: 1,
-            editable: userPermissions.includes(lang.code),
+            editable: userPermissions.includes(lang.code) && !isCurrentBranchLocked,
             renderHeader: () => (
                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold' }}>
                     <Box component="span" className={`flag-icon flag-icon-${getFlagCode(lang.code)}`} sx={{ mr: 1, mt: '-2px' }} />
@@ -69,6 +69,7 @@ const ReviewView: React.FC = observer(() => {
                 columns={columns}
                 getRowHeight={() => 'auto'}
                 processRowUpdate={processRowUpdate}
+                isCellEditable={(params) => params.colDef.editable}
                 sx={{
                     border: 'none',
                     '& .MuiDataGrid-cell--editable': {

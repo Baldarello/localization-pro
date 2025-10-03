@@ -22,7 +22,7 @@ import LanguageSelector from './LanguageSelector';
 const Header: React.FC = observer(() => {
     const { authStore, uiStore, projectStore } = useStores();
     const { currentUser, logout } = authStore;
-    const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole, selectProject, switchBranch, selectTerm, canCommit } = projectStore;
+    const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole, selectProject, switchBranch, selectTerm, canCommit, isCurrentBranchLocked } = projectStore;
     const canManageProject = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
@@ -171,20 +171,25 @@ const Header: React.FC = observer(() => {
                 {selectedProject && uiStore.view !== 'profile' && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {uncommittedChangesCount > 0 && canCommit && (
-                            <Button
-                                color="secondary"
-                                variant="contained"
-                                size="small"
-                                startIcon={isMobile ? null : <SaveIcon />}
-                                onClick={uiStore.openCommitDialog}
-                                sx={{ color: 'common.white', mr: 1, ...(isMobile && { minWidth: 'auto', px: 1 }) }}
-                            >
-                                {isMobile ? <SaveIcon /> : 'Commit'}
-                                {isMobile ? 
-                                    <Box component="span" sx={{ ml: 0.5 }}>({uncommittedChangesCount})</Box> :
-                                    ` (${uncommittedChangesCount})`
-                                }
-                            </Button>
+                            <Tooltip title={isCurrentBranchLocked ? "This branch is protected" : ""}>
+                                <span>
+                                    <Button
+                                        color="secondary"
+                                        variant="contained"
+                                        size="small"
+                                        startIcon={isMobile ? null : <SaveIcon />}
+                                        onClick={uiStore.openCommitDialog}
+                                        disabled={isCurrentBranchLocked}
+                                        sx={{ color: 'common.white', mr: 1, ...(isMobile && { minWidth: 'auto', px: 1 }) }}
+                                    >
+                                        {isMobile ? <SaveIcon /> : 'Commit'}
+                                        {isMobile ? 
+                                            <Box component="span" sx={{ ml: 0.5 }}>({uncommittedChangesCount})</Box> :
+                                            ` (${uncommittedChangesCount})`
+                                        }
+                                    </Button>
+                                </span>
+                            </Tooltip>
                         )}
                         {isMobile ? (
                             <>

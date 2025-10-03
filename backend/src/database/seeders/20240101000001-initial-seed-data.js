@@ -52,9 +52,9 @@ export async function up(queryInterface, Sequelize) {
   await queryInterface.bulkInsert('TeamMemberships', teamMemberships, {});
 
   const branches = [
-    { id: 1, name: 'main', projectId: 'proj-1', workingTerms: '[]' },
-    { id: 2, name: 'feature/new-checkout', projectId: 'proj-1', workingTerms: '[]' },
-    { id: 3, name: 'main', projectId: 'proj-2', workingTerms: '[]' },
+    { id: 1, name: 'main', projectId: 'proj-1', workingTerms: '[]', isProtected: true },
+    { id: 2, name: 'feature/new-checkout', projectId: 'proj-1', workingTerms: '[]', isProtected: false },
+    { id: 3, name: 'main', projectId: 'proj-2', workingTerms: '[]', isProtected: false },
   ];
   await queryInterface.bulkInsert('Branches', branches, {});
 

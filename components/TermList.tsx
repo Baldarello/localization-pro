@@ -19,7 +19,8 @@ const TermList: React.FC = observer(() => {
         selectTerm,
         addTerm,
         deleteTerm,
-        getAssignedLanguagesForCurrentUser
+        getAssignedLanguagesForCurrentUser,
+        isCurrentBranchLocked,
     } = projectStore;
 
     const [newTerm, setNewTerm] = useState('');
@@ -108,6 +109,11 @@ const TermList: React.FC = observer(() => {
                                 You have reached the {authStore.termLimit} term limit for this project.
                             </Alert>
                         )}
+                        {isCurrentBranchLocked && (
+                             <Alert severity="info" sx={{ mt: 1 }}>
+                                This branch is protected. Only admins can add or remove terms.
+                            </Alert>
+                        )}
                         <Box component="form" onSubmit={handleAddTerm} sx={{ display: 'flex', gap: 1, mt: 1 }}>
                             <TextField
                                 fullWidth
@@ -116,9 +122,9 @@ const TermList: React.FC = observer(() => {
                                 size="small"
                                 value={newTerm}
                                 onChange={(e) => setNewTerm(e.target.value)}
-                                disabled={isTermLimitReached}
+                                disabled={isTermLimitReached || isCurrentBranchLocked}
                             />
-                            <IconButton type="submit" color="primary" sx={{ flexShrink: 0 }} disabled={isTermLimitReached}>
+                            <IconButton type="submit" color="primary" sx={{ flexShrink: 0 }} disabled={isTermLimitReached || isCurrentBranchLocked}>
                                 <AddIcon />
                             </IconButton>
                         </Box>
@@ -156,10 +162,11 @@ const TermList: React.FC = observer(() => {
                                     <IconButton
                                         size="small"
                                         onClick={(e) => { e.stopPropagation(); deleteTerm(term.id); }}
+                                        disabled={isCurrentBranchLocked}
                                         sx={{
-                                            visibility: 'hidden',
+                                            visibility: isCurrentBranchLocked ? 'hidden' : 'hidden',
                                             '.MuiListItemButton-root:hover &': {
-                                                visibility: 'visible',
+                                                visibility: isCurrentBranchLocked ? 'hidden' : 'visible',
                                             },
                                         }}
                                     >
