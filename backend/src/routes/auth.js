@@ -50,7 +50,7 @@ router.get('/config', (req, res) => {
         config.usageLimits = {
             enforced: true,
             projects: 3,
-            terms: 1000,
+            terms: 5000,
             members: 5,
         };
     }

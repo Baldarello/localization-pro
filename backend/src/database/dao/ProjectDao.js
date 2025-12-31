@@ -294,8 +294,8 @@ export const addTerm = async (projectId, termText, authorId) => {
     }
 
     if (process.env.ENFORCE_USAGE_LIMITS === 'true') {
-        if (branch.workingTerms.length >= 1000) {
-            throw new UsageLimitError('This project has reached the maximum of 1000 terms.');
+        if (branch.workingTerms.length >= 5000) {
+            throw new UsageLimitError('This project has reached the maximum of 5000 terms.');
         }
     }
 
@@ -360,8 +360,8 @@ export const updateTranslation = async (projectId, termId, langCode, value, auth
 export const bulkUpdateTerms = async (projectId, newTerms, authorId) => {
     const branch = await getCurrentBranch(projectId);
     if (process.env.ENFORCE_USAGE_LIMITS === 'true') {
-        if (newTerms.length > 1000) {
-            throw new UsageLimitError(`This import would result in ${newTerms.length} terms, exceeding the 1000 term limit.`);
+        if (newTerms.length > 5000) {
+            throw new UsageLimitError(`This import would result in ${newTerms.length} terms, exceeding the 5000 term limit.`);
         }
     }
     branch.workingTerms = newTerms;

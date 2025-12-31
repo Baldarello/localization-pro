@@ -114,7 +114,7 @@ const pricingContent = {
             title: 'Cloud - Free',
             price: 'Free',
             description: 'Perfect for personal projects and small teams to get started. Generous limits, no credit card required.',
-            features: [ '3 Projects', '1,000 Terms per Project', '5 Team Members per Project', 'Community Support' ],
+            features: [ '3 Projects', '5,000 Terms per Project', '5 Team Members per Project', 'Community Support' ],
             buttonText: 'Get Started for Free'
         },
         cloudPro: {
@@ -144,7 +144,7 @@ const pricingContent = {
             title: 'Cloud - Gratuito',
             price: 'Gratis',
             description: 'Perfetto per progetti personali e piccoli team. Limiti generosi, nessuna carta di credito richiesta.',
-            features: [ '3 Progetti', '1.000 Termini per Progetto', '5 Membri del Team per Progetto', 'Supporto Community' ],
+            features: [ '3 Progetti', '5.000 Termini per Progetto', '5 Membri del Team per Progetto', 'Supporto Community' ],
             buttonText: 'Inizia Gratuitamente'
         },
         cloudPro: {
