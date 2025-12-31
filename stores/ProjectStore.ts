@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction, computed } from 'mobx';
 import { Project, Term, Language, User, UserRole, Branch, Commit, UncommittedChange, Comment, ApiKey, ApiKeyPermissions, Invitation } from '../types';
-import { AVAILABLE_LANGUAGES } from '../constants';
+import { AVAILABLE_LANGUAGES } from '../constants.js';
 import { RootStore } from './RootStore';
 import { GoogleGenAI } from '@google/genai';
 import { AddMemberResult } from '../ApiClient';
@@ -321,6 +321,25 @@ export class ProjectStore {
             this.rootStore.uiStore.showAlert(error.message || 'Failed to create project.', 'error');
         }
     };
+
+    async deleteProject(projectId: string) {
+        const user = this.rootStore.authStore.currentUser;
+        if (!user) return;
+        
+        const success = await this.rootStore.apiClient.deleteProject(projectId);
+        
+        if (success) {
+            runInAction(() => {
+                const index = this.projects.findIndex(p => p.id === projectId);
+                if (index !== -1) {
+                    this.projects.splice(index, 1);
+                }
+            });
+            this.rootStore.uiStore.showAlert('Project deleted successfully.', 'success');
+        } else {
+            this.rootStore.uiStore.showAlert('Failed to delete project.', 'error');
+        }
+    }
     
     async addTerm(termText: string) {
         if (!this.selectedProject || !this.currentBranch || (this.currentUserRole !== UserRole.Admin && this.currentUserRole !== UserRole.Editor)) return;

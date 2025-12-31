@@ -201,6 +201,11 @@ export const createProject = async (name, userId) => {
     return formatProject(fullProject);
 };
 
+export const deleteProject = async (projectId) => {
+    const deletedCount = await Project.destroy({ where: { id: projectId } });
+    return deletedCount > 0;
+};
+
 export const updateProjectLanguages = async (projectId, newLanguages) => {
     const project = await findProjectById(projectId);
     if (!project) throw new Error('Project not found');

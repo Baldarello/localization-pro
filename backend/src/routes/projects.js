@@ -117,6 +117,44 @@ router.post('/', authenticate, async (req, res, next) => {
 
 /**
  * @swagger
+ * /projects/{projectId}:
+ *   delete:
+ *     summary: Delete a project
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '204':
+ *         description: Project deleted successfully
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden (Only admins can delete projects)
+ *       '404':
+ *         description: Project not found
+ */
+router.delete('/:projectId', authenticate, async (req, res, next) => {
+    try {
+        if (!(await isProjectAdmin(req.user.id, req.params.projectId))) {
+            return res.status(403).json({ message: 'Forbidden: Only project admins can delete projects.' });
+        }
+        const success = await ProjectDao.deleteProject(req.params.projectId);
+        if (success) {
+            res.sendStatus(204);
+        } else {
+            res.status(404).json({ message: 'Project not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * @swagger
  * /projects/{projectId}/languages:
  *   put:
  *     summary: Update project languages

@@ -220,6 +220,17 @@ class ApiClient {
             body: JSON.stringify({ name, userId }),
         });
     }
+
+    async deleteProject(projectId: string): Promise<boolean> {
+        try {
+            await this.apiFetch(`/projects/${projectId}`, {
+                method: 'DELETE',
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
     
     async addTerm(projectId: string, termText: string): Promise<Term | null> {
         return await this.apiFetch(`/projects/${projectId}/terms`, {
