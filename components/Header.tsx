@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery, CircularProgress, Paper } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery, CircularProgress, Paper, Chip } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import CodeIcon from '@mui/icons-material/Code';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -260,19 +260,6 @@ const Header: React.FC = observer(() => {
                                         <CodeIcon />
                                     </IconButton>
                                 </Tooltip>
-                                {currentUser && (
-                                    <Tooltip title="Notifications">
-                                        <IconButton color="inherit" onClick={(e) => handleNotificationMenuOpen(e.currentTarget)} sx={{ width: 40, height: 40 }}>
-                                            {uiStore.isFetchingNotifications ? (
-                                                <CircularProgress size={24} color="inherit" />
-                                            ) : (
-                                                <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
-                                                    <NotificationsIcon />
-                                                </Badge>
-                                            )}
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
                                 {canManageProject && (
                                     <Tooltip title="Import / Export Data">
                                         <IconButton color="inherit" onClick={uiStore.openImportExportDialog}>
@@ -323,6 +310,52 @@ const Header: React.FC = observer(() => {
                  {/* The API spec and notification icons are now inside the isMobile ternary, so remove them from here */}
                 {currentUser && (
                     <>
+                        {/* Subscription & Upgrade Section - Only desktop */}
+                        {!isMobile && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, ml: 2 }}>
+                                <Chip
+                                    label="Free"
+                                    size="small"
+                                    sx={{
+                                        bgcolor: 'rgba(255, 255, 255, 0.15)',
+                                        color: 'common.white',
+                                        fontWeight: 'bold',
+                                        mr: 1
+                                    }}
+                                />
+                                <Tooltip title="Coming soon">
+                                    <span>
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            disabled
+                                            sx={{
+                                                color: 'rgba(255, 255, 255, 0.5) !important',
+                                                borderColor: 'rgba(255, 255, 255, 0.3) !important',
+                                                textTransform: 'none'
+                                            }}
+                                        >
+                                            Upgrade
+                                        </Button>
+                                    </span>
+                                </Tooltip>
+                            </Box>
+                        )}
+
+                        {!isMobile && (
+                            <Tooltip title="Notifications">
+                                <IconButton color="inherit" onClick={(e) => handleNotificationMenuOpen(e.currentTarget)} sx={{ width: 40, height: 40 }}>
+                                    {uiStore.isFetchingNotifications ? (
+                                        <CircularProgress size={24} color="inherit" />
+                                    ) : (
+                                        <Badge badgeContent={uiStore.unreadNotificationCount} color="error">
+                                            <NotificationsIcon />
+                                        </Badge>
+                                    )}
+                                </IconButton>
+                            </Tooltip>
+                        )}
+
                          <Menu
                             anchorEl={notificationMenuAnchorEl}
                             open={isNotificationMenuOpen}
