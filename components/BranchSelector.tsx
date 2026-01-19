@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Button, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip, Box } from '@mui/material';
@@ -24,7 +22,7 @@ const BranchSelector: React.FC = observer(() => {
 
     return (
         <div>
-            <Tooltip title="Switch branch">
+            <Tooltip title="Switch branch" children={
                 <Button
                     id="branch-selector-button"
                     aria-controls={open ? 'branch-menu' : undefined}
@@ -45,7 +43,7 @@ const BranchSelector: React.FC = observer(() => {
                     {currentBranch?.isProtected && <LockIcon fontSize="small" sx={{ mr: 0.5 }} />}
                     {project.currentBranchName}
                 </Button>
-            </Tooltip>
+            } />
             <Menu
                 id="branch-menu"
                 anchorEl={anchorEl}

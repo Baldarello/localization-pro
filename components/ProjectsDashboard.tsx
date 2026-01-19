@@ -1,5 +1,3 @@
-
-
 import React, { useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Box, Typography, Button, Container, Tooltip } from '@mui/material';
@@ -26,7 +24,7 @@ const ProjectsDashboard: React.FC = observer(() => {
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
                     Projects
                 </Typography>
-                <Tooltip title={isProjectLimitReached ? `You have reached the maximum of ${authStore.projectLimit} projects.` : ''}>
+                <Tooltip title={isProjectLimitReached ? `You have reached the maximum of ${authStore.projectLimit} projects.` : ''} children={
                     <span> {/* Tooltip needs a span wrapper for disabled buttons */}
                         <Button
                             variant="contained"
@@ -38,7 +36,7 @@ const ProjectsDashboard: React.FC = observer(() => {
                             New Project
                         </Button>
                     </span>
-                </Tooltip>
+                } />
             </Box>
             {projectStore.projects.length > 0 ? (
                 // FIX: Replaced MUI Grid with Box and flexbox for layout. The Grid component's props (`item`, `xs`, etc.) were causing TypeScript errors, possibly due to a type definition issue in the project's environment. This alternative achieves the same responsive layout. The spacing is replicated using negative margins on the container and padding on the items.

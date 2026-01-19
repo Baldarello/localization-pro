@@ -1,8 +1,6 @@
-
-
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery, Alert } from '@mui/material';
+import { Box, TextField, FormControlLabel, Switch, List, ListItemButton, ListItemText, LinearProgress, Typography, IconButton, InputAdornment, useMediaQuery, Alert, Theme } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
@@ -27,7 +25,7 @@ const TermList: React.FC = observer(() => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showUntranslatedOnly, setShowUntranslatedOnly] = useState(false);
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     const handleAddTerm = (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,8 +43,16 @@ const TermList: React.FC = observer(() => {
 
     const userAssignedLangs = getAssignedLanguagesForCurrentUser();
     const filteredTerms = currentBranchTerms.filter(term => {
-        const matchesSearch = (term.text || '').toLowerCase().includes(searchQuery.toLowerCase());
-        if (!matchesSearch) return false;
+        const lowerQuery = searchQuery.toLowerCase();
+        
+        // Search in Key OR in Translations
+        const matchesKey = (term.text || '').toLowerCase().includes(lowerQuery);
+        const matchesTranslations = Object.values(term.translations || {}).some(
+            (t: any) => (t || '').toLowerCase().includes(lowerQuery)
+        );
+
+        if (!matchesKey && !matchesTranslations) return false;
+
         if (showUntranslatedOnly) {
             if (userAssignedLangs.length === 0 && currentUserRole === UserRole.Translator) return false;
             if (userAssignedLangs.length > 0) {

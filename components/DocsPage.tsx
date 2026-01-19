@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Button, Container, Box, Paper, Divider, Chip, Tooltip, IconButton, Link, Alert } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
@@ -21,11 +20,11 @@ const CodeBlock: React.FC<{ code: string }> = ({ code }) => {
 
     return (
         <Paper variant="outlined" sx={{ mt: 2, bgcolor: 'action.hover', position: 'relative' }}>
-            <Tooltip title={copied ? "Copied!" : "Copy code"}>
+            <Tooltip title={copied ? "Copied!" : "Copy code"} children={
                 <IconButton onClick={handleCopy} sx={{ position: 'absolute', top: 4, right: 4, zIndex: 1, color: 'text.secondary' }}>
                     {copied ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
                 </IconButton>
-            </Tooltip>
+            } />
             <Box component="pre" sx={{ m: 0, p: 2, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.875rem' }}>
                 <code>{code.trim()}</code>
             </Box>

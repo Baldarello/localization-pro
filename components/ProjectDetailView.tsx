@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, Tabs, Tab, Paper, useMediaQuery } from '@mui/material';
+import { Box, Tabs, Tab, Paper, useMediaQuery, Theme } from '@mui/material';
 import { useStores } from '../stores/StoreProvider';
 import { UserRole } from '../types';
 import TeamManager from './TeamManager';
@@ -46,7 +46,7 @@ const ProjectDetailView: React.FC = observer(() => {
     const { projectStore } = useStores();
     const [tabValue, setTabValue] = useState(0);
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     const { selectedProject: project, currentUserRole, selectedTermId } = projectStore;
 

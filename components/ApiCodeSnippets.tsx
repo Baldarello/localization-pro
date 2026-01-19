@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Box, Tabs, Tab, IconButton, Tooltip, Paper, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -338,11 +337,11 @@ const ApiCodeSnippets: React.FC<ApiCodeSnippetsProps> = ({ path, method, details
                 </Tabs>
             </Box>
             <Box sx={{ position: 'relative', flexGrow: 1, minHeight: 200 }}>
-                <Tooltip title={copied ? "Copied!" : "Copy to clipboard"}>
+                <Tooltip title={copied ? "Copied!" : "Copy to clipboard"} children={
                     <IconButton onClick={handleCopy} sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
                         {copied ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
                     </IconButton>
-                </Tooltip>
+                } />
                 <Box
                     component="pre"
                     sx={{

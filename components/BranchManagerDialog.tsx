@@ -1,14 +1,8 @@
-
-
-
-
-
-
 import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
-    MenuItem, List, ListItem, ListItemText, Divider, Tabs, Tab, Chip, Tooltip, Alert, Grid, Paper, useMediaQuery
+    MenuItem, List, ListItem, ListItemText, Divider, Tabs, Tab, Chip, Tooltip, Alert, Grid, Paper, useMediaQuery, Theme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
@@ -72,7 +66,7 @@ const BranchManagerDialog: React.FC = observer(() => {
     const { isBranchManagerOpen, closeBranchManager } = uiStore;
     const { selectedProject: project, currentUserRole } = projectStore;
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     const [tabIndex, setTabIndex] = useState(0);
     const [newBranchName, setNewBranchName] = useState('');
@@ -208,20 +202,20 @@ const BranchManagerDialog: React.FC = observer(() => {
                                     secondaryAction={
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                             {currentUserRole === UserRole.Admin && (
-                                                <Tooltip title={branch.isProtected ? "Unprotect branch" : "Protect branch"}>
+                                                <Tooltip title={branch.isProtected ? "Unprotect branch" : "Protect branch"} children={
                                                     <IconButton onClick={() => projectStore.updateBranchProtection(branch.name, !branch.isProtected)}>
                                                         {branch.isProtected ? <LockIcon color="primary" /> : <LockOpenIcon />}
                                                     </IconButton>
-                                                </Tooltip>
+                                                } />
                                             )}
                                             {branch.name !== 'main' && (
-                                                <Tooltip title={isLockedForUser ? "Branch is protected" : "Delete branch"}>
+                                                <Tooltip title={isLockedForUser ? "Branch is protected" : "Delete branch"} children={
                                                     <span>
                                                         <IconButton edge="end" disabled={isLockedForUser} onClick={() => projectStore.deleteBranch(branch.name)}>
                                                             <DeleteIcon />
                                                         </IconButton>
                                                     </span>
-                                                </Tooltip>
+                                                } />
                                             )}
                                         </Box>
                                     }
@@ -254,7 +248,7 @@ const BranchManagerDialog: React.FC = observer(() => {
                                  <MenuItem value="" disabled><em>Select branch</em></MenuItem>
                                 {project.branches.filter(b => b.name !== baseBranch).map(b => <MenuItem key={b.name} value={b.name}>{b.name}</MenuItem>)}
                             </Select>
-                             <Tooltip title={targetBranchForMerge?.isProtected && currentUserRole !== UserRole.Admin ? "Target branch is protected" : ""}>
+                             <Tooltip title={targetBranchForMerge?.isProtected && currentUserRole !== UserRole.Admin ? "Target branch is protected" : ""} children={
                                 <span>
                                     <Button
                                         variant="contained"
@@ -265,7 +259,7 @@ const BranchManagerDialog: React.FC = observer(() => {
                                         Merge
                                     </Button>
                                 </span>
-                            </Tooltip>
+                            } />
                         </Box>
                         <Divider sx={{ my: 1 }} />
                         {comparison ? (

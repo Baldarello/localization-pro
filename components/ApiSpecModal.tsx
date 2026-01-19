@@ -1,11 +1,9 @@
-
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, DialogActions, Button, Tabs, Tab, Chip, Paper,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, List, ListItemButton, ListItemText, ListSubheader,
-    CircularProgress, TextField, InputAdornment, useMediaQuery
+    CircularProgress, TextField, InputAdornment, useMediaQuery, Theme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CodeIcon from '@mui/icons-material/Code';
@@ -124,7 +122,7 @@ const ApiReferenceView = () => {
     const [selectedEndpoint, setSelectedEndpoint] = useState<{ path: string, method: string } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     useEffect(() => {
         const fetchSpec = async () => {
@@ -273,7 +271,7 @@ const ApiSpecModal: React.FC = observer(() => {
     const { uiStore } = useStores();
     const [tab, setTab] = useState(0);
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
 
     return (

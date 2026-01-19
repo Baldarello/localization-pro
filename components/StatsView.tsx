@@ -126,13 +126,13 @@ const StatsView: React.FC = observer(() => {
                         );
 
                         return (
-                            <Tooltip key={commit.id} title={tooltipContent} placement="top" arrow>
+                            <Tooltip key={commit.id} title={tooltipContent} placement="top" arrow children={
                                 <Box sx={{ flex: 1, height: `${barHeight}%`, minWidth: '10px', display: 'flex', flexDirection: 'column', bgcolor: 'action.hover', cursor: 'pointer', '&:hover': { bgcolor: 'action.selected' } }}>
                                     <Box sx={{ height: `${addedHeight}%`, bgcolor: 'success.main', width: '100%' }} />
                                     <Box sx={{ height: `${modifiedHeight}%`, bgcolor: 'warning.main', width: '100%' }} />
                                     <Box sx={{ flexGrow: 1, bgcolor: 'error.main', width: '100%' }} />
                                 </Box>
-                            </Tooltip>
+                            } />
                         );
                     })}
                 </Box>

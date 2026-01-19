@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery, CircularProgress, Paper, Chip } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, Avatar, Box, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Badge, Divider, useMediaQuery, CircularProgress, Paper, Chip, Theme } from '@mui/material';
 import TranslateIcon from '@mui/icons-material/Translate';
 import CodeIcon from '@mui/icons-material/Code';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -25,7 +25,7 @@ const Header: React.FC = observer(() => {
     const { selectedProject, deselectProject, uncommittedChangesCount, currentUserRole, selectProject, switchBranch, selectTerm, canCommit, isCurrentBranchLocked } = projectStore;
     const canManageProject = currentUserRole === UserRole.Admin || currentUserRole === UserRole.Editor;
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [adminMenuAnchorEl, setAdminMenuAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -110,11 +110,11 @@ const Header: React.FC = observer(() => {
             <Toolbar>
                 {selectedProject && uiStore.view !== 'profile' ? (
                     <>
-                        <Tooltip title="Back to Projects">
+                        <Tooltip title="Back to Projects" children={
                             <IconButton color="inherit" onClick={deselectProject} edge="start" sx={{ mr: 1 }}>
                                 <ArrowBackIcon />
                             </IconButton>
-                        </Tooltip>
+                        } />
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
                             <Typography variant="h6" component="h1" noWrap sx={{ fontWeight: 'bold' }}>
                                 {selectedProject.name}
@@ -137,7 +137,7 @@ const Header: React.FC = observer(() => {
                                 >
                                     {selectedProject.id}
                                 </Typography>
-                                <Tooltip title={copiedProjectId ? "Copied!" : "Copy Project ID"}>
+                                <Tooltip title={copiedProjectId ? "Copied!" : "Copy Project ID"} children={
                                     <IconButton
                                         size="small"
                                         color="inherit"
@@ -149,7 +149,7 @@ const Header: React.FC = observer(() => {
                                             <ContentCopyIcon sx={{ fontSize: '1rem', opacity: 0.7 }} />
                                         }
                                     </IconButton>
-                                </Tooltip>
+                                } />
                             </Paper>
                         </Box>
                         <Box sx={{ ml: 2, borderLeft: 1, borderColor: 'rgba(255, 255, 255, 0.12)', pl: 2 }}>
@@ -171,7 +171,7 @@ const Header: React.FC = observer(() => {
                 {selectedProject && uiStore.view !== 'profile' && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {uncommittedChangesCount > 0 && canCommit && (
-                            <Tooltip title={isCurrentBranchLocked ? "This branch is protected" : ""}>
+                            <Tooltip title={isCurrentBranchLocked ? "This branch is protected" : ""} children={
                                 <span>
                                     <Button
                                         color="secondary"
@@ -189,15 +189,15 @@ const Header: React.FC = observer(() => {
                                         }
                                     </Button>
                                 </span>
-                            </Tooltip>
+                            } />
                         )}
                         {isMobile ? (
                             <>
-                                <Tooltip title="More Actions">
+                                <Tooltip title="More Actions" children={
                                     <IconButton color="inherit" onClick={handleAdminMenuClick}>
                                         <MoreVertIcon />
                                     </IconButton>
-                                </Tooltip>
+                                } />
                                 <Menu
                                     id="admin-controls-menu"
                                     anchorEl={adminMenuAnchorEl}
@@ -255,25 +255,25 @@ const Header: React.FC = observer(() => {
                             </>
                         ) : (
                             <>
-                                <Tooltip title="View API Spec">
+                                <Tooltip title="View API Spec" children={
                                     <IconButton color="inherit" onClick={uiStore.openApiSpecModal}>
                                         <CodeIcon />
                                     </IconButton>
-                                </Tooltip>
+                                } />
                                 {canManageProject && (
-                                    <Tooltip title="Import / Export Data">
+                                    <Tooltip title="Import / Export Data" children={
                                         <IconButton color="inherit" onClick={uiStore.openImportExportDialog}>
                                             <ImportExportIcon />
                                         </IconButton>
-                                    </Tooltip>
+                                    } />
                                 )}
                                 {currentUserRole === UserRole.Admin && (
                                     <>
-                                        <Tooltip title="Admin Controls">
+                                        <Tooltip title="Admin Controls" children={
                                             <IconButton color="inherit" onClick={handleAdminMenuClick}>
                                                 <MoreVertIcon />
                                             </IconButton>
-                                        </Tooltip>
+                                        } />
                                         <Menu
                                             id="admin-controls-menu"
                                             anchorEl={adminMenuAnchorEl}
@@ -323,7 +323,7 @@ const Header: React.FC = observer(() => {
                                         mr: 1
                                     }}
                                 />
-                                <Tooltip title="Coming soon">
+                                <Tooltip title="Coming soon" children={
                                     <span>
                                         <Button
                                             size="small"
@@ -338,12 +338,12 @@ const Header: React.FC = observer(() => {
                                             Upgrade
                                         </Button>
                                     </span>
-                                </Tooltip>
+                                } />
                             </Box>
                         )}
 
                         {!isMobile && (
-                            <Tooltip title="Notifications">
+                            <Tooltip title="Notifications" children={
                                 <IconButton color="inherit" onClick={(e) => handleNotificationMenuOpen(e.currentTarget)} sx={{ width: 40, height: 40 }}>
                                     {uiStore.isFetchingNotifications ? (
                                         <CircularProgress size={24} color="inherit" />
@@ -353,7 +353,7 @@ const Header: React.FC = observer(() => {
                                         </Badge>
                                     )}
                                 </IconButton>
-                            </Tooltip>
+                            } />
                         )}
 
                          <Menu
@@ -387,13 +387,13 @@ const Header: React.FC = observer(() => {
                             )}
                         </Menu>
 
-                        <Tooltip title="Account settings">
+                        <Tooltip title="Account settings" children={
                             <IconButton onClick={handleMenu} sx={{ p: 0, ml: 1.5 }}>
                                 <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, fontSize: '0.875rem' }}>
                                     {currentUser.avatarInitials}
                                 </Avatar>
                             </IconButton>
-                        </Tooltip>
+                        } />
                         <Menu
                             id="menu-appbar"
                             anchorEl={anchorEl}

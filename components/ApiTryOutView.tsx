@@ -32,11 +32,11 @@ const ResponseBlock: React.FC<{ title: string, content: string, language?: strin
         <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>{title}</Typography>
             <Paper variant="outlined" sx={{ position: 'relative' }}>
-                <Tooltip title={copied ? "Copied!" : "Copy to clipboard"}>
+                <Tooltip title={copied ? "Copied!" : "Copy to clipboard"} children={
                     <IconButton onClick={handleCopy} sx={{ position: 'absolute', top: 4, right: 4, zIndex: 1 }}>
                         {copied ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
                     </IconButton>
-                </Tooltip>
+                } />
                 <Box
                     component="pre"
                     sx={{

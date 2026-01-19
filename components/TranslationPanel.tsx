@@ -1,9 +1,7 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 // FIX: Import `Divider` from `@mui/material` to resolve the "Cannot find name 'Divider'" error.
-import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, useMediaQuery, Divider, Alert } from '@mui/material';
+import { Box, Typography, TextField, IconButton, InputAdornment, CircularProgress, Button, useMediaQuery, Divider, Alert, Theme } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import StarIcon from '@mui/icons-material/Star';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -35,7 +33,7 @@ const TranslationPanel: React.FC = observer(() => {
     const [localTranslations, setLocalTranslations] = useState<{ [key: string]: string }>({});
 
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     useEffect(() => {
         if (term) {

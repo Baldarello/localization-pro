@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { User, UserRole, Invitation } from '../types';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
-    MenuItem, Avatar, ListItemText, Tooltip, SelectChangeEvent, List, ListItem, Divider, Paper, Chip, FormControl, InputLabel, OutlinedInput, Checkbox, useMediaQuery, Alert
+    MenuItem, Avatar, ListItemText, Tooltip, SelectChangeEvent, List, ListItem, Divider, Paper, Chip, FormControl, InputLabel, OutlinedInput, Checkbox, useMediaQuery, Alert, Theme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PeopleIcon from '@mui/icons-material/People';
@@ -15,7 +15,7 @@ const TeamManager: React.FC = observer(() => {
     const { uiStore, projectStore, authStore } = useStores();
     const { isTeamManagerOpen, closeTeamManager } = uiStore;
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     const [newMemberEmail, setNewMemberEmail] = useState('');
     const [newMemberRole, setNewMemberRole] = useState<UserRole>(UserRole.Translator);
@@ -157,14 +157,14 @@ const TeamManager: React.FC = observer(() => {
                                             </Box>
                                             {/* Actions */}
                                             <Box sx={{ p: 1, width: { xs: '50%', md: '8.33%' }, textAlign: 'right' }}>
-                                                <Tooltip title={isInvitation ? "Revoke invitation" : "Remove member"}>
+                                                <Tooltip title={isInvitation ? "Revoke invitation" : "Remove member"} children={
                                                     <IconButton
                                                         onClick={() => isInvitation ? projectStore.revokeInvitation(invitation!.id) : projectStore.removeMember(member!.id)}
                                                         aria-label={isInvitation ? "Revoke invitation" : "Remove member"}
                                                     >
                                                         <DeleteIcon color={isInvitation ? "error" : "inherit"} />
                                                     </IconButton>
-                                                </Tooltip>
+                                                } />
                                             </Box>
                                         </Box>
                                     </ListItem>

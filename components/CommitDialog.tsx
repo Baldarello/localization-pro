@@ -1,10 +1,8 @@
-
-
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Button, TextField, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Box,
-    Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Tooltip, Paper, useMediaQuery
+    Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Tooltip, Paper, useMediaQuery, Theme
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
@@ -18,7 +16,7 @@ const CommitDialog: React.FC = observer(() => {
     const { currentBranch, uncommittedChanges, commitChanges, discardChange } = projectStore;
     const [message, setMessage] = useState('');
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     const handleCommit = async () => {
         if (message.trim()) {
@@ -65,11 +63,11 @@ const CommitDialog: React.FC = observer(() => {
             <ListItem
                 key={change.type === 'removed' ? change.originalTerm.id : change.term.id}
                 secondaryAction={
-                    <Tooltip title="Discard this change">
+                    <Tooltip title="Discard this change" children={
                         <IconButton edge="end" aria-label="discard" onClick={() => handleDiscardChange(change)}>
                             <UndoIcon />
                         </IconButton>
-                    </Tooltip>
+                    } />
                 }
             >
                 <ListItemIcon>{icon}</ListItemIcon>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Box, TextField, Select,
-    MenuItem, List, ListItem, ListItemText, Divider, Chip, Tooltip, Alert, useMediaQuery, FormControl, InputLabel, SelectChangeEvent, Paper
+    MenuItem, List, ListItem, ListItemText, Divider, Chip, Tooltip, Alert, useMediaQuery, FormControl, InputLabel, SelectChangeEvent, Paper, Theme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
@@ -116,11 +116,11 @@ const ShowKeyDialog: React.FC<{
                     <Typography component="code" sx={{ wordBreak: 'break-all', fontFamily: 'monospace' }}>
                         {apiKey.secret}
                     </Typography>
-                    <Tooltip title={copied ? 'Copied!' : 'Copy to clipboard'}>
+                    <Tooltip title={copied ? 'Copied!' : 'Copy to clipboard'} children={
                         <IconButton onClick={handleCopy} sx={{ position: 'absolute', top: 4, right: 4 }}>
                             {copied ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
                         </IconButton>
-                    </Tooltip>
+                    } />
                 </Paper>
             </DialogContent>
             <DialogActions>
@@ -136,7 +136,7 @@ const ApiKeysManagerDialog: React.FC = observer(() => {
     const { isApiKeysManagerOpen, closeApiKeysManager } = uiStore;
     const project = projectStore.selectedProject;
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     const [isCreateOpen, setCreateOpen] = useState(false);
     const [newlyCreatedKey, setNewlyCreatedKey] = useState<ApiKey | null>(null);
@@ -182,11 +182,11 @@ const ApiKeysManagerDialog: React.FC = observer(() => {
                                 <React.Fragment key={key.id}>
                                     <ListItem
                                         secondaryAction={
-                                            <Tooltip title="Revoke Key">
+                                            <Tooltip title="Revoke Key" children={
                                                 <IconButton edge="end" onClick={() => setKeyToRevoke(key)}>
                                                     <DeleteIcon />
                                                 </IconButton>
-                                            </Tooltip>
+                                            } />
                                         }
                                     >
                                         <ListItemText

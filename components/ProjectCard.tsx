@@ -45,7 +45,7 @@ const ProjectCard: React.FC<ProjectCardProps> = observer(({ project }) => {
             }}>
                 {isProjectAdmin && (
                     <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
-                        <Tooltip title="Delete Project">
+                        <Tooltip title="Delete Project" children={
                             <IconButton 
                                 size="small" 
                                 onClick={handleDeleteClick}
@@ -61,7 +61,7 @@ const ProjectCard: React.FC<ProjectCardProps> = observer(({ project }) => {
                             >
                                 <DeleteIcon fontSize="small" />
                             </IconButton>
-                        </Tooltip>
+                        } />
                     </Box>
                 )}
                 
@@ -94,9 +94,9 @@ const ProjectCard: React.FC<ProjectCardProps> = observer(({ project }) => {
                                 }}
                             >
                                 {teamMembers.map(member => (
-                                    <Tooltip title={member.name} key={member.id}>
+                                    <Tooltip title={member.name} key={member.id} children={
                                         <Avatar sx={{ bgcolor: 'primary.main' }}>{member.avatarInitials}</Avatar>
-                                    </Tooltip>
+                                    } />
                                 ))}
                             </AvatarGroup>
                         </Box>

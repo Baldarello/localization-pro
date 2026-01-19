@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Box, Typography, Paper, Divider, Chip, List, ListItem, ListItemText, Dialog, DialogTitle,
-    DialogContent, DialogActions, Button, IconButton, TextField, Alert, useMediaQuery, Tooltip
+    DialogContent, DialogActions, Button, IconButton, TextField, Alert, useMediaQuery, Tooltip, Theme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import RestoreIcon from '@mui/icons-material/Restore';
@@ -69,7 +69,7 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
     const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [newBranchName, setNewBranchName] = useState(`restore-${commit.id.slice(0, 7)}`);
     // FIX: Pass a callback to useMediaQuery to safely access theme properties and avoid potential type errors.
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
     const author = useMemo(() => allUsers.find(u => u.id === commit.authorId), [commit, allUsers]);
     const commitDate = useMemo(() => new Date(commit.timestamp), [commit]);
@@ -194,11 +194,11 @@ const CommitDetailDialog: React.FC<CommitDetailDialogProps> = observer(({ commit
                 </DialogContent>
                 <DialogActions>
                     {isLatest ? (
-                        <Tooltip title={isBranchLocked ? "Cannot delete commit on a protected branch" : ""}>
+                        <Tooltip title={isBranchLocked ? "Cannot delete commit on a protected branch" : ""} children={
                             <span>
                                 <Button color="error" startIcon={<DeleteForeverIcon />} onClick={() => setDeleteDialogOpen(true)} disabled={!parentCommit || isBranchLocked}>Delete Commit</Button>
                             </span>
-                        </Tooltip>
+                        } />
                     ) : (
                         <Button color="primary" startIcon={<RestoreIcon />} onClick={() => setRestoreDialogOpen(true)}>Restore from this commit</Button>
                     )}
