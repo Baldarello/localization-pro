@@ -362,6 +362,48 @@ export const updateTranslation = async (projectId, termId, langCode, value, auth
     broadcastBranchUpdate(projectId, branch.name, authorId);
 };
 
+export const upsertTranslation = async (projectId, termKey, langCode, translation, authorId) => {
+    const branch = await getCurrentBranch(projectId);
+    const normalizedKey = termKey.trim();
+    if (!normalizedKey) {
+        throw new ValidationError('Term key cannot be empty.');
+    }
+
+    const termIndex = branch.workingTerms.findIndex(t => t.text === normalizedKey);
+    let resultAction = 'updated';
+    let term;
+
+    if (termIndex > -1) {
+        // Update existing term
+        term = { ...branch.workingTerms[termIndex] };
+        term.translations = { ...term.translations, [langCode]: translation };
+        
+        // Update specific item in array by creating a new array copy
+        const newTerms = [...branch.workingTerms];
+        newTerms[termIndex] = term;
+        branch.workingTerms = newTerms;
+    } else {
+        // Create new term
+        if (process.env.ENFORCE_USAGE_LIMITS === 'true') {
+            if (branch.workingTerms.length >= 5000) {
+                throw new UsageLimitError('This project has reached the maximum of 5000 terms.');
+            }
+        }
+        
+        resultAction = 'created';
+        term = {
+            id: `term-${Date.now()}`,
+            text: normalizedKey,
+            translations: { [langCode]: translation }
+        };
+        branch.workingTerms = [...branch.workingTerms, term];
+    }
+
+    await branch.save();
+    broadcastBranchUpdate(projectId, branch.name, authorId);
+    return { term, action: resultAction };
+};
+
 export const bulkUpdateTerms = async (projectId, newTerms, authorId) => {
     const branch = await getCurrentBranch(projectId);
     if (process.env.ENFORCE_USAGE_LIMITS === 'true') {

@@ -647,6 +647,70 @@ router.put('/:projectId/terms/:termId/translations/:langCode', authenticate, asy
     }
 });
 
+/**
+ * @swagger
+ * /projects/{projectId}/translations/upsert:
+ *   put:
+ *     summary: Create or update a translation by term text (key)
+ *     description: Looks up a term by its text (key). If found, updates the translation for the specified language. If not found, creates the term and adds the translation.
+ *     tags: [Translations]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - termKey
+ *               - langCode
+ *               - translation
+ *             properties:
+ *               termKey:
+ *                 type: string
+ *                 description: The text of the term to lookup.
+ *               langCode:
+ *                 type: string
+ *                 description: The language code for the translation.
+ *               translation:
+ *                 type: string
+ *                 description: The translation value.
+ *     responses:
+ *       '200':
+ *         description: Translation upserted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 term:
+ *                   $ref: '#/components/schemas/Term'
+ *                 action:
+ *                   type: string
+ *                   enum: ['created', 'updated']
+ *                   description: Whether the term was created or updated.
+ *       '400':
+ *         description: Invalid input
+ *       '401':
+ *         description: Unauthorized
+ *       '404':
+ *         description: Project or current branch not found
+ */
+router.put('/:projectId/translations/upsert', authenticate, async (req, res, next) => {
+    try {
+        const { termKey, langCode, translation } = req.body;
+        const result = await ProjectDao.upsertTranslation(req.params.projectId, termKey, langCode, translation, req.user.id);
+        res.json(result);
+    } catch (error) {
+        next(error);
+    }
+});
+
 
 // --- Comments ---
 

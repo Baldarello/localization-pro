@@ -52,7 +52,7 @@ const ResponseBlock: React.FC<{ title: string, content: string, language?: strin
     );
 };
 
-type Endpoint = 'read-all' | 'check-last-edit' | 'read-all-locales' | 'get-project-locales' | 'add-term';
+type Endpoint = 'read-all' | 'check-last-edit' | 'read-all-locales' | 'get-project-locales' | 'add-term' | 'upsert-translation';
 
 const ApiTryOutView: React.FC = observer(() => {
     const { uiStore, projectStore } = useStores();
@@ -64,6 +64,7 @@ const ApiTryOutView: React.FC = observer(() => {
     const [selectedLocale, setSelectedLocale] = useState('');
     const [selectedBranch, setSelectedBranch] = useState('');
     const [termText, setTermText] = useState('');
+    const [translationText, setTranslationText] = useState('');
     const [response, setResponse] = useState<any | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +80,8 @@ const ApiTryOutView: React.FC = observer(() => {
         'check-last-edit': { title: 'Check for Updates', path: `/check-last-edit/${selectedProject.id}`, method: 'GET' },
         'read-all-locales': { title: 'Fetch All Available Locales', path: '/locale/read', method: 'GET' },
         'get-project-locales': { title: 'Fetch Project Locales', path: `/projects/${selectedProject.id}/locales`, method: 'GET' },
-        'add-term': { title: 'Add a Term', path: `/projects/${selectedProject.id}/terms`, method: 'POST' }
+        'add-term': { title: 'Add a Term', path: `/projects/${selectedProject.id}/terms`, method: 'POST' },
+        'upsert-translation': { title: 'Upsert Translation', path: `/projects/${selectedProject.id}/translations/upsert`, method: 'PUT' }
     };
     
     const currentEndpoint = endpointDetails[selectedEndpoint];
@@ -95,6 +97,7 @@ const ApiTryOutView: React.FC = observer(() => {
         setSelectedLocale('');
         setSelectedBranch('');
         setTermText('');
+        setTranslationText('');
     };
 
     const handleSendRequest = async () => {
@@ -105,6 +108,8 @@ const ApiTryOutView: React.FC = observer(() => {
             if (!selectedLocale || !selectedBranch) isInvalid = true;
         } else if (selectedEndpoint === 'add-term') {
             if (!termText.trim()) isInvalid = true;
+        } else if (selectedEndpoint === 'upsert-translation') {
+            if (!termText.trim() || !selectedLocale || !translationText.trim()) isInvalid = true;
         }
 
         if (isInvalid) {
@@ -144,15 +149,24 @@ const ApiTryOutView: React.FC = observer(() => {
             curl = `curl -X GET "${url}" \\
   -H "X-Api-Key-Prefix: ${selectedApiKeyPrefix}" \\
   -H "Authorization: Bearer ${apiSecret}"`;
-        } else if (currentMethod === 'POST') {
+        } else if (currentMethod === 'POST' || currentMethod === 'PUT') {
+            headers['Content-Type'] = 'application/json';
+            let body = {};
+
             if (selectedEndpoint === 'add-term') {
-                const body = { termText: termText.trim() };
-                headers['Content-Type'] = 'application/json';
-                fetchOptions.body = JSON.stringify(body);
-                curl += ` \\
+                body = { termText: termText.trim() };
+            } else if (selectedEndpoint === 'upsert-translation') {
+                body = { 
+                    termKey: termText.trim(),
+                    langCode: selectedLocale,
+                    translation: translationText.trim()
+                };
+            }
+
+            fetchOptions.body = JSON.stringify(body);
+            curl += ` \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(body)}'`;
-            }
         }
 
         setCurlCommand(curl);
@@ -184,6 +198,8 @@ const ApiTryOutView: React.FC = observer(() => {
         if (!selectedLocale || !selectedBranch) isSendDisabled = true;
     } else if (selectedEndpoint === 'add-term') {
         if (!termText.trim()) isSendDisabled = true;
+    } else if (selectedEndpoint === 'upsert-translation') {
+        if (!termText.trim() || !selectedLocale || !translationText.trim()) isSendDisabled = true;
     }
 
     return (
@@ -246,6 +262,7 @@ const ApiTryOutView: React.FC = observer(() => {
                             <MenuItem value="read-all-locales">[GET] Fetch All Available Locales</MenuItem>
                             <MenuItem value="get-project-locales">[GET] Fetch Project Locales</MenuItem>
                             <MenuItem value="add-term">[POST] Add a Term</MenuItem>
+                            <MenuItem value="upsert-translation">[PUT] Upsert Translation (By Key)</MenuItem>
                         </Select>
                     </FormControl>
 
@@ -266,7 +283,7 @@ const ApiTryOutView: React.FC = observer(() => {
                         </Box>
                     )}
 
-                    {selectedEndpoint === 'add-term' && (
+                    {(selectedEndpoint === 'add-term' || selectedEndpoint === 'upsert-translation') && (
                         <>
                             <TextField
                                 fullWidth
@@ -281,6 +298,26 @@ const ApiTryOutView: React.FC = observer(() => {
                                 Note: Terms are added to the project's currently active branch ({selectedProject.currentBranchName}).
                             </Alert>
                         </>
+                    )}
+
+                    {selectedEndpoint === 'upsert-translation' && (
+                        <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' }, mt: 1 }}>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>Locale</InputLabel>
+                                <Select value={selectedLocale} label="Locale" onChange={(e: SelectChangeEvent) => setSelectedLocale(e.target.value)} required>
+                                    {selectedProject.languages.map(lang => <MenuItem key={lang.code} value={lang.code}>{lang.name}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                            <TextField
+                                fullWidth
+                                margin="normal"
+                                label="Translation Value"
+                                value={translationText}
+                                onChange={(e) => setTranslationText(e.target.value)}
+                                placeholder="e.g., Invia"
+                                required
+                            />
+                        </Box>
                     )}
                     
                     <Button
